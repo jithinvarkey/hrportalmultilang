@@ -1,0 +1,362 @@
+<div class="page-header">
+  <div>
+    <h1><mat-icon>campaign</mat-icon> Announcements</h1>
+    <p>Company news and updates from HR</p>
+  </div>
+  <div class="hdr-actions" *ngIf="isManager">
+    <button class="btn-outline" (click)="openBirthdayWishes()"><mat-icon>cake</mat-icon> Birthday Wishes</button>
+    <button class="btn-outline" (click)="openCategories()"><mat-icon>sell</mat-icon> Categories</button>
+    <button class="btn btn-primary" (click)="openForm()"><mat-icon>add</mat-icon> New Announcement</button>
+  </div>
+</div>
+
+<!-- Birthday wish settings -->
+<div class="modal-backdrop" *ngIf="showBirthdayWishes" (click)="closeBirthdayWishes()"></div>
+<div class="modal-panel birthday-panel" *ngIf="showBirthdayWishes">
+  <div class="modal-hdr">
+    <h3><mat-icon>cake</mat-icon> Birthday Wishes</h3>
+    <button class="icon-btn" (click)="closeBirthdayWishes()" matTooltip="Close"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="loading-wrap" *ngIf="birthdayLoading"><mat-spinner diameter="28"></mat-spinner></div>
+  <ng-container *ngIf="!birthdayLoading">
+    <div class="modal-body">
+      <label class="birthday-toggle">
+        <input type="checkbox" [(ngModel)]="birthdaySettings.enabled">
+        <span><strong>Automatic birthday wishes</strong><small>Send daily at 8:00 AM Riyadh time</small></span>
+      </label>
+      <div class="language-editors">
+        <section class="language-editor" dir="ltr">
+          <div class="language-label">English</div>
+          <div class="fg">
+            <label>Email subject <span class="req">*</span></label>
+            <input [(ngModel)]="birthdaySettings.subject" maxlength="200" placeholder="Happy Birthday, {{employee_name}}!">
+          </div>
+          <div class="fg">
+            <label>Message <span class="req">*</span></label>
+            <textarea rows="8" [(ngModel)]="birthdaySettings.body" maxlength="5000"></textarea>
+          </div>
+          <div class="placeholder-row">
+            <span>Insert:</span>
+            <button type="button" *ngFor="let token of birthdayPlaceholders" (click)="insertBirthdayPlaceholder(token, 'en')">{{ token }}</button>
+          </div>
+        </section>
+        <section class="language-editor arabic-editor" dir="rtl" lang="ar">
+          <div class="language-label">العربية</div>
+          <div class="fg">
+            <label>عنوان البريد</label>
+            <input [(ngModel)]="birthdaySettings.subject_ar" maxlength="200" placeholder="عيد ميلاد سعيد، {{employee_name}}!">
+          </div>
+          <div class="fg">
+            <label>الرسالة</label>
+            <textarea rows="8" [(ngModel)]="birthdaySettings.body_ar" maxlength="5000"></textarea>
+          </div>
+          <div class="placeholder-row">
+            <span>إدراج:</span>
+            <button type="button" *ngFor="let token of birthdayPlaceholders" (click)="insertBirthdayPlaceholder(token, 'ar')">{{ token }}</button>
+          </div>
+        </section>
+      </div>
+      <div class="fg">
+        <label>Background image <span class="optional-label">Optional</span></label>
+        <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onBirthdayBackgroundSelected($event)">
+        <small class="file-hint">JPG, PNG or WebP, up to 5 MB. The birthday message is overlaid at the top.</small>
+      </div>
+      <div class="birthday-background-preview" *ngIf="birthdayBackgroundPreview" [style.background-image]="'url(' + birthdayBackgroundPreview + ')'">
+        <div>Birthday email artwork</div>
+        <button class="icon-btn danger" type="button" (click)="clearBirthdayBackground()" matTooltip="Remove background image"><mat-icon>delete_outline</mat-icon></button>
+      </div>
+      <section class="today-birthdays">
+        <div class="birthday-section-head"><strong>Today's birthdays</strong><span>{{ todaysBirthdays.length }}</span></div>
+        <div class="birthday-person" *ngFor="let birthday of todaysBirthdays">
+          <mat-icon>person</mat-icon>
+          <div><strong>{{ birthday.name }}</strong><small>{{ birthday.email }}</small></div>
+          <span class="delivery-status" [class.sent]="birthday.status === 'sent'">{{ birthday.status === 'sent' ? 'Sent' : (birthday.status === 'failed' ? 'Failed' : 'Not sent') }}</span>
+        </div>
+        <div class="birthday-empty" *ngIf="!todaysBirthdays.length">No active employee birthdays today.</div>
+      </section>
+      <div class="form-err" *ngIf="birthdayError"><mat-icon>error_outline</mat-icon> {{ birthdayError }}</div>
+    </div>
+    <div class="modal-footer birthday-footer">
+      <button class="btn-outline" (click)="sendTodaysBirthdayWishes()" [disabled]="birthdaySending || !todaysBirthdays.length">
+        <mat-icon>send</mat-icon> {{ birthdaySending ? 'Sending...' : (todaysBirthdays.length && todaysBirthdays[0].status === 'sent' ? "Resend Today's Wishes" : "Send Today's Wishes") }}
+      </button>
+      <button class="btn btn-primary" (click)="saveBirthdayWishes()" [disabled]="birthdaySaving">
+        <mat-icon>save</mat-icon> {{ birthdaySaving ? 'Saving...' : 'Save Template' }}
+      </button>
+    </div>
+  </ng-container>
+</div>
+
+<div class="toast ok" *ngIf="successMsg"><mat-icon>check_circle</mat-icon> {{ successMsg }}</div>
+<div class="toast err" *ngIf="errorMsg"><mat-icon>error_outline</mat-icon> {{ errorMsg }}</div>
+
+<!-- Filters -->
+<div class="filters">
+  <div class="search-box">
+    <mat-icon>search</mat-icon>
+    <input [(ngModel)]="search" (keyup.enter)="onFilterChange()" placeholder="Search announcements…">
+  </div>
+  <select [(ngModel)]="filterCategoryId" (ngModelChange)="onFilterChange()">
+    <option [ngValue]="null">All categories</option>
+    <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
+  </select>
+</div>
+
+<div class="loading-wrap" *ngIf="loading"><mat-spinner diameter="32"></mat-spinner></div>
+
+<!-- List -->
+<div class="ann-list" *ngIf="!loading">
+  <div class="ann-card" *ngFor="let a of announcements"
+       [class.pinned]="a.is_pinned" [class.unpublished]="!a.is_published" [class.read]="a.is_read" [class.clickable]="!isManager"
+       [attr.tabindex]="isManager ? null : 0" (click)="markRead(a)" (keydown.enter)="markRead(a)">
+    <div class="ann-top">
+      <div class="ann-badges">
+        <span class="cat-chip" *ngIf="a.category"
+              [style.background]="(a.category.color || '#2E75B6') + '22'"
+              [style.color]="a.category.color || '#2E75B6'">
+          <mat-icon *ngIf="a.category.icon">{{ a.category.icon }}</mat-icon>
+          {{ a.category.name }}
+        </span>
+        <span class="pri-chip" [ngClass]="'pri-' + a.priority" *ngIf="a.priority !== 'normal'">
+          {{ a.priority }}
+        </span>
+        <span class="pin-flag" *ngIf="a.is_pinned"><mat-icon>push_pin</mat-icon> Pinned</span>
+        <span class="draft-flag" *ngIf="!a.is_published">Draft</span>
+      </div>
+      <div class="ann-admin" *ngIf="isManager">
+        <button class="icon-btn" (click)="openStats(a)" matTooltip="Engagement"><mat-icon>insights</mat-icon></button>
+        <button class="icon-btn" (click)="openForm(a)" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
+        <button class="icon-btn danger" (click)="deleteAnnouncement(a)" matTooltip="Delete"><mat-icon>delete_outline</mat-icon></button>
+      </div>
+    </div>
+
+    <div class="announcement-languages">
+      <section dir="ltr">
+        <h3 class="ann-title">{{ a.title }}</h3>
+        <p class="ann-body">{{ a.body }}</p>
+      </section>
+      <section class="announcement-arabic" dir="rtl" lang="ar" *ngIf="a.title_ar || a.body_ar">
+        <h3 class="ann-title" *ngIf="a.title_ar">{{ a.title_ar }}</h3>
+        <p class="ann-body" *ngIf="a.body_ar">{{ a.body_ar }}</p>
+      </section>
+    </div>
+
+    <div class="ann-attach" *ngIf="a.has_attachment">
+      <mat-icon>attach_file</mat-icon>
+      <span>{{ a.attachment_name }}</span>
+      <button class="attachment-view" *ngIf="canPreviewAttachment(a)" (click)="viewAttachment(a)"
+              matTooltip="View attachment" [attr.aria-label]="'View ' + a.attachment_name">
+        <mat-icon>visibility</mat-icon>
+      </button>
+      <button class="link-btn" (click)="downloadAttachment(a)">Download</button>
+    </div>
+
+    <div class="ann-foot">
+      <span><mat-icon>schedule</mat-icon> {{ (a.published_at || a.created_at) | date:'MMM d, y, h:mm a' }}</span>
+      <span *ngIf="a.creator">· {{ a.creator.name }}</span>
+      <span *ngIf="a.scheduled_at && !a.is_published" class="scheduled">· Scheduled {{ a.scheduled_at | date:'MMM d, h:mm a' }}</span>
+      <span *ngIf="a.expires_at" class="expires">· Expires {{ a.expires_at | date:'MMM d, y' }}</span>
+
+      <span class="foot-spacer"></span>
+
+      <!-- Reaction (everyone) -->
+      <button class="react-btn" (click)="toggleReaction(a)" matTooltip="React">
+        👍 <span *ngIf="a.reactions_count">{{ a.reactions_count }}</span>
+      </button>
+      <!-- Read marker for employees -->
+      <span class="read-count" *ngIf="!isManager && a.is_read"><mat-icon>done_all</mat-icon> Read</span>
+      <!-- Read count for HR -->
+      <span class="read-count" *ngIf="isManager"><mat-icon>visibility</mat-icon> {{ a.reads_count || 0 }}</span>
+    </div>
+  </div>
+
+  <div class="empty-hint" *ngIf="!announcements.length">
+    <mat-icon>campaign</mat-icon>
+    <p>No announcements yet.</p>
+  </div>
+</div>
+
+<!-- ── Announcement form ─────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showForm" (click)="closeForm()"></div>
+<div class="modal-panel" *ngIf="showForm">
+  <div class="modal-hdr">
+    <h3><mat-icon>{{ editId ? 'edit' : 'campaign' }}</mat-icon> {{ editId ? 'Edit Announcement' : 'New Announcement' }}</h3>
+    <button class="icon-btn" (click)="closeForm()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body announcement-form-body">
+    <div class="language-editors announcement-editors">
+      <section class="language-editor" dir="ltr">
+        <div class="language-label">English</div>
+    <div class="fg">
+      <label>Title <span class="req">*</span></label>
+      <input [(ngModel)]="form.title" placeholder="Announcement title">
+    </div>
+    <div class="fg">
+      <label>Message <span class="req">*</span></label>
+      <textarea rows="6" [(ngModel)]="form.body" placeholder="Write your announcement…"></textarea>
+    </div>
+      </section>
+      <section class="language-editor arabic-editor" dir="rtl" lang="ar">
+        <div class="language-label">العربية</div>
+        <div class="fg">
+          <label>العنوان</label>
+          <input [(ngModel)]="form.title_ar" placeholder="عنوان الإعلان">
+        </div>
+        <div class="fg">
+          <label>الرسالة</label>
+          <textarea rows="6" [(ngModel)]="form.body_ar" placeholder="اكتب نص الإعلان..."></textarea>
+        </div>
+      </section>
+    </div>
+    <div class="two-col">
+      <div class="fg">
+        <label>Category</label>
+        <select [(ngModel)]="form.category_id">
+          <option [ngValue]="null">— None —</option>
+          <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Priority</label>
+        <select [(ngModel)]="form.priority">
+          <option *ngFor="let p of priorities" [value]="p">{{ p | titlecase }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="fg">
+        <label>Expiry date (optional)</label>
+        <input type="date" [(ngModel)]="form.expires_at">
+      </div>
+      <div class="fg">
+        <label>Attachment (PDF/DOC/Image, ≤10MB)</label>
+        <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" (change)="onFileSelected($event)">
+        <div class="file-hint" *ngIf="selectedFile">{{ selectedFile.name }}</div>
+      </div>
+    </div>
+
+    <!-- Audience targeting -->
+    <div class="fg">
+      <label>Audience</label>
+      <select [(ngModel)]="form.audience_type">
+        <option value="all">Everyone</option>
+        <option value="departments">Specific departments</option>
+        <option value="roles">Specific roles</option>
+        <option value="employees">Selected employees</option>
+      </select>
+    </div>
+    <div class="target-box" *ngIf="form.audience_type === 'departments'">
+      <span class="target-hint">Select departments:</span>
+      <label class="chip-check" *ngFor="let d of departments"
+             [class.on]="form.target_department_ids.includes(d.id)">
+        <input type="checkbox" [checked]="form.target_department_ids.includes(d.id)" (change)="toggleDept(d.id)">
+        {{ d.name }}
+      </label>
+    </div>
+    <div class="target-box" *ngIf="form.audience_type === 'roles'">
+      <span class="target-hint">Select roles:</span>
+      <label class="chip-check" *ngFor="let r of roleOptions"
+             [class.on]="form.target_roles.includes(r)">
+        <input type="checkbox" [checked]="form.target_roles.includes(r)" (change)="toggleRole(r)">
+        {{ r }}
+      </label>
+    </div>
+    <div class="target-box" *ngIf="form.audience_type === 'employees'">
+      <span class="target-hint">Select employees:</span>
+      <label class="chip-check" *ngFor="let e of employees"
+             [class.on]="form.target_employee_ids.includes(e.id)">
+        <input type="checkbox" [checked]="form.target_employee_ids.includes(e.id)" (change)="toggleEmployee(e.id)">
+        {{ employeeLabel(e) }}
+      </label>
+    </div>
+
+    <!-- Scheduling -->
+    <div class="fg">
+      <label>Schedule for later (optional)</label>
+      <input type="datetime-local" [(ngModel)]="form.scheduled_at">
+      <div class="file-hint" *ngIf="form.scheduled_at">Will auto-publish at the scheduled time.</div>
+    </div>
+
+    <div class="check-row">
+      <label><input type="checkbox" [(ngModel)]="form.is_pinned"> Pin to top</label>
+      <label *ngIf="!form.scheduled_at"><input type="checkbox" [(ngModel)]="form.is_published"> Publish now</label>
+    </div>
+    <div class="form-err" *ngIf="formError"><mat-icon>error_outline</mat-icon> {{ formError }}</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="closeForm()">Cancel</button>
+    <button class="btn btn-primary" (click)="saveAnnouncement()" [disabled]="submitting">
+      <mat-icon>{{ submitting ? 'hourglass_empty' : 'send' }}</mat-icon>
+      {{ submitting ? 'Saving…' : (editId ? 'Update' : 'Publish') }}
+    </button>
+  </div>
+</div>
+
+<!-- ── Category manager ──────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showCategories" (click)="closeCategories()"></div>
+<div class="modal-panel" *ngIf="showCategories">
+  <div class="modal-hdr">
+    <h3><mat-icon>sell</mat-icon> Announcement Categories</h3>
+    <button class="icon-btn" (click)="closeCategories()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="cat-row" *ngFor="let c of categories">
+      <span class="cat-dot" [style.background]="c.color || '#2E75B6'"></span>
+      <span class="cat-name">{{ c.name }}</span>
+      <span class="cat-count">{{ c.announcements_count }} posts</span>
+      <button class="icon-btn" (click)="editCategory(c)"><mat-icon>edit</mat-icon></button>
+      <button class="icon-btn danger" (click)="deleteCategory(c)"><mat-icon>delete_outline</mat-icon></button>
+    </div>
+
+    <div class="cat-editor">
+      <div class="two-col">
+        <div class="fg"><label>Name</label><input [(ngModel)]="catForm.name" placeholder="e.g. Events"></div>
+        <div class="fg"><label>Icon</label><input [(ngModel)]="catForm.icon" placeholder="material icon"></div>
+      </div>
+      <div class="fg"><label>Color</label><input type="color" [(ngModel)]="catForm.color"></div>
+      <button class="btn btn-primary sm" (click)="saveCategory()">
+        <mat-icon>{{ catEditId ? 'save' : 'add' }}</mat-icon> {{ catEditId ? 'Update' : 'Add' }} Category
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Engagement stats drawer (HR) ──────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showStats" (click)="closeStats()"></div>
+<div class="stats-drawer" [class.open]="showStats">
+  <div class="modal-hdr">
+    <h3><mat-icon>insights</mat-icon> Engagement</h3>
+    <button class="icon-btn" (click)="closeStats()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="drawer-body">
+    <div class="loading-wrap" *ngIf="statsLoading"><mat-spinner diameter="28"></mat-spinner></div>
+    <ng-container *ngIf="stats && !statsLoading">
+      <div class="stat-title">{{ stats.announcement.title }}</div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="sb-num">{{ stats.reach }}</div><div class="sb-lbl">Audience</div></div>
+        <div class="stat-box ok"><div class="sb-num">{{ stats.read_count }}</div><div class="sb-lbl">Read</div></div>
+        <div class="stat-box"><div class="sb-num">{{ stats.read_rate }}%</div><div class="sb-lbl">Read rate</div></div>
+        <div class="stat-box"><div class="sb-num">{{ stats.reaction_count }}</div><div class="sb-lbl">Reactions</div></div>
+      </div>
+
+      <div class="stat-cols">
+        <div class="stat-col">
+          <div class="sc-head done">Read ({{ stats.read_count }})</div>
+          <div class="sc-row" *ngFor="let r of stats.readers">
+            <span>{{ r.employee_name }}</span>
+            <span class="sc-date">{{ r.read_at | date:'MMM d, h:mm a' }}</span>
+          </div>
+          <div class="sc-empty" *ngIf="!stats.readers.length">No reads yet</div>
+        </div>
+        <div class="stat-col">
+          <div class="sc-head pend">Not read ({{ stats.unread.length }})</div>
+          <div class="sc-row" *ngFor="let e of stats.unread">
+            <span>{{ e.employee_name }}</span>
+            <span class="sc-code">{{ e.employee_code }}</span>
+          </div>
+          <div class="sc-empty" *ngIf="!stats.unread.length">Everyone has read 🎉</div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

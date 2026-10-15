@@ -1,0 +1,160 @@
+<div class="onboarding-page">
+  <section class="onboarding-shell">
+    <header class="onboarding-header">
+      <div class="brand-mark">
+        <mat-icon>assignment_ind</mat-icon>
+      </div>
+      <div>
+        <h1>Employee Onboarding</h1>
+        <p *ngIf="employee">{{ employee.full_name }} <span *ngIf="employee.designation">- {{ employee.designation }}</span></p>
+      </div>
+    </header>
+
+    <div class="state-card" *ngIf="loading">
+      <mat-spinner diameter="32"></mat-spinner>
+      <span>Loading onboarding form...</span>
+    </div>
+
+    <div class="state-card error" *ngIf="!loading && error && !employee">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ error }}</span>
+    </div>
+
+    <form *ngIf="!loading && employee" [formGroup]="form" (ngSubmit)="submit()" class="onboarding-form">
+      <div class="notice">
+        <mat-icon>info</mat-icon>
+        <span>Complete the required details and upload the mandatory onboarding documents.</span>
+      </div>
+
+      <div class="section-title">Initial Details</div>
+      <div class="form-grid">
+        <label class="field">
+          <span>Phone Number <b>*</b></span>
+          <input formControlName="phone" autocomplete="tel" placeholder="+966 5x xxx xxxx">
+          <small *ngIf="form.get('phone')?.touched && form.get('phone')?.invalid">Phone number is required</small>
+        </label>
+
+        <label class="field">
+          <span>Date of Birth <b>*</b></span>
+          <input type="date" formControlName="dob">
+          <small *ngIf="form.get('dob')?.touched && form.get('dob')?.invalid">Date of birth is required</small>
+        </label>
+
+        <label class="field">
+          <span>Gender <b>*</b></span>
+          <select formControlName="gender">
+            <option value="">Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+          <small *ngIf="form.get('gender')?.touched && form.get('gender')?.invalid">Gender is required</small>
+        </label>
+
+        <label class="field">
+          <span>Marital Status <b>*</b></span>
+          <select formControlName="marital_status">
+            <option value="">Select status</option>
+            <option value="single">Single</option>
+            <option value="married">Married</option>
+            <option value="divorced">Divorced</option>
+            <option value="widowed">Widowed</option>
+          </select>
+          <small *ngIf="form.get('marital_status')?.touched && form.get('marital_status')?.invalid">Marital status is required</small>
+        </label>
+
+        <label class="field wide">
+          <span>National Address <b>*</b></span>
+          <input formControlName="address" autocomplete="street-address" placeholder="Building, street, district">
+          <small *ngIf="form.get('address')?.touched && form.get('address')?.invalid">National address is required</small>
+        </label>
+
+        <label class="field">
+          <span>City</span>
+          <input formControlName="city" placeholder="Riyadh">
+        </label>
+
+        <label class="field">
+          <span>Country</span>
+          <input formControlName="country" placeholder="Saudi Arabia">
+        </label>
+
+        <label class="field">
+          <span>ID / Iqama Number <b>*</b></span>
+          <input formControlName="national_id" placeholder="ID / Iqama number">
+          <small *ngIf="form.get('national_id')?.touched && form.get('national_id')?.invalid">ID / Iqama number is required</small>
+        </label>
+
+        <label class="field">
+          <span>ID / Iqama Expiry</span>
+          <input type="date" formControlName="id_expiry_date">
+        </label>
+
+        <label class="field">
+          <span>Passport Number</span>
+          <input formControlName="passport_number" placeholder="Optional">
+        </label>
+
+        <label class="field">
+          <span>Passport Expiry</span>
+          <input type="date" formControlName="passport_expiry_date">
+        </label>
+
+        <label class="field">
+          <span>Bank Name <b>*</b></span>
+          <input formControlName="bank_name" placeholder="Bank name">
+          <small *ngIf="form.get('bank_name')?.touched && form.get('bank_name')?.invalid">Bank name is required</small>
+        </label>
+
+        <label class="field">
+          <span>Bank Account / IBAN <b>*</b></span>
+          <input formControlName="bank_account" placeholder="SA..." maxlength="24" (input)="normalizeBankAccount()">
+          <small *ngIf="form.get('bank_account')?.touched && form.get('bank_account')?.hasError('required')">Bank account is required</small>
+          <small *ngIf="form.get('bank_account')?.touched && (form.get('bank_account')?.hasError('maxlength') || form.get('bank_account')?.hasError('pattern'))">Only S, A, and numbers are allowed, maximum 24 characters</small>
+        </label>
+
+        <label class="field">
+          <span>Emergency Contact Name <b>*</b></span>
+          <input formControlName="emergency_contact_name" placeholder="Contact person name">
+          <small *ngIf="form.get('emergency_contact_name')?.touched && form.get('emergency_contact_name')?.invalid">Emergency contact name is required</small>
+        </label>
+
+        <label class="field">
+          <span>Emergency Contact Phone <b>*</b></span>
+          <input formControlName="emergency_contact_phone" placeholder="+966 5x xxx xxxx">
+          <small *ngIf="form.get('emergency_contact_phone')?.touched && form.get('emergency_contact_phone')?.invalid">Emergency contact phone is required</small>
+        </label>
+      </div>
+
+      <div class="section-title">Document Uploads</div>
+      <div class="upload-grid">
+        <label class="upload-tile" *ngFor="let doc of documents">
+          <span class="upload-label">{{ doc.title }} <b *ngIf="doc.required">*</b></span>
+          <span class="upload-name">{{ fileName(doc.field) }}</span>
+          <input type="file" (change)="onFileChange($event, doc.field)" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx">
+          <span class="upload-action">
+            <mat-icon>upload_file</mat-icon>
+            Choose File
+          </span>
+        </label>
+      </div>
+
+      <div class="form-message error" *ngIf="error">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ error }}</span>
+      </div>
+      <div class="form-message success" *ngIf="success">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ success }}</span>
+      </div>
+
+      <div class="actions">
+        <button class="submit-btn" type="submit" [disabled]="saving">
+          <mat-spinner *ngIf="saving" diameter="18"></mat-spinner>
+          <mat-icon *ngIf="!saving">send</mat-icon>
+          Submit Details
+        </button>
+      </div>
+    </form>
+  </section>
+</div>

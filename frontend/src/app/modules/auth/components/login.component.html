@@ -1,0 +1,92 @@
+<div class="login-wrapper">
+  <div class="login-card mat-elevation-z8">
+
+    <div class="login-header">
+      <div class="logo">
+        <img src="assets/diamond-company-logo.jpg" alt="Diamond Insurance Broker">
+      </div>
+      <h1>Diamond HRMS</h1>
+      <p>Human Resources Management System</p>
+    </div>
+
+    <form *ngIf="!otpStep" [formGroup]="form" (ngSubmit)="onSubmit()" class="login-form">
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Email or Employee Number</mat-label>
+        <input matInput type="text" formControlName="email" autocomplete="username">
+        <mat-icon matPrefix>person</mat-icon>
+        <mat-error *ngIf="form.get('email')?.hasError('required')">Email or employee number is required</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Password</mat-label>
+        <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" autocomplete="current-password">
+        <mat-icon matPrefix>lock</mat-icon>
+        <button mat-icon-button matSuffix type="button" (click)="hidePassword = !hidePassword">
+          <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        <mat-error *ngIf="form.get('password')?.hasError('required')">Password is required</mat-error>
+      </mat-form-field>
+
+      <div class="forgot-link">
+        <a routerLink="/auth/forgot-password">Forgot password?</a>
+      </div>
+
+      <div class="error-banner" *ngIf="errorMsg">
+        <mat-icon>error_outline</mat-icon>
+        {{ errorMsg }}
+      </div>
+
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        class="login-btn"
+        [disabled]="form.invalid || loading">
+        <mat-spinner diameter="20" strokeWidth="3" *ngIf="loading"></mat-spinner>
+        <span>{{ loading ? 'Signing in…' : 'Sign In' }}</span>
+      </button>
+
+    </form>
+
+    <form *ngIf="otpStep" [formGroup]="otpForm" (ngSubmit)="verifyOtp()" class="login-form">
+      <div class="otp-intro">
+        <mat-icon>mark_email_read</mat-icon>
+        <p>Enter the 6-digit OTP sent to your email and mobile number if available.</p>
+        <strong>{{ expiryLabel }}</strong>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>OTP Code</mat-label>
+        <input matInput type="text" formControlName="otp" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+        <mat-icon matPrefix>pin</mat-icon>
+        <mat-error *ngIf="otpForm.get('otp')?.hasError('required')">OTP is required</mat-error>
+        <mat-error *ngIf="otpForm.get('otp')?.hasError('pattern')">Enter the 6-digit OTP</mat-error>
+      </mat-form-field>
+
+      <div class="error-banner" *ngIf="errorMsg">
+        <mat-icon>error_outline</mat-icon>
+        {{ errorMsg }}
+      </div>
+
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        class="login-btn"
+        [disabled]="otpForm.invalid || loading || expiresIn === 0">
+        <mat-spinner diameter="20" strokeWidth="3" *ngIf="loading"></mat-spinner>
+        <span>{{ loading ? 'Verifying…' : 'Verify OTP' }}</span>
+      </button>
+
+      <div class="otp-actions">
+        <button mat-button type="button" (click)="backToLogin()">Back</button>
+        <button mat-button color="primary" type="button" (click)="resendOtp()" [disabled]="resendCoolingDown">Resend OTP</button>
+      </div>
+    </form>
+
+    <div class="login-footer">
+      <small>&copy; 2026 HRMS &mdash; All rights reserved</small>
+    </div>
+  </div>
+</div>

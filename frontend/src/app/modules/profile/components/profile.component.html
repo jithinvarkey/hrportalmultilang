@@ -1,0 +1,422 @@
+<div class="module-page">
+
+  <!-- Header -->
+  <div class="page-hdr">
+    <div>
+      <h1 class="page-title">My Profile</h1>
+      <p class="page-sub">Account settings and personal information</p>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-wrap">
+    <div class="spinner"></div>
+    <p>Loading profile…</p>
+  </div>
+
+  <div *ngIf="!loading" class="profile-layout">
+
+    <!-- ── Left: Identity Card ─────────────────────────────────────────── -->
+    <div class="identity-card">
+
+      <!-- Avatar -->
+      <div class="av-wrap">
+        <div class="av-circle" [style.background-image]="avatarUrl() ? 'url(' + avatarUrl() + ')' : 'none'">
+          <span *ngIf="!avatarUrl()">{{ initial(user?.name) }}</span>
+          <div *ngIf="avatarUploading" class="av-overlay">
+            <div class="spinner sm"></div>
+          </div>
+        </div>
+        <label class="av-upload-btn" title="Change avatar">
+          <span class="material-icons">photo_camera</span>
+          <input type="file" accept="image/*" (change)="onAvatarChange($event)" style="display:none">
+        </label>
+      </div>
+      <p *ngIf="avatarError" class="field-err">{{ avatarError }}</p>
+
+      <!-- Name / Email / Role -->
+      <div class="identity-name">{{ user?.name || '—' }}</div>
+      <div class="identity-email">{{ user?.email || '—' }}</div>
+      <div class="identity-role" *ngIf="user?.roles?.length">
+        {{ roleBadge(user.roles[0]) }}
+      </div>
+
+      <!-- Employee info snippet -->
+      <div *ngIf="employee" class="identity-meta">
+        <div class="meta-row" *ngIf="employee.employee_code">
+          <span class="material-icons">badge</span> {{ employee.employee_code }}
+        </div>
+        <div class="meta-row" *ngIf="employee.department">
+          <span class="material-icons">domain</span> {{ employee.department }}
+        </div>
+        <div class="meta-row" *ngIf="employee.designation">
+          <span class="material-icons">work</span> {{ employee.designation }}
+        </div>
+        <div class="meta-row" *ngIf="employee.hire_date">
+          <span class="material-icons">calendar_today</span>
+          Joined {{ employee.hire_date | date:'dd MMM yyyy' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Right: Tabs ────────────────────────────────────────────────── -->
+    <div class="profile-content">
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button *ngFor="let t of tabs"
+                class="tab-btn"
+                [hidden]="t.id === 'dependents' && !employee"
+                [class.active]="activeTab === t.id"
+                (click)="switchTab(t.id)">
+          <span class="material-icons">{{ t.icon }}</span>
+          {{ t.label }}
+          <span *ngIf="t.id === 'dependents' && dependents.length" class="tab-count">{{ dependents.length }}</span>
+        </button>
+      </div>
+
+      <!-- ── Tab: My Info ─────────────────────────────────────────────── -->
+      <div *ngIf="activeTab === 'info'" class="tab-panel">
+        <div class="info-section">
+          <div class="section-title">Account</div>
+          <div class="info-grid">
+            <div class="info-row"><span class="info-label">Full Name</span><span class="info-val">{{ user?.name || '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Email</span><span class="info-val">{{ user?.email || '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Role</span><span class="info-val">{{ roleBadge(user?.roles?.[0] || '') || '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Member Since</span><span class="info-val">{{ (user?.created_at | date:'dd MMM yyyy') || '—' }}</span></div>
+          </div>
+        </div>
+
+        <div *ngIf="employee" class="info-section">
+          <div class="section-title">Employment</div>
+          <div class="info-grid">
+            <div class="info-row"><span class="info-label">Employee Code</span><span class="info-val">{{ employee.employee_code || '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Department</span><span class="info-val">{{ employee.department || '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Designation</span><span class="info-val">{{ employee.designation || '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Employment Type</span><span class="info-val"> {{ formatEmploymentType(employee.employment_type)|| '_' }} </span></div>
+            <div class="info-row">
+  <span class="info-label">Status</span>
+
+  <span class="status-badge"
+        [ngClass]="employee.status">
+    {{ employee.status | titlecase }}
+  </span>
+</div>
+            <div class="info-row"><span class="info-label">Hire Date</span><span class="info-val">{{ (employee.hire_date | date:'dd MMM yyyy') || '—' }}</span></div>
+          </div>
+        </div>
+
+        <div *ngIf="employee" class="info-section">
+          <div class="section-title">Contact</div>
+          <div class="info-grid">
+            <div class="info-row"><span class="info-label">Phone</span><span class="info-val">{{ employee.phone || '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Work Phone</span><span class="info-val">{{ employee.work_phone || '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Extension</span><span class="info-val">{{ employee.extension || '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Nationality</span><span class="info-val">{{ employee.nationality || '—' }}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Dependents -->
+      <div *ngIf="activeTab === 'dependents'" class="tab-panel">
+        <div class="form-section">
+          <div class="section-head">
+            <div>
+              <div class="section-title">Dependents</div>
+              <p class="section-hint">Add family member details and upload passport or ID/Iqama documents.</p>
+            </div>
+            <button class="btn-primary no-margin" type="button" (click)="openDependentForm()">
+              <span class="material-icons">person_add</span>
+              Add Dependent
+            </button>
+          </div>
+
+          <p *ngIf="dependentError" class="form-error">{{ dependentError }}</p>
+
+          <div *ngIf="showDependentForm" class="dependent-form-card">
+            <div class="section-title small">{{ dependentEditId ? 'Edit Dependent' : 'New Dependent' }}</div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Full Name *</label>
+                <input class="inp" [(ngModel)]="dependentForm.full_name" placeholder="Dependent full name">
+              </div>
+              <div class="form-field">
+                <label>Relationship *</label>
+                <select class="inp" [(ngModel)]="dependentForm.relationship">
+                  <option value="spouse">Spouse</option>
+                  <option value="son">Son</option>
+                  <option value="daughter">Daughter</option>
+                  <option value="father">Father</option>
+                  <option value="mother">Mother</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Date of Birth</label>
+                <input class="inp" type="date" [(ngModel)]="dependentForm.date_of_birth">
+              </div>
+              <div class="form-field">
+                <label>Nationality</label>
+                <input class="inp" [(ngModel)]="dependentForm.nationality" placeholder="Nationality">
+              </div>
+              <div class="form-field">
+                <label>Iqama / ID Number *</label>
+                <input class="inp" [(ngModel)]="dependentForm.id_number" placeholder="ID number">
+              </div>
+              <div class="form-field">
+                <label>Iqama / ID Expiry</label>
+                <input class="inp" type="date" [(ngModel)]="dependentForm.id_expiry">
+              </div>
+              <div class="form-field">
+                <label>Passport Number</label>
+                <input class="inp" [(ngModel)]="dependentForm.passport_number" placeholder="Passport number">
+              </div>
+              <div class="form-field">
+                <label>Passport Expiry</label>
+                <input class="inp" type="date" [(ngModel)]="dependentForm.passport_expiry">
+              </div>
+              <div class="form-field">
+                <label>Passport Copy</label>
+                <input class="inp file-inp" type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="selectDependentFile('passport', $event)">
+                <small>{{ dependentPassportFile?.name || dependentForm.passport_file_name || 'PDF, JPG, or PNG up to 5 MB' }}</small>
+              </div>
+              <div class="form-field">
+                <label>ID / Iqama Copy</label>
+                <input class="inp file-inp" type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="selectDependentFile('id', $event)">
+                <small>{{ dependentIdFile?.name || dependentForm.id_file_name || 'PDF, JPG, or PNG up to 5 MB' }}</small>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-secondary" type="button" (click)="cancelDependentForm()">Cancel</button>
+              <button class="btn-primary no-margin" type="button" (click)="saveDependent()" [disabled]="dependentSaving">
+                {{ dependentSaving ? 'Saving...' : (dependentEditId ? 'Update Dependent' : 'Save Dependent') }}
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="dependentsLoading" class="dependent-empty">
+            <div class="spinner sm"></div>
+            <span>Loading dependents...</span>
+          </div>
+
+          <div *ngIf="!dependentsLoading && !dependents.length && !showDependentForm" class="dependent-empty">
+            <span class="material-icons">family_restroom</span>
+            <strong>No dependents added yet</strong>
+            <p>Add spouse, child, or family member information and attach their documents.</p>
+          </div>
+
+          <div class="dependent-list" *ngIf="!dependentsLoading && dependents.length">
+            <div class="dependent-card" *ngFor="let d of dependents">
+              <div class="dependent-main">
+                <div class="dependent-icon"><span class="material-icons">person</span></div>
+                <div>
+                  <div class="dependent-name">{{ d.full_name }}</div>
+                  <div class="dependent-meta">{{ d.relationship | titlecase }} - ID: {{ displayText(d.id_number) }}</div>
+                  <div class="dependent-meta">Nationality: {{ displayText(d.nationality) }} - Passport: {{ displayText(d.passport_number) }}</div>
+                  <div class="doc-actions">
+                    <button *ngIf="d.passport_file_path" type="button" (click)="downloadDependentDocument(d, 'passport')">
+                      <span class="material-icons">description</span> Passport
+                    </button>
+                    <button *ngIf="d.id_file_path" type="button" (click)="downloadDependentDocument(d, 'id')">
+                      <span class="material-icons">badge</span> ID / Iqama
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="dependent-actions">
+                <button type="button" class="icon-action" title="Edit" (click)="openDependentForm(d)">
+                  <span class="material-icons">edit</span>
+                </button>
+                <button type="button" class="icon-action danger" title="Delete" (click)="deleteDependent(d)">
+                  <span class="material-icons">delete_outline</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Documents -->
+      <div *ngIf="activeTab === 'documents'" class="tab-panel">
+        <div class="form-section">
+          <div class="section-title">My Documents</div>
+          <p class="section-hint">Upload your ID/Iqama, passport, HDF, signed offer letter, certificate, bank details, or other supporting files.</p>
+
+          <div class="document-upload-card">
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Document Type *</label>
+                <select class="inp" [(ngModel)]="documentForm.document_key" (change)="onDocumentTypeChange()">
+                  <option *ngFor="let type of documentTypes" [value]="type.key">{{ type.label }}</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Document Title *</label>
+                <input class="inp doc-title-input"
+                       [(ngModel)]="documentForm.title"
+                       [readonly]="documentForm.document_key !== 'other'"
+                       placeholder="Document title">
+                <small>{{ documentForm.document_key === 'other' ? 'Enter a clear document title.' : 'Auto-filled from the selected document type.' }}</small>
+              </div>
+              <div class="form-field">
+                <label>Expiry Date</label>
+                <input class="inp" type="date" [(ngModel)]="documentForm.expiry_date">
+              </div>
+              <div class="form-field">
+                <label>File *</label>
+                <input class="inp file-inp" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls" (change)="selectDocumentFile($event)">
+                <small>{{ documentFile?.name || 'PDF, Word, image, or Excel file up to 10 MB' }}</small>
+              </div>
+            </div>
+
+            <p *ngIf="documentSuccess" class="form-success">{{ documentSuccess }}</p>
+            <p *ngIf="documentError" class="form-error">{{ documentError }}</p>
+
+            <div class="form-actions">
+              <button class="btn-primary no-margin" type="button" (click)="uploadDocument()" [disabled]="documentUploading">
+                <span class="material-icons">upload</span>
+                {{ documentUploading ? 'Uploading...' : 'Upload Document' }}
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="documentsLoading" class="dependent-empty">
+            <div class="spinner sm"></div>
+            <span>Loading documents...</span>
+          </div>
+
+          <div *ngIf="!documentsLoading && !documents.length" class="dependent-empty">
+            <span class="material-icons">folder_open</span>
+            <strong>No documents uploaded yet</strong>
+            <p>Use the form above to upload your employment-related documents.</p>
+          </div>
+
+          <div class="document-list" *ngIf="!documentsLoading && documents.length">
+            <div class="document-card" *ngFor="let doc of documents">
+              <div class="document-main">
+                <div class="dependent-icon"><span class="material-icons">description</span></div>
+                <div>
+                  <div class="dependent-name">{{ doc.title }}</div>
+                  <div class="dependent-meta">
+                    {{ documentTypeLabel(doc.type) }} - {{ formatFileSize(doc.file_size) }} - {{ displayText(doc.file_name) }}
+                  </div>
+                  <div class="dependent-meta" *ngIf="doc.expiry_date">Expires {{ doc.expiry_date | date:'dd MMM yyyy' }}</div>
+                  <span class="verify-chip" [class.verified]="doc.is_verified">{{ doc.is_verified ? 'Verified' : 'Pending verification' }}</span>
+                </div>
+              </div>
+              <div class="dependent-actions">
+                <button type="button" class="icon-action" title="Download" (click)="downloadDocument(doc)">
+                  <span class="material-icons">download</span>
+                </button>
+                <button type="button" class="icon-action danger" title="Delete" (click)="deleteDocument(doc)">
+                  <span class="material-icons">delete_outline</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Tab: Edit Profile ────────────────────────────────────────── -->
+      <div *ngIf="activeTab === 'edit'" class="tab-panel">
+        <div class="form-section">
+          <div class="section-title">Personal Information</div>
+
+          <div class="form-grid">
+            <div class="form-field full">
+              <label>Full Name</label>
+              <input type="text" [(ngModel)]="editForm.name" placeholder="Your name" class="inp">
+            </div>
+
+            <div class="form-field">
+              <label>Phone</label>
+              <input type="text" [(ngModel)]="editForm.phone" placeholder="+966 5x xxx xxxx" class="inp">
+            </div>
+
+            <div class="form-field">
+              <label>Arabic Name</label>
+              <input type="text" [(ngModel)]="editForm.arabic_name" placeholder="الاسم بالعربي" class="inp" dir="rtl">
+            </div>
+
+            <div class="form-field full">
+              <label>Address</label>
+              <input type="text" [(ngModel)]="editForm.address" placeholder="Street address" class="inp">
+            </div>
+
+            <div class="form-field">
+              <label>City</label>
+              <input type="text" [(ngModel)]="editForm.city" placeholder="City" class="inp">
+            </div>
+
+            <div class="form-field">
+              <label>Country</label>
+              <input type="text" [(ngModel)]="editForm.country" placeholder="Country" class="inp">
+            </div>
+          </div>
+
+          <p *ngIf="editSuccess" class="form-success">{{ editSuccess }}</p>
+          <p *ngIf="editError" class="form-error">{{ editError }}</p>
+
+          <button class="btn-primary" (click)="saveProfile()" [disabled]="editSaving">
+            <span *ngIf="!editSaving">Save Changes</span>
+            <span *ngIf="editSaving">Saving…</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Tab: Change Password ─────────────────────────────────────── -->
+      <div *ngIf="activeTab === 'password'" class="tab-panel">
+        <div class="form-section">
+          <div class="section-title">Change Password</div>
+          <p class="section-hint">Your new password must be at least 8 characters long.</p>
+
+          <div class="form-grid single">
+            <div class="form-field full">
+              <label>Current Password</label>
+              <div class="pw-wrap">
+                <input [type]="showCurrentPw ? 'text' : 'password'"
+                       [(ngModel)]="pwForm.current_password"
+                       placeholder="Enter current password" class="inp">
+                <button class="pw-eye" type="button" (click)="showCurrentPw = !showCurrentPw">
+                  <span class="material-icons">{{ showCurrentPw ? 'visibility_off' : 'visibility' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-field full">
+              <label>New Password</label>
+              <div class="pw-wrap">
+                <input [type]="showNewPw ? 'text' : 'password'"
+                       [(ngModel)]="pwForm.password"
+                       placeholder="Enter new password" class="inp">
+                <button class="pw-eye" type="button" (click)="showNewPw = !showNewPw">
+                  <span class="material-icons">{{ showNewPw ? 'visibility_off' : 'visibility' }}</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-field full">
+              <label>Confirm New Password</label>
+              <div class="pw-wrap">
+                <input [type]="showConfirmPw ? 'text' : 'password'"
+                       [(ngModel)]="pwForm.password_confirmation"
+                       placeholder="Repeat new password" class="inp">
+                <button class="pw-eye" type="button" (click)="showConfirmPw = !showConfirmPw">
+                  <span class="material-icons">{{ showConfirmPw ? 'visibility_off' : 'visibility' }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p *ngIf="pwSuccess" class="form-success">{{ pwSuccess }}</p>
+          <p *ngIf="pwError" class="form-error">{{ pwError }}</p>
+
+          <button class="btn-primary" (click)="changePassword()" [disabled]="pwSaving">
+            <span *ngIf="!pwSaving">Change Password</span>
+            <span *ngIf="pwSaving">Changing…</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

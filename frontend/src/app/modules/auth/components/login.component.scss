@@ -1,0 +1,160 @@
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(8, 137, 163, .24), transparent 28%),
+    linear-gradient(135deg, #12253d 0%, #0b6f86 100%);
+}
+
+.login-card {
+  width: 420px;
+  padding: 48px 40px 32px;
+  border-radius: 16px;
+  background: #fff;
+
+  @media (max-width: 480px) {
+    width: 100%;
+    margin: 16px;
+    padding: 32px 24px;
+  }
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+
+  .logo {
+    width: min(220px, 100%);
+    min-height: 58px;
+    margin: 0 auto 14px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(10, 112, 135, .14);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(8, 31, 45, .10);
+  }
+
+  .logo img {
+    display: block;
+    width: 100%;
+    max-width: 180px;
+    height: auto;
+    object-fit: contain;
+  }
+
+  h1 { font-size: 32px; font-weight: 700; color: #1B3A6B; margin: 0; }
+  p  { color: #666; margin: 4px 0 0; font-size: 14px; }
+}
+
+.login-form { display: flex; flex-direction: column; gap: 4px; }
+
+.full-width { width: 100%; }
+
+.forgot-link {
+  text-align: right;
+  margin: -8px 0 8px;
+  a { color: #2E75B6; font-size: 13px; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fdecea;
+  border-radius: 8px;
+  color: #c62828;
+  font-size: 13px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+.login-btn {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 24px;
+  color: #aaa;
+}
+
+/* ── Forgot / Reset password states ──────────────────────────────────── */
+.success-panel {
+  text-align: center;
+  padding: 8px 4px 4px;
+
+  .success-icon {
+    font-size: 56px;
+    width: 56px;
+    height: 56px;
+    color: #2e7d32;
+    margin-bottom: 12px;
+  }
+
+  p {
+    color: #555;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0 0 20px;
+  }
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2E75B6;
+  font-size: 14px;
+  text-decoration: none;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &:hover { text-decoration: underline; }
+}
+
+.otp-intro {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  color: #555;
+  margin-bottom: 10px;
+
+  mat-icon {
+    font-size: 42px;
+    width: 42px;
+    height: 42px;
+    color: #1B3A6B;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  strong {
+    color: #1B3A6B;
+    font-size: 18px;
+  }
+}
+
+.otp-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}

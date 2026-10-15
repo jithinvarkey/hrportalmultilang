@@ -1,0 +1,269 @@
+<div class="page-header">
+  <div>
+    <h1><mat-icon>fingerprint</mat-icon> BioTime Devices</h1>
+    <p>Manage biometric attendance devices and sync records</p>
+  </div>
+  <button class="btn btn-primary" (click)="openForm()">
+    <mat-icon>add</mat-icon> Add Device
+  </button>
+</div>
+
+<div class="toast" *ngIf="successMsg"><mat-icon>check_circle</mat-icon> {{ successMsg }}</div>
+
+<!-- Loading -->
+<div class="loading-wrap" *ngIf="loading">
+  <mat-spinner diameter="32"></mat-spinner>
+</div>
+
+<!-- Empty -->
+<div class="empty-state" *ngIf="!loading && !devices.length">
+  <mat-icon>device_hub</mat-icon>
+  <h3>No devices configured</h3>
+  <p>Add a BioTime or ZKTeco device to start syncing attendance records automatically.</p>
+</div>
+
+<!-- Device grid -->
+<div class="device-grid" *ngIf="!loading && devices.length">
+  <div class="device-card" *ngFor="let d of devices">
+
+    <div class="dc-head">
+      <div class="dc-title">
+        <mat-icon>{{ d.is_active ? 'sensors' : 'sensors_off' }}</mat-icon>
+        <div>
+          <div class="dc-name">{{ d.name }}</div>
+          <div class="dc-addr">{{ d.protocol }}://{{ d.ip_address }}:{{ d.port }}</div>
+        </div>
+      </div>
+      <span class="status-pill" [class.on]="d.is_active" [class.off]="!d.is_active">
+        {{ d.is_active ? 'Active' : 'Inactive' }}
+      </span>
+    </div>
+
+    <div class="dc-meta">
+      <div class="dcm-item">
+        <span class="dcm-lbl">Last Sync</span>
+        <span class="dcm-val">{{ d.last_synced_at ? (d.last_synced_at | date:'MMM d, h:mm a') : 'Never' }}</span>
+      </div>
+      <div class="dcm-item">
+        <span class="dcm-lbl">Status</span>
+        <span class="dcm-val" [class.txt-ok]="d.last_sync_status==='success' || d.last_sync_status==='connected'"
+                              [class.txt-err]="d.last_sync_status==='failed'">
+          {{ d.last_sync_status || '—' }}
+        </span>
+      </div>
+      <div class="dcm-item">
+        <span class="dcm-lbl">Last Count</span>
+        <span class="dcm-val">{{ d.last_sync_count ?? '—' }}</span>
+      </div>
+    </div>
+
+    <!-- Test result -->
+    <div class="test-result" *ngIf="testResult[d.id]"
+         [class.ok]="testResult[d.id].ok" [class.err]="!testResult[d.id].ok">
+      <mat-icon>{{ testResult[d.id].ok ? 'check_circle' : 'error_outline' }}</mat-icon>
+      <span>{{ testResult[d.id].message }}</span>
+    </div>
+
+    <div class="dc-actions">
+      <button class="btn-sm" (click)="testConnection(d)" [disabled]="testing[d.id]">
+        <mat-icon>{{ testing[d.id] ? 'hourglass_empty' : 'wifi_tethering' }}</mat-icon>
+        {{ testing[d.id] ? 'Testing…' : 'Test' }}
+      </button>
+      <button class="btn-sm primary"
+        (click)="openSyncModal(d)"
+        [disabled]="syncing[d.id] || !d.is_active">
+       <mat-icon>{{ syncing[d.id] ? 'hourglass_empty' : 'sync' }}</mat-icon>
+      {{ syncing[d.id] ? 'Syncing…' : 'Sync' }}
+      
+      </button>
+      <!-- <button class="btn-sm primary" (click)="syncDevice(d)" [disabled]="syncing[d.id] || !d.is_active">
+        <mat-icon>{{ syncing[d.id] ? 'hourglass_empty' : 'sync' }}</mat-icon>
+        {{ syncing[d.id] ? 'Syncing…' : 'Sync' }}
+      </button> -->
+
+      <button class="btn-sm" (click)="openStats(d)">
+        <mat-icon>insights</mat-icon> Stats
+      </button>
+      <button class="btn-sm" (click)="openForm(d)" matTooltip="Edit">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button class="btn-sm danger" (click)="deleteDevice(d)" matTooltip="Delete">
+        <mat-icon>delete_outline</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add / Edit modal ─────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showForm" (click)="closeForm()"></div>
+<div class="modal-panel" *ngIf="showForm">
+  <div class="modal-hdr">
+    <h3><mat-icon>{{ editId ? 'edit' : 'add_box' }}</mat-icon> {{ editId ? 'Edit Device' : 'Add Device' }}</h3>
+    <button class="icon-btn" (click)="closeForm()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="fg">
+      <label>Device Name <span class="req">*</span></label>
+      <input [(ngModel)]="form.name" placeholder="e.g. Main Entrance">
+    </div>
+    <div class="two-col">
+      <div class="fg">
+        <label>Protocol</label>
+        <select [(ngModel)]="form.protocol">
+          <option value="http">HTTP</option>
+          <option value="https">HTTPS</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Port</label>
+        <input type="number" [(ngModel)]="form.port" placeholder="8088">
+      </div>
+    </div>
+    <div class="fg">
+      <label>IP Address / Host <span class="req">*</span></label>
+      <input [(ngModel)]="form.ip_address" placeholder="192.168.1.50">
+    </div>
+<div class="fg">
+  <label>API Path</label>
+  <input
+    [(ngModel)]="form.api_path"
+    placeholder="/iclock/api/transactions/">
+</div>
+
+    <div class="two-col">
+      <div class="fg">
+        <label>Username <span class="req">*</span></label>
+        <input [(ngModel)]="form.username" autocomplete="off" placeholder="admin">
+      </div>
+      <div class="fg">
+        <label>Password {{ editId ? '' : '*' }}</label>
+        <input type="password" [(ngModel)]="form.password" autocomplete="new-password"
+               [placeholder]="editId ? 'Leave blank to keep current' : '••••••••'">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="fg">
+        <label>Timeout (seconds)</label>
+        <input type="number" [(ngModel)]="form.timeout_seconds" placeholder="30">
+      </div>
+      <div class="fg">
+        <label>Status</label>
+        <select [(ngModel)]="form.is_active">
+          <option [ngValue]="true">Active</option>
+          <option [ngValue]="false">Inactive</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-err" *ngIf="formError"><mat-icon>error_outline</mat-icon> {{ formError }}</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="closeForm()">Cancel</button>
+    <button class="btn btn-primary" (click)="saveDevice()" [disabled]="submitting">
+      <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
+      {{ submitting ? 'Saving…' : (editId ? 'Update Device' : 'Add Device') }}
+    </button>
+  </div>
+</div>
+
+<!-- ── Stats drawer ─────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showStats" (click)="closeStats()"></div>
+<div class="stats-drawer" [class.open]="showStats">
+  <div class="modal-hdr" *ngIf="statsDevice">
+    <h3><mat-icon>insights</mat-icon> {{ statsDevice.name }} — Stats</h3>
+    <button class="icon-btn" (click)="closeStats()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="drawer-body">
+    <div class="loading-wrap" *ngIf="showStats && !stats"><mat-spinner diameter="28"></mat-spinner></div>
+    <div *ngIf="stats && !stats.error" class="stat-grid">
+      <div class="stat-box"><div class="sb-num">{{ stats.total_punches }}</div><div class="sb-lbl">Total Punches</div></div>
+      <div class="stat-box"><div class="sb-num">{{ stats.today_punches }}</div><div class="sb-lbl">Today</div></div>
+      <div class="stat-box"><div class="sb-num">{{ stats.processed_punches }}</div><div class="sb-lbl">Processed</div></div>
+      <div class="stat-box"><div class="sb-num">{{ stats.pending_punches }}</div><div class="sb-lbl">Pending</div></div>
+      <div class="stat-box warn"><div class="sb-num">{{ stats.unmatched_punches }}</div><div class="sb-lbl">Unmatched</div></div>
+    </div>
+    <div *ngIf="stats?.error" class="form-err"><mat-icon>error_outline</mat-icon> Could not load stats.</div>
+  </div>
+</div>
+<!-- ── Sync specific ─────────────────────────────────────────────────────── -->
+<div class="modal-backdrop"
+     *ngIf="showSyncModal"
+     (click)="closeSyncModal()"></div>
+
+<div class="modal-panel" *ngIf="showSyncModal">
+
+  <div class="modal-hdr">
+    <h3>
+      <mat-icon>sync</mat-icon>
+      Sync Attendance
+    </h3>
+
+    <button class="icon-btn"
+            (click)="closeSyncModal()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="modal-body">
+
+    <div class="fg">
+      <label>Sync Type</label>
+
+      <select [(ngModel)]="syncForm.type">
+        <option value="today">Today</option>
+        <option value="date">Specific Date</option>
+        <option value="range">Date Range</option>
+      </select>
+    </div>
+
+    <div class="fg" *ngIf="syncForm.type === 'date'">
+      <label>Date</label>
+      <input type="date"
+             [(ngModel)]="syncForm.date">
+    </div>
+
+    <div *ngIf="syncForm.type === 'range'">
+
+      <div class="fg">
+        <label>Start Date</label>
+        <input type="date"
+               [(ngModel)]="syncForm.start_date">
+      </div>
+
+      <div class="fg">
+        <label>End Date</label>
+        <input type="date"
+               [(ngModel)]="syncForm.end_date">
+      </div>
+
+    </div>
+
+    <div class="fg">
+      <label>Employee Code (Optional)</label>
+      <input
+        [(ngModel)]="syncForm.employee_code"
+        placeholder="158">
+    </div>
+
+  </div>
+
+  <div class="modal-footer">
+
+    <button class="btn-outline"
+            [disabled]="syncDeviceObj && syncing[syncDeviceObj.id]"
+            (click)="closeSyncModal()">
+      Cancel
+    </button>
+
+    <button class="btn btn-primary"
+            [disabled]="syncDeviceObj && syncing[syncDeviceObj.id]"
+            (click)="syncDevice()">
+
+      <span class="btn-spinner" *ngIf="syncDeviceObj && syncing[syncDeviceObj.id]"></span>
+      <mat-icon *ngIf="!syncDeviceObj || !syncing[syncDeviceObj.id]">sync</mat-icon>
+      {{ syncDeviceObj && syncing[syncDeviceObj.id] ? 'Syncing...' : 'Start Sync' }}
+
+    </button>
+
+  </div>
+
+</div>

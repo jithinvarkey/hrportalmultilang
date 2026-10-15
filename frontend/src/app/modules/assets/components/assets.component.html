@@ -1,0 +1,349 @@
+<div class="page-header">
+  <div>
+    <h1><mat-icon>inventory_2</mat-icon> {{ pageTitle }}</h1>
+    <p>{{ pageSubtitle }}</p>
+  </div>
+  <div class="hdr-actions" *ngIf="isManager">
+    <button class="btn-outline" (click)="downloadReport('assets')"><mat-icon>download</mat-icon> Assets</button>
+    <button class="btn-outline" (click)="downloadReport('assignments')"><mat-icon>assignment</mat-icon> Assignments</button>
+    <button class="btn-outline" (click)="downloadReport('maintenance')"><mat-icon>build</mat-icon> Maintenance</button>
+    <button class="btn-outline" *ngIf="canManage" (click)="openCategories()"><mat-icon>sell</mat-icon> Categories</button>
+    <button class="btn btn-primary" *ngIf="canManage" (click)="openForm()"><mat-icon>add</mat-icon> Add Asset</button>
+  </div>
+</div>
+
+<div class="toast ok" *ngIf="successMsg"><mat-icon>check_circle</mat-icon> {{ successMsg }}</div>
+<div class="toast err" *ngIf="errorMsg"><mat-icon>error_outline</mat-icon> {{ errorMsg }}</div>
+
+<!-- Stats cards -->
+<div class="stats-row" *ngIf="isManager && stats">
+  <div class="stat-card"><div class="sc-num">{{ stats.total }}</div><div class="sc-lbl">Total Assets</div></div>
+  <div class="stat-card avail"><div class="sc-num">{{ stats.available }}</div><div class="sc-lbl">Available</div></div>
+  <div class="stat-card assigned"><div class="sc-num">{{ stats.assigned }}</div><div class="sc-lbl">Assigned</div></div>
+  <div class="stat-card maint"><div class="sc-num">{{ stats.under_maintenance }}</div><div class="sc-lbl">Maintenance</div></div>
+  <div class="stat-card disposed"><div class="sc-num">{{ stats.disposed + stats.lost }}</div><div class="sc-lbl">Disposed/Lost</div></div>
+</div>
+
+<!-- Filters -->
+<div class="filters">
+  <div class="search-box">
+    <mat-icon>search</mat-icon>
+    <input [(ngModel)]="search" (keyup.enter)="onFilterChange()" placeholder="Search asset, assignee or employee code…">
+  </div>
+  <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
+    <option value="">All statuses</option>
+    <option *ngFor="let s of statuses" [value]="s">{{ s | titlecase }}</option>
+  </select>
+  <select [(ngModel)]="filterCategoryId" (ngModelChange)="onFilterChange()">
+    <option [ngValue]="null">All categories</option>
+    <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
+  </select>
+</div>
+
+<div class="loading-wrap" *ngIf="loading"><mat-spinner diameter="32"></mat-spinner></div>
+
+<!-- Asset table -->
+<div class="table-wrap" *ngIf="!loading && assets.length">
+  <table class="asset-table">
+    <thead>
+      <tr>
+        <th>Asset</th><th>Code</th><th>Category</th><th>Status</th>
+        <th>Condition</th><th>Location</th><th>Assigned To</th><th>Assign Date</th><th>Return Date</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let a of assets" (click)="openDetail(a)" class="clickable">
+        <td>
+          <div class="asset-name">{{ a.name }}</div>
+          <div class="asset-sub" *ngIf="a.brand">{{ a.brand }}{{ a.model ? ' · ' + a.model : '' }}</div>
+        </td>
+        <td class="mono">{{ a.asset_code }}</td>
+        <td>
+          <span class="cat-chip" *ngIf="a.category">
+            <mat-icon>{{ a.category.icon || 'devices' }}</mat-icon>{{ a.category.name }}
+          </span>
+        </td>
+        <td><span class="status-badge" [ngClass]="statusClass(a.status)">{{ a.status | titlecase }}</span></td>
+        <td><span class="cond-badge" [ngClass]="conditionClass(a.condition)">{{ a.condition | titlecase }}</span></td>
+        <td>{{ a.location || '—' }}</td>
+        <td>{{ a.custodian?.name || '—' }}</td>
+        <td>{{ (a.assigned_date | date:'MMM d, y') || 'N/A' }}</td>
+        <td>{{ a.return_date ? (a.return_date | date:'MMM d, y') : (a.status === 'assigned' ? 'Current' : 'N/A') }}</td>
+        <td class="row-actions" (click)="$event.stopPropagation()">
+          <button class="icon-btn" *ngIf="canManage && a.status === 'available'" (click)="openAssign(a)" matTooltip="Assign"><mat-icon>person_add</mat-icon></button>
+          <button class="icon-btn" *ngIf="canManage && a.status === 'assigned'" (click)="openReturn(a)" matTooltip="Return"><mat-icon>assignment_return</mat-icon></button>
+          <button class="icon-btn" *ngIf="canManage" (click)="openMaintenance(a)" matTooltip="Maintenance"><mat-icon>build</mat-icon></button>
+          <button class="icon-btn" *ngIf="canManage" (click)="openForm(a)" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
+          <button class="icon-btn danger" *ngIf="canManage" (click)="deleteAsset(a)" matTooltip="Delete"><mat-icon>delete_outline</mat-icon></button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<mat-paginator
+  *ngIf="!loading && totalAssets > 0"
+  class="asset-paginator"
+  [length]="totalAssets"
+  [pageIndex]="pageIndex"
+  [pageSize]="pageSize"
+  [pageSizeOptions]="pageSizeOptions"
+  [showFirstLastButtons]="true"
+  aria-label="Select asset page"
+  (page)="onPageChange($event)">
+</mat-paginator>
+
+<div class="empty-hint" *ngIf="!loading && !assets.length">
+  <mat-icon>inventory_2</mat-icon><p>No assets found.</p>
+</div>
+
+<!-- ── Detail drawer ──────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showDetail" (click)="closeDetail()"></div>
+<div class="detail-drawer" [class.open]="showDetail">
+  <div class="modal-hdr" *ngIf="selected">
+    <h3><mat-icon>inventory_2</mat-icon> {{ selected.name }}</h3>
+    <button class="icon-btn" (click)="closeDetail()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="drawer-body" *ngIf="selectedDetail">
+    <div class="inline-loading" *ngIf="detailLoading">
+      <mat-spinner diameter="18"></mat-spinner>
+      <span>Loading full details...</span>
+    </div>
+    <div class="form-err" *ngIf="detailError"><mat-icon>error_outline</mat-icon> {{ detailError }}</div>
+    <div class="detail-badges">
+      <span class="status-badge" [ngClass]="statusClass(selectedDetail.status)">{{ selectedDetail.status | titlecase }}</span>
+      <span class="cond-badge" [ngClass]="conditionClass(selectedDetail.condition)">{{ selectedDetail.condition | titlecase }}</span>
+    </div>
+    <div class="detail-grid">
+      <div class="dg-item"><span class="dg-lbl">Assign Date</span><span class="dg-val">{{ (selectedDetail.assigned_date | date:'MMM d, y') || 'N/A' }}</span></div>
+      <div class="dg-item"><span class="dg-lbl">Return Date</span><span class="dg-val">{{ selectedDetail.return_date ? (selectedDetail.return_date | date:'MMM d, y') : (selectedDetail.status === 'assigned' ? 'Current' : 'N/A') }}</span></div>
+      <div class="dg-item"><span class="dg-lbl">Code</span><span class="dg-val mono">{{ selectedDetail.asset_code }}</span></div>
+      <div class="dg-item"><span class="dg-lbl">Category</span><span class="dg-val">{{ selectedDetail.category?.name || '—' }}</span></div>
+      <div class="dg-item"><span class="dg-lbl">Brand / Model</span><span class="dg-val">{{ (selectedDetail.brand || '') + (selectedDetail.model ? ' ' + selectedDetail.model : '') || '—' }}</span></div>
+      <div class="dg-item"><span class="dg-lbl">Serial Number</span><span class="dg-val mono">{{ selectedDetail.serial_number || '—' }}</span></div>
+      <div class="dg-item"><span class="dg-lbl">Location</span><span class="dg-val">{{ selectedDetail.location || '—' }}</span></div>
+      <div class="dg-item"><span class="dg-lbl">Custodian</span><span class="dg-val">{{ selectedDetail.custodian?.name || '—' }}</span></div>
+      <div class="dg-item"><span class="dg-lbl">Purchase Date</span><span class="dg-val">{{ (selectedDetail.purchase_date | date:'MMM d, y') || '—' }}</span></div>
+      <div class="dg-item"><span class="dg-lbl">Purchase Price</span><span class="dg-val">{{ selectedDetail.purchase_price ? ('SAR ' + selectedDetail.purchase_price) : '—' }}</span></div>
+      <div class="dg-item"><span class="dg-lbl">Warranty</span><span class="dg-val">{{ selectedDetail.warranty_expiry || '—' }}</span></div>
+      <div class="dg-item"><span class="dg-lbl">Vendor</span><span class="dg-val">{{ selectedDetail.vendor || '—' }}</span></div>
+    </div>
+    <div class="detail-desc" *ngIf="selectedDetail.description">
+      <div class="dg-lbl">Description</div>
+      <p>{{ selectedDetail.description }}</p>
+    </div>
+    <button class="attach-btn" *ngIf="isManager && selectedDetail.has_attachment" (click)="downloadAttachment(selected!)">
+      <mat-icon>attach_file</mat-icon> {{ selectedDetail.attachment_name || 'Download document' }}
+    </button>
+
+    <!-- Assignment history -->
+    <div class="section-title">Assignment History</div>
+    <div *ngIf="selectedDetail.assignments?.length; else noAssign">
+      <div class="hist-row" *ngFor="let h of selectedDetail.assignments">
+        <mat-icon>person</mat-icon>
+        <div><strong>{{ h.employee?.first_name }} {{ h.employee?.last_name }}</strong>
+          — {{ h.assigned_date | date:'MMM d, y' }} → {{ h.return_date ? (h.return_date | date:'MMM d, y') : 'Current' }}
+          <span *ngIf="h.notes" class="hist-note">{{ h.notes }}</span>
+        </div>
+      </div>
+    </div>
+    <ng-template #noAssign><div class="hist-empty">No assignment history.</div></ng-template>
+
+    <!-- Maintenance log -->
+    <div class="section-title">Maintenance Log</div>
+    <div *ngIf="selectedDetail.maintenance?.length; else noMaint">
+      <div class="hist-row" *ngFor="let m of selectedDetail.maintenance">
+        <mat-icon>build</mat-icon>
+        <div><strong>{{ m.title }}</strong> · <span class="hist-type">{{ m.type }}</span>
+          — {{ (m.scheduled_date | date:'MMM d, y') || '—' }}
+          <span class="hist-status" [class.done]="m.status==='completed'">{{ m.status }}</span>
+          <span *ngIf="m.cost"> · SAR {{ m.cost }}</span>
+        </div>
+      </div>
+    </div>
+    <ng-template #noMaint><div class="hist-empty">No maintenance records.</div></ng-template>
+  </div>
+  <div class="loading-wrap" *ngIf="showDetail && !selectedDetail"><mat-spinner diameter="28"></mat-spinner></div>
+</div>
+
+<!-- ── Asset form modal ───────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showForm" (click)="closeForm()"></div>
+<div class="modal-panel" *ngIf="showForm">
+  <div class="modal-hdr">
+    <h3><mat-icon>{{ editId ? 'edit' : 'add_box' }}</mat-icon> {{ editId ? 'Edit Asset' : 'New Asset' }}</h3>
+    <button class="icon-btn" (click)="closeForm()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="two-col">
+      <div class="fg"><label>Name <span class="req">*</span></label><input [(ngModel)]="form.name" placeholder="MacBook Pro 14&quot;"></div>
+      <div class="fg"><label>Asset Code <span class="req">*</span></label><input [(ngModel)]="form.asset_code" placeholder="IT-001"></div>
+    </div>
+    <div class="two-col">
+      <div class="fg"><label>Category</label>
+        <select [(ngModel)]="form.category_id">
+          <option [ngValue]="null">— None —</option>
+          <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
+        </select>
+      </div>
+      <div class="fg"><label>Condition</label>
+        <select [(ngModel)]="form.condition">
+          <option *ngFor="let c of conditions" [value]="c">{{ c | titlecase }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="fg"><label>Brand</label><input [(ngModel)]="form.brand" placeholder="Apple"></div>
+      <div class="fg"><label>Model</label><input [(ngModel)]="form.model" placeholder="MBP M3"></div>
+    </div>
+    <div class="two-col">
+      <div class="fg"><label>Serial Number</label><input [(ngModel)]="form.serial_number" placeholder="SN-XXXXX"></div>
+      <div class="fg"><label>Location</label><input [(ngModel)]="form.location" placeholder="Office A, Desk 12"></div>
+    </div>
+    <div class="two-col">
+      <div class="fg"><label>Purchase Price (SAR)</label><input type="number" [(ngModel)]="form.purchase_price"></div>
+      <div class="fg"><label>Purchase Date</label><input type="date" [(ngModel)]="form.purchase_date"></div>
+    </div>
+    <div class="two-col">
+      <div class="fg"><label>Vendor</label><input [(ngModel)]="form.vendor" placeholder="Vendor name"></div>
+      <div class="fg"><label>Warranty Expiry</label><input type="date" [(ngModel)]="form.warranty_expiry"></div>
+    </div>
+    <div class="fg"><label>Description</label><textarea rows="3" [(ngModel)]="form.description" placeholder="Optional notes…"></textarea></div>
+    <div class="fg"><label>Document (PDF/Image ≤10MB)</label>
+      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" (change)="onFileSelected($event)">
+      <div class="file-hint" *ngIf="selectedFile">{{ selectedFile.name }}</div>
+    </div>
+    <div class="form-err" *ngIf="formError"><mat-icon>error_outline</mat-icon> {{ formError }}</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="closeForm()">Cancel</button>
+    <button class="btn btn-primary" (click)="saveAsset()" [disabled]="submitting">
+      <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
+      {{ submitting ? 'Saving…' : (editId ? 'Update' : 'Create Asset') }}
+    </button>
+  </div>
+</div>
+
+<!-- ── Assign modal ───────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showAssign" (click)="closeAssign()"></div>
+<div class="modal-panel sm" *ngIf="showAssign">
+  <div class="modal-hdr">
+    <h3><mat-icon>person_add</mat-icon> Assign "{{ selected?.name }}"</h3>
+    <button class="icon-btn" (click)="closeAssign()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="fg"><label>Employee <span class="req">*</span></label>
+      <select [(ngModel)]="assignForm.employee_id">
+        <option [ngValue]="null">Select employee…</option>
+        <option *ngFor="let e of employees" [ngValue]="e.id">{{ e.first_name }} {{ e.last_name }} ({{ e.employee_code }})</option>
+      </select>
+    </div>
+    <div class="two-col">
+      <div class="fg"><label>Assign Date <span class="req">*</span></label><input type="date" [(ngModel)]="assignForm.assigned_date"></div>
+      <div class="fg"><label>Condition</label>
+        <select [(ngModel)]="assignForm.condition_at_assign">
+          <option *ngFor="let c of conditions" [value]="c">{{ c | titlecase }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea rows="2" [(ngModel)]="assignForm.notes"></textarea></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="closeAssign()">Cancel</button>
+    <button class="btn btn-primary" (click)="doAssign()" [disabled]="assigning">
+      <mat-icon>{{ assigning ? 'hourglass_empty' : 'person_add' }}</mat-icon>
+      {{ assigning ? 'Assigning…' : 'Assign' }}
+    </button>
+  </div>
+</div>
+
+<!-- ── Return modal ───────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showReturn" (click)="closeReturn()"></div>
+<div class="modal-panel sm" *ngIf="showReturn">
+  <div class="modal-hdr">
+    <h3><mat-icon>assignment_return</mat-icon> Return "{{ selected?.name }}"</h3>
+    <button class="icon-btn" (click)="closeReturn()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="two-col">
+      <div class="fg"><label>Return Date <span class="req">*</span></label><input type="date" [(ngModel)]="returnForm.return_date"></div>
+      <div class="fg"><label>Condition on Return</label>
+        <select [(ngModel)]="returnForm.condition_at_return">
+          <option *ngFor="let c of conditions" [value]="c">{{ c | titlecase }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea rows="2" [(ngModel)]="returnForm.notes"></textarea></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="closeReturn()">Cancel</button>
+    <button class="btn btn-primary" (click)="doReturn()" [disabled]="returning">
+      <mat-icon>assignment_return</mat-icon> {{ returning ? 'Processing…' : 'Confirm Return' }}
+    </button>
+  </div>
+</div>
+
+<!-- ── Maintenance modal ──────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showMaintenance" (click)="closeMaintenance()"></div>
+<div class="modal-panel sm" *ngIf="showMaintenance">
+  <div class="modal-hdr">
+    <h3><mat-icon>build</mat-icon> Log Maintenance for "{{ selected?.name }}"</h3>
+    <button class="icon-btn" (click)="closeMaintenance()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="two-col">
+      <div class="fg"><label>Type</label>
+        <select [(ngModel)]="maintenanceForm.type">
+          <option *ngFor="let t of maintTypes" [value]="t">{{ t | titlecase }}</option>
+        </select>
+      </div>
+      <div class="fg"><label>Status</label>
+        <select [(ngModel)]="maintenanceForm.status">
+          <option value="scheduled">Scheduled</option>
+          <option value="in_progress">In Progress</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Title <span class="req">*</span></label><input [(ngModel)]="maintenanceForm.title" placeholder="Annual service"></div>
+    <div class="fg"><label>Description</label><textarea rows="2" [(ngModel)]="maintenanceForm.description"></textarea></div>
+    <div class="two-col">
+      <div class="fg"><label>Scheduled Date</label><input type="date" [(ngModel)]="maintenanceForm.scheduled_date"></div>
+      <div class="fg"><label>Cost (SAR)</label><input type="number" [(ngModel)]="maintenanceForm.cost"></div>
+    </div>
+    <div class="fg"><label>Vendor / Technician</label><input [(ngModel)]="maintenanceForm.vendor"></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="closeMaintenance()">Cancel</button>
+    <button class="btn btn-primary" (click)="saveMaintenance()" [disabled]="maintenanceSaving">
+      <mat-icon>build</mat-icon> {{ maintenanceSaving ? 'Saving…' : 'Log Maintenance' }}
+    </button>
+  </div>
+</div>
+
+<!-- ── Category manager ───────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showCategories" (click)="closeCategories()"></div>
+<div class="modal-panel sm" *ngIf="showCategories">
+  <div class="modal-hdr">
+    <h3><mat-icon>sell</mat-icon> Asset Categories</h3>
+    <button class="icon-btn" (click)="closeCategories()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="cat-row" *ngFor="let c of categories">
+      <mat-icon>{{ c.icon || 'devices' }}</mat-icon>
+      <span class="cat-name">{{ c.name }}</span>
+      <span class="cat-count">{{ c.assets_count }}</span>
+      <button class="icon-btn" (click)="editCategory(c)"><mat-icon>edit</mat-icon></button>
+      <button class="icon-btn danger" (click)="deleteCategory(c)"><mat-icon>delete_outline</mat-icon></button>
+    </div>
+    <div class="cat-editor">
+      <div class="two-col">
+        <div class="fg"><label>Name</label><input [(ngModel)]="catForm.name" placeholder="IT Equipment"></div>
+        <div class="fg"><label>Icon</label><input [(ngModel)]="catForm.icon" placeholder="computer"></div>
+      </div>
+      <button class="btn btn-primary sm" (click)="saveCategory()">
+        <mat-icon>{{ catEditId ? 'save' : 'add' }}</mat-icon> {{ catEditId ? 'Update' : 'Add' }} Category
+      </button>
+    </div>
+  </div>
+</div>

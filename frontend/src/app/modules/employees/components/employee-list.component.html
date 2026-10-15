@@ -1,0 +1,219 @@
+<div class="module-page">
+
+  <!-- Header -->
+  <div class="page-hdr">
+    <div>
+      <h1 class="page-title">Employees</h1>
+      <p class="page-sub">Manage your workforce · <span *ngIf="pagination$ | async as pg" style="color:var(--accent)">{{ pg.total ?? 0 }} total</span></p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-outline" (click)="clearFilters()"><mat-icon>filter_list_off</mat-icon> Clear</button>
+      <button class="btn-outline" *ngIf="isHR" (click)="downloadEmployeeDetailsReport()"><mat-icon>download</mat-icon> Employee Report</button>
+      <button class="btn-primary" *ngIf="isHR"  (click)="addEmployee()"><mat-icon>person_add_alt_1</mat-icon> Add Employee</button>
+    </div>
+  </div>
+
+  <!-- ── Stat strip ────────────────────────────────────────────── -->
+  <div class="stat-strip">
+
+    <!-- Skeleton while loading -->
+    <ng-container *ngIf="statsLoading">
+      <div class="stat-tile sk-tile" *ngFor="let i of [1,2,3,4,5,6]">
+        <div class="sk" style="width:36px;height:36px;border-radius:10px"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+          <div class="sk" style="width:40px;height:20px;border-radius:4px"></div>
+          <div class="sk" style="width:60px;height:11px;border-radius:4px"></div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Tiles -->
+    <button class="stat-tile"
+            *ngFor="let t of statTiles"
+            [disabled]="!canFilterEmployees"
+            (click)="filterByStatus(t)"
+            [class.active]="statusFilter.value === t.status && t.status !== ''"
+            [style.--tile-color]="t.color">
+      <div class="tile-icon-wrap">
+        <mat-icon>{{ t.icon }}</mat-icon>
+      </div>
+      <div class="tile-body">
+        <div class="tile-val">{{ t.value }}</div>
+        <div class="tile-lbl">{{ t.label }}</div>
+      </div>
+    </button>
+
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input class="search-input" placeholder="Search name, email or ID…" [formControl]="searchControl">
+    </div>
+
+    <select *ngIf="canFilterEmployees" class="filter-select" [formControl]="statusFilter" (change)="loadEmployees()">
+      <option value="">All Statuses</option>
+      <option value="active">Active</option>
+      <option value="probation">Probation</option>
+      <option value="inactive">Inactive</option>
+      <option value="on_leave">On Leave</option>
+      <option value="resigned">Resigned</option>
+      <option value="terminated">Terminated</option>
+    </select>
+
+    <select *ngIf="canFilterEmployees" class="filter-select" [formControl]="deptFilter" (change)="loadEmployees()">
+      <option value="">All Departments</option>
+      <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+    </select>
+
+    <select *ngIf="canFilterEmployees" class="filter-select" [formControl]="unitFilter" (change)="loadEmployees()">
+      <option value="">All Units</option>
+      <option *ngFor="let u of units" [value]="u.id">{{ u.name }}</option>
+    </select>
+
+    <select *ngIf="canFilterEmployees" class="filter-select" [formControl]="typeFilter" (change)="loadEmployees()">
+      <option value="">All Types</option>
+      <option value="full_time">Full Time</option>
+      <option value="part_time">Part Time</option>
+      <option value="contract">Contract</option>
+      <option value="intern">Intern</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="data-card">
+    <div class="loading-bar" *ngIf="loading$ | async"></div>
+
+    <table mat-table [dataSource]="(employees$ | async) || []">
+
+      <!-- Avatar -->
+      <ng-container matColumnDef="avatar">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let e">
+          <div class="av" [style.background]="avatarColor(e.full_name || e.first_name)">
+            <img *ngIf="e.avatar_url" [src]="e.avatar_url" [alt]="e.full_name" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+            <span *ngIf="!e.avatar_url">{{ initial(e.full_name || e.first_name) }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Code -->
+      <ng-container matColumnDef="employee_code">
+        <th mat-header-cell *matHeaderCellDef>ID</th>
+        <td mat-cell *matCellDef="let e"><span class="mono">{{ e.employee_code }}</span></td>
+      </ng-container>
+
+      <!-- Name -->
+      <ng-container matColumnDef="full_name">
+        <th mat-header-cell *matHeaderCellDef>Employee</th>
+        <td mat-cell *matCellDef="let e">
+          <div class="name-cell">
+            <span class="name-main">{{ e.full_name }}</span>
+            <span class="name-sub">{{ e.email }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Department -->
+      <ng-container matColumnDef="department">
+        <th mat-header-cell *matHeaderCellDef>Department</th>
+        <td mat-cell *matCellDef="let e">
+          <div class="td-stack">
+            <span>{{ e.department?.name || '—' }}</span>
+            <span class="td-sub">{{ e.designation?.title || '' }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="unit">
+        <th mat-header-cell *matHeaderCellDef>Unit</th>
+        <td mat-cell *matCellDef="let e">{{ e.unit?.name || '—' }}</td>
+      </ng-container>
+
+      <!-- Nationality -->
+      <ng-container matColumnDef="nationality">
+        <th mat-header-cell *matHeaderCellDef>Nationality</th>
+        <td mat-cell *matCellDef="let e">{{ e.nationality || '—' }}</td>
+      </ng-container>
+
+      <!-- Type -->
+      <ng-container matColumnDef="employment_type">
+        <th mat-header-cell *matHeaderCellDef>Type</th>
+        <td mat-cell *matCellDef="let e">
+          <span class="type-tag">{{ (e.employment_type || '').replace('_', ' ') | titlecase }}</span>
+        </td>
+      </ng-container>
+
+      <!-- Status -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let e">
+          <span class="status-badge" [class]="statusClass(e.status)">{{ (e.status || '').replace('_', ' ') | titlecase }}</span>
+        </td>
+      </ng-container>
+
+      <!-- Actions -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let e">
+          <div class="row-actions">
+            <button class="row-btn" (click)="viewEmployee(e.id)" matTooltip="View Profile">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button class="row-btn" *ngIf="isHR" (click)="editEmployee(e.id)" matTooltip="Edit">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <!-- Quick status toggle: inactive ↔ active, terminated stays as-is -->
+            <button class="row-btn"
+                    *ngIf="isHR && (e.status === 'active' || e.status === 'probation' || e.status === 'on_leave')"
+                    matTooltip="Set Inactive"
+                    (click)="quickStatus(e, 'inactive', $event)" >
+              <mat-icon>pause_circle_outline</mat-icon>
+            </button>
+            <button class="row-btn success"
+                    *ngIf="isHR && e.status === 'inactive'"
+                    matTooltip="Set Active"
+                    (click)="quickStatus(e, 'active', $event)">
+              <mat-icon>play_circle_outline</mat-icon>
+            </button>
+            <button class="row-btn danger" (click)="terminate(e.id)" matTooltip="Terminate" *ngIf="isHR && e.status !== 'terminated'">
+              <mat-icon>person_remove</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky:true"></tr>
+      <tr mat-row *matRowDef="let row; columns:displayedColumns;" class="data-row" (click)="viewEmployee(row.id)"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell empty-td" [attr.colspan]="displayedColumns.length">
+          <ng-container *ngIf="loading$ | async">
+            <mat-spinner diameter="28"></mat-spinner> Loading…
+          </ng-container>
+          <ng-container *ngIf="!(loading$ | async)">
+            <mat-icon>search_off</mat-icon> No employees found
+          </ng-container>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination-bar" *ngIf="pagination$ | async as pg">
+      <span class="pg-info">
+        Showing {{ pg.from ?? 0 }}–{{ pg.to ?? 0 }} of {{ pg.total ?? 0 }}
+      </span>
+      <div class="pg-btns">
+        <button class="pg-btn" [disabled]="pg.currentPage <= 1" (click)="loadEmployees(pg.currentPage - 1)">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <span class="pg-curr">{{ pg.currentPage }} / {{ pg.lastPage }}</span>
+        <button class="pg-btn" [disabled]="pg.currentPage >= pg.lastPage" (click)="loadEmployees(pg.currentPage + 1)">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

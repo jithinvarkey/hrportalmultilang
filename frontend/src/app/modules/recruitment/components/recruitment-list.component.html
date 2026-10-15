@@ -1,0 +1,1161 @@
+<div class="module-page">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="page-hdr">
+    <div>
+      <h1 class="page-title"><mat-icon>work</mat-icon> Recruitment</h1>
+      <p class="page-sub">Job postings · Applicant pipeline · Hire management</p>
+    </div>
+    <button class="btn-primary" *ngIf="canManageRecruitment" (click)="openJobForm()">
+      <mat-icon>post_add</mat-icon> Post Job
+    </button>
+  </div>
+
+  <!-- ── Alerts ──────────────────────────────────────────────────────── -->
+  <div class="alert alert-success" *ngIf="successMsg"><mat-icon>check_circle</mat-icon> {{ successMsg }}</div>
+  <div class="alert alert-error"   *ngIf="errorMsg">  <mat-icon>error_outline</mat-icon> {{ errorMsg }}</div>
+
+  <!-- ── Stat strip ──────────────────────────────────────────────────── -->
+  <div class="stat-strip" *ngIf="!isInterviewOnly">
+    <div class="stat-tile" *ngFor="let t of statTiles" [style.--tile-color]="t.color">
+      <div class="tile-icon-wrap"><mat-icon>{{ t.icon }}</mat-icon></div>
+      <div class="tile-body">
+        <div class="tile-val">{{ stats[t.key] ?? 0 }}</div>
+        <div class="tile-lbl">{{ t.label }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tabs ────────────────────────────────────────────────────────── -->
+  <div class="mod-tabs">
+    <button class="mod-tab" *ngIf="!isInterviewOnly" [class.active]="activeTab==='jobs'"     (click)="switchTab('jobs')">
+      <mat-icon>work</mat-icon> Job Postings
+    </button>
+    <button class="mod-tab" [class.active]="activeTab==='pipeline'" (click)="switchTab('pipeline')">
+      <mat-icon>view_kanban</mat-icon> Applicant Pipeline
+      <span class="tab-badge" *ngIf="stats.total_applicants > 0">{{ stats.total_applicants }}</span>
+    </button>
+    <button class="mod-tab" *ngIf="!isInterviewOnly" [class.active]="activeTab==='cv_bank'" (click)="switchTab('cv_bank')">
+      <mat-icon>folder_shared</mat-icon> CV Bank
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       JOB POSTINGS TAB
+  ══════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'jobs'">
+
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <mat-icon class="search-icon">search</mat-icon>
+        <input class="search-input" placeholder="Search job title…" [formControl]="searchControl">
+      </div>
+      <select class="filter-select" [(ngModel)]="statusFilter" (change)="loadJobs(1)">
+        <option value="">All Status</option>
+        <option *ngFor="let s of jobStatuses" [value]="s.value">{{ s.label }}</option>
+      </select>
+    </div>
+
+    <div class="data-card">
+      <div class="loading-bar" *ngIf="loading"></div>
+      <table mat-table [dataSource]="jobs">
+
+        <ng-container matColumnDef="title">
+          <th mat-header-cell *matHeaderCellDef>Job Title</th>
+          <td mat-cell *matCellDef="let r">
+            <div class="name-cell">
+              <span class="name-main">{{ r.title }}</span>
+              <span class="name-sub">{{ r.location || 'No location' }} · {{ r.vacancies }} vacanc{{ r.vacancies===1?'y':'ies' }}</span>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="department">
+          <th mat-header-cell *matHeaderCellDef>Department</th>
+          <td mat-cell *matCellDef="let r" class="td-muted">{{ r.department?.name || '—' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <td mat-cell *matCellDef="let r">
+            <span class="type-tag">{{ (r.employment_type||'').replace('_',' ') | titlecase }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="applicants">
+          <th mat-header-cell *matHeaderCellDef>Applicants</th>
+          <td mat-cell *matCellDef="let r">
+            <button class="app-count-btn" (click)="viewApplications(r)" matTooltip="View applicants">
+              <mat-icon>people</mat-icon> {{ r.applications_count ?? 0 }}
+            </button>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let r">
+            <span class="status-badge" [class]="'status-' + r.status">{{ r.status | titlecase }}</span>
+            <span class="closing-hint" *ngIf="r.closing_date">Closes {{ formatDate(r.closing_date) }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let r">
+            <div class="row-actions">
+              <button class="row-btn" matTooltip="View applicants" (click)="viewApplications(r)">
+                <mat-icon>group</mat-icon>
+              </button>
+              <button class="row-btn" matTooltip="Edit" *ngIf="canManageRecruitment" (click)="openJobForm(r); $event.stopPropagation()">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button class="row-btn success" matTooltip="Set Open" *ngIf="canManageRecruitment && r.status!=='open'" (click)="changeJobStatus(r,'open',$event)">
+                <mat-icon>lock_open</mat-icon>
+              </button>
+              <button class="row-btn warn" matTooltip="Close Job" *ngIf="canManageRecruitment && r.status==='open'" (click)="changeJobStatus(r,'closed',$event)">
+                <mat-icon>lock</mat-icon>
+              </button>
+              <button class="row-btn danger" matTooltip="Delete" *ngIf="canManageRecruitment" (click)="deleteJob(r.id, $event)">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky:true"></tr>
+        <tr mat-row *matRowDef="let row; columns:displayedColumns;" class="data-row" (click)="viewApplications(row)"></tr>
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell empty-td" colspan="6">
+            <ng-container *ngIf="loading"><mat-spinner diameter="28"></mat-spinner> Loading…</ng-container>
+            <ng-container *ngIf="!loading"><mat-icon>work_outline</mat-icon> No job postings</ng-container>
+          </td>
+        </tr>
+      </table>
+
+      <div class="pagination-bar" *ngIf="pagination?.last_page > 1">
+        <span class="pg-info">{{ pagination?.from }}–{{ pagination?.to }} of {{ pagination?.total }}</span>
+        <div class="pg-btns">
+          <button class="pg-btn" [disabled]="currentPage<=1" (click)="loadJobs(currentPage-1)"><mat-icon>chevron_left</mat-icon></button>
+          <button *ngFor="let p of pages" class="pg-btn" [class.active]="p===currentPage" (click)="loadJobs(p)">{{ p }}</button>
+          <button class="pg-btn" [disabled]="currentPage>=pagination?.last_page" (click)="loadJobs(currentPage+1)"><mat-icon>chevron_right</mat-icon></button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       APPLICANT PIPELINE TAB — Kanban by stage
+  ══════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'pipeline'">
+
+    <div class="pipeline-toolbar">
+      <button class="btn-outline" (click)="selectedJobFilter=null; loadApplications()">
+        <mat-icon>grid_view</mat-icon> All Jobs
+      </button>
+      <select class="filter-select" [(ngModel)]="stageFilter" (change)="loadApplications(selectedJobFilter ?? undefined)">
+        <option value="">All Stages</option>
+        <option *ngFor="let s of stages" [value]="s.value">{{ s.label }}</option>
+      </select>
+      <span class="pipeline-count">{{ applications.length }} applicants</span>
+      <button class="btn-primary" *ngIf="canManageRecruitment" (click)="openAddApplicantForm()" style="margin-left:auto">
+        <mat-icon>person_add</mat-icon> Add Applicant
+      </button>
+    </div>
+
+    <div class="pipeline-loading" *ngIf="appsLoading">
+      <mat-spinner diameter="32"></mat-spinner> Loading applicants…
+    </div>
+
+    <div class="kanban-board" *ngIf="!appsLoading">
+      <div class="kanban-col" *ngFor="let s of stages">
+        <div class="kc-header" [style.--kc-color]="s.color">
+          <mat-icon>{{ s.icon }}</mat-icon>
+          <span>{{ s.label }}</span>
+          <span class="kc-count">{{ appsByStage(s.value).length }}</span>
+        </div>
+        <div class="kc-body">
+          <div class="app-card" *ngFor="let a of appsByStage(s.value)" (click)="viewApp(a)">
+            <div class="ac-top">
+              <div class="av" [style.background]="avatarColor(a.applicant_name)">
+                {{ initial(a.applicant_name) }}
+              </div>
+              <div>
+                <div class="ac-name">{{ a.applicant_name }}</div>
+                <div class="ac-sub">{{ a.job_posting?.title || '—' }}</div>
+              </div>
+            </div>
+            <div class="ac-date">Applied {{ formatDate(a.created_at) }}</div>
+            <div class="ac-actions" *ngIf="isHR" (click)="$event.stopPropagation()">
+              <ng-container *ngFor="let ns of stages">
+                <button *ngIf="s.value === 'offer' && ns.value === 'offer'"
+                        class="ac-move-btn offer" [matTooltip]="'Send / Resend Offer'"
+                        (click)="openOfferForm(a, $event)">
+                  <mat-icon>local_offer</mat-icon>
+                </button>
+                <button *ngIf="ns.value !== s.value && ns.value !== 'rejected' && ns.value !== 'hired' && ns.value !== 'offer'"
+                        class="ac-move-btn" [matTooltip]="'Move to ' + ns.label"
+                        (click)="moveStage(a, ns.value, $event)">
+                  <mat-icon>{{ ns.icon }}</mat-icon>
+                </button>
+                <button *ngIf="ns.value === 'offer' && s.value !== 'offer'"
+                        class="ac-move-btn offer" [matTooltip]="'Send Offer'"
+                        (click)="openOfferForm(a, $event)">
+                  <mat-icon>local_offer</mat-icon>
+                </button>
+                <button *ngIf="ns.value === 'hired' && (s.value === 'offer' || s.value === 'hired')"
+                        class="ac-move-btn hire" [matTooltip]="s.value === 'hired' ? 'Resend Hire Confirmation' : 'Confirm Hire'"
+                        (click)="openHireForm(a, $event)">
+                  <mat-icon>how_to_reg</mat-icon>
+                </button>
+              </ng-container>
+              <button class="ac-move-btn danger" matTooltip="Reject" (click)="moveStage(a,'rejected',$event)">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </div>
+          </div>
+          <div class="kc-empty" *ngIf="!appsByStage(s.value).length">
+            <mat-icon>inbox</mat-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- CV BANK TAB -->
+  <ng-container *ngIf="activeTab==='cv_bank'">
+
+    <div class="cv-toolbar">
+      <div class="search-wrap">
+        <mat-icon class="search-ico">search</mat-icon>
+        <input class="search-input" placeholder="Search name, role, skills..."
+               [(ngModel)]="cvBankSearch" (keyup.enter)="loadCvBank()">
+      </div>
+      <div class="cv-filter-group">
+        <select class="cv-filter-select" [(ngModel)]="cvBankRating" (change)="loadCvBank()">
+          <option value="">All Ratings</option>
+          <option *ngFor="let r of ratings" [value]="r.value">{{ r.label }}</option>
+        </select>
+        <select class="cv-filter-select" [(ngModel)]="cvBankSource" (change)="loadCvBank()">
+          <option value="">All Sources</option>
+          <option *ngFor="let s of sources" [value]="s">{{ s }}</option>
+        </select>
+        <select class="cv-filter-select wide" [(ngModel)]="cvBankPosition" (change)="loadCvBank()">
+          <option value="">All Positions</option>
+          <option *ngFor="let p of jobPositionOptions" [value]="p">{{ p }}</option>
+        </select>
+        <select class="cv-filter-select wide" *ngIf="!managerDepartmentId" [(ngModel)]="cvBankDepartment" (change)="loadCvBank()">
+          <option value="">All Departments</option>
+          <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+        </select>
+      </div>
+      <button class="btn-primary" *ngIf="canManageRecruitment" (click)="openCvForm()">
+        <mat-icon>person_add</mat-icon> Add CV
+      </button>
+    </div>
+
+    <div class="cv-list" *ngIf="!cvBankLoading">
+      <div class="cv-card" *ngFor="let cv of cvBankEntries" (click)="viewCv(cv)">
+        <div class="cv-rating-bar" [style.background]="ratingColor(cv.rating)"></div>
+
+        <div class="cv-card-body">
+          <div class="cv-card-top">
+            <div class="cv-avatar" [style.background]="avatarColor(cv.applicant_name)">
+              {{ initial(cv.applicant_name) }}
+            </div>
+            <div class="cv-info">
+              <div class="cv-name">{{ cv.applicant_name }}</div>
+              <div class="cv-role">{{ cvPositionLabel(cv) }}</div>
+              <div class="cv-meta">{{ cvDepartmentName(cv) }}</div>
+              <div class="cv-meta">
+                <span *ngIf="cv.experience_years">{{ cv.experience_years }}y exp</span>
+                <span *ngIf="cv.nationality"> - {{ cv.nationality }}</span>
+                <span *ngIf="cv.source"> - {{ cv.source }}</span>
+              </div>
+            </div>
+            <span class="cv-rating-badge" [style.background]="ratingColor(cv.rating)+'18'"
+                  [style.color]="ratingColor(cv.rating)">
+              {{ ratingLabel(cv.rating) }}
+            </span>
+          </div>
+
+          <div class="cv-skills" *ngIf="cv.skills">
+            <span class="skill-tag" *ngFor="let s of cv.skills.split(',').slice(0,4)">{{ s.trim() }}</span>
+            <span class="skill-more" *ngIf="cv.skills.split(',').length > 4">
+              +{{ cv.skills.split(',').length - 4 }}
+            </span>
+          </div>
+
+          <div class="cv-card-footer">
+            <div class="cv-date">{{ cv.cv_path ? 'CV uploaded' : 'No file uploaded' }} - {{ cv.created_at | date:'dd MMM yyyy' }}</div>
+            <div class="cv-actions" (click)="$event.stopPropagation()">
+              <a *ngIf="cv.cv_path" [href]="'/storage/'+cv.cv_path" target="_blank"
+                 class="cv-action-btn" matTooltip="View CV">
+                <mat-icon>description</mat-icon>
+              </a>
+              <button class="cv-action-btn" matTooltip="Link to Job" *ngIf="canManageRecruitment"
+                      (click)="openLinkModal(cv)">
+                <mat-icon>link</mat-icon>
+              </button>
+              <button class="cv-action-btn danger" matTooltip="Remove" *ngIf="canDeleteCv(cv)"
+                      (click)="deleteCv(cv)">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cv-empty" *ngIf="!cvBankEntries.length">
+        <mat-icon>folder_open</mat-icon>
+        <div>No CVs in the bank yet</div>
+        <div class="cv-empty-sub">Add candidates even without an open position</div>
+        <button class="btn-primary" *ngIf="canManageRecruitment" (click)="openCvForm()">
+          <mat-icon>person_add</mat-icon> Add First CV
+        </button>
+      </div>
+    </div>
+
+    <div class="cv-loading" *ngIf="cvBankLoading">
+      <mat-spinner diameter="28"></mat-spinner>
+    </div>
+
+  </ng-container>
+
+</div>
+
+<!-- ═══ APPLICANT DETAIL DRAWER ═══ -->
+<div class="drawer-backdrop" *ngIf="showAppDetail" (click)="showAppDetail=false"></div>
+<div class="detail-drawer" [class.open]="showAppDetail">
+  <ng-container *ngIf="selectedApp">
+    <div class="drawer-hdr">
+      <div class="drawer-hdr-left">
+        <div class="av lg" [style.background]="avatarColor(selectedApp.applicant_name)">
+          {{ initial(selectedApp.applicant_name) }}
+        </div>
+        <div>
+          <div class="drawer-name">{{ selectedApp.applicant_name }}</div>
+          <div class="drawer-sub">{{ selectedApp.applicant_email }}</div>
+        </div>
+      </div>
+      <button class="row-btn" (click)="showAppDetail=false"><mat-icon>close</mat-icon></button>
+    </div>
+    <div class="drawer-body">
+      <div class="applicant-edit-error" role="alert" *ngIf="applicantEditError">{{ applicantEditError }}</div>
+      <div class="detail-section">
+        <div class="ds-title applicant-detail-title">Application
+          <button class="btn-outline" *ngIf="canEditApplicant && !editingApplicant" [disabled]="applicantEditBusy" (click)="editApplicant()">
+            <mat-icon>edit</mat-icon> Edit details
+          </button>
+        </div>
+        <form *ngIf="canEditApplicant && editingApplicant" [formGroup]="applicantEditForm" (ngSubmit)="saveApplicantDetails()" class="applicant-edit-form">
+          <label>Position *
+            <select class="field-input" formControlName="job_posting_id">
+              <option value="" disabled>Select a job position</option>
+              <option *ngFor="let job of applicantJobOptions" [ngValue]="job.id">{{ job.title }}{{ job.department?.name ? ' — ' + job.department.name : '' }} ({{ job.status }})</option>
+            </select>
+          </label>
+          <span *ngIf="applicantJobsLoading" role="status">Loading positions…</span>
+          <label>Full name *<input class="field-input" formControlName="applicant_name" maxlength="255" autocomplete="name"></label>
+          <label>Email *<input class="field-input" type="email" formControlName="applicant_email" maxlength="255" autocomplete="email"></label>
+          <label>Phone *<input class="field-input" type="tel" formControlName="applicant_phone" maxlength="30" autocomplete="tel"></label>
+          <label>Expected salary (SAR)<input class="field-input" type="number" formControlName="expected_salary" min="0" max="99999999.99" step="0.01"></label>
+          <label>Available from<input class="field-input" type="date" formControlName="available_from"></label>
+          <label>Cover letter<textarea class="field-input" formControlName="cover_letter_text" rows="4" maxlength="20000"></textarea></label>
+          <div class="applicant-edit-actions">
+            <button class="btn-outline" type="button" [disabled]="applicantEditBusy" (click)="editingApplicant=false; applicantEditError=''">Cancel</button>
+            <button class="btn-primary" type="submit" [disabled]="applicantEditBusy">{{ applicantEditBusy ? 'Saving…' : 'Save changes' }}</button>
+          </div>
+        </form>
+        <div class="info-grid" *ngIf="!editingApplicant">
+          <div class="ig-item"><span class="ig-lbl">Job</span><span class="ig-val">{{ selectedApp.job_posting?.title }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">Stage</span>
+            <span class="stage-pill" [style.background]="stageData(selectedApp.stage).color + '18'"
+                  [style.color]="stageData(selectedApp.stage).color">
+              {{ stageData(selectedApp.stage).label }}
+            </span>
+          </div>
+          <div class="ig-item"><span class="ig-lbl">Applied</span><span class="ig-val">{{ formatDate(selectedApp.created_at) }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">Phone</span><span class="ig-val">{{ selectedApp.applicant_phone || '—' }}</span></div>
+          <div class="ig-item" *ngIf="selectedApp.available_from"><span class="ig-lbl">Available from</span><span class="ig-val">{{ formatDate(selectedApp.available_from) }}</span></div>
+          <div class="ig-item" *ngIf="isHR && selectedApp.expected_salary">
+            <span class="ig-lbl">Expected Salary</span>
+            <span class="ig-val">{{ selectedApp.expected_salary | number }} SAR</span>
+          </div>
+        </div>
+      </div>
+      <div class="detail-section" *ngIf="selectedApp.cv_path">
+        <div class="ds-title">CV / Resume</div>
+        <a class="doc-link" [href]="'/storage/' + selectedApp.cv_path" target="_blank">
+          <mat-icon>open_in_new</mat-icon> View CV
+        </a>
+      </div>
+      <div class="detail-section" *ngIf="selectedApp.cover_letter_text">
+        <div class="ds-title">Cover Letter</div>
+        <div class="terms-body">{{ selectedApp.cover_letter_text }}</div>
+      </div>
+      <div class="detail-section interview-detail" *ngIf="selectedApp.latest_interview as interview">
+        <div class="ds-title">Latest Scheduled Interview</div>
+        <div class="info-grid">
+          <div class="ig-item"><span class="ig-lbl">Date &amp; Time</span><span class="ig-val">{{ formatDateTime(interview.scheduled_at) }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">Round</span><span class="ig-val">{{ interview.round || '—' }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">Format</span><span class="ig-val">{{ interviewFormat(interview.format) }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">Duration</span><span class="ig-val">{{ interview.duration_minutes ? interview.duration_minutes + ' minutes' : '—' }}</span></div>
+          <div class="ig-item interview-wide"><span class="ig-lbl">Interviewer(s)</span><span class="ig-val">{{ interview.interviewers?.join(', ') || '—' }}</span></div>
+          <div class="ig-item interview-wide"><span class="ig-lbl">Location / Meeting Link</span>
+            <a *ngIf="isWebLink(interview.location_or_link); else locationText" class="interview-link"
+               [href]="interview.location_or_link" target="_blank" rel="noopener noreferrer">
+              {{ interview.location_or_link }} <mat-icon>open_in_new</mat-icon>
+            </a>
+            <ng-template #locationText><span class="ig-val">{{ interview.location_or_link || '—' }}</span></ng-template>
+          </div>
+        </div>
+      </div>
+      <div class="detail-section" *ngIf="isHR">
+        <div class="ds-title" style="display:flex;align-items:center;justify-content:space-between">
+          HR Notes
+          <button class="icon-btn-sm" *ngIf="canEditApplicant" (click)="editingNotes=!editingNotes; hrNotesText=selectedApp.hr_notes||''">
+            <mat-icon>{{ editingNotes ? 'close' : 'edit' }}</mat-icon>
+          </button>
+        </div>
+        <div class="terms-body" *ngIf="!editingNotes && selectedApp.hr_notes">{{ selectedApp.hr_notes }}</div>
+        <div class="no-notes" *ngIf="!editingNotes && !selectedApp.hr_notes">No notes yet</div>
+        <ng-container *ngIf="canEditApplicant && editingNotes">
+          <textarea class="notes-input" [(ngModel)]="hrNotesText" rows="3"
+                    placeholder="Internal HR notes…"></textarea>
+          <button class="btn-primary" style="margin-top:6px" (click)="saveHrNotes(selectedApp)">
+            Save Notes
+          </button>
+        </ng-container>
+      </div>
+    </div>
+    <div class="drawer-footer" *ngIf="isHR && !editingApplicant">
+      <!-- Progress actions based on current stage -->
+      <ng-container [ngSwitch]="selectedApp.stage">
+        <ng-container *ngSwitchCase="'applied'">
+          <button class="btn-primary" (click)="moveStage(selectedApp,'screening',$event)">
+            <mat-icon>manage_search</mat-icon> Move to Screening
+          </button>
+        </ng-container>
+        <ng-container *ngSwitchCase="'screening'">
+          <button class="btn-primary" (click)="openInterviewForm(selectedApp)">
+            <mat-icon>video_call</mat-icon> Schedule Interview
+          </button>
+        </ng-container>
+        <ng-container *ngSwitchCase="'interview'">
+          <button class="btn-primary" (click)="openOfferForm(selectedApp)">
+            <mat-icon>local_offer</mat-icon> Send Offer
+          </button>
+        </ng-container>
+        <ng-container *ngSwitchCase="'offer'">
+          <button class="btn-primary" (click)="openHireForm(selectedApp, $event)">
+            <mat-icon>how_to_reg</mat-icon> Hire
+          </button>
+        </ng-container>
+      </ng-container>
+
+      <button class="btn-outline btn-danger-outline"
+              *ngIf="selectedApp.stage!=='hired' && selectedApp.stage!=='rejected'"
+              (click)="moveStage(selectedApp,'rejected',$event); showAppDetail=false">
+        <mat-icon>cancel</mat-icon> Reject
+      </button>
+      <button class="btn-outline" (click)="showAppDetail=false">Close</button>
+    </div>
+  </ng-container>
+</div>
+
+<!-- ═══ JOB FORM MODAL ═══ -->
+<div class="modal-backdrop" *ngIf="showJobForm" (click)="showJobForm=false"></div>
+<div class="modal-panel wide-modal" *ngIf="showJobForm" [formGroup]="jobForm">
+  <div class="modal-hdr">
+    <h3><mat-icon>{{ editJobId ? 'edit' : 'post_add' }}</mat-icon> {{ editJobId ? 'Edit Job' : 'Post New Job' }}</h3>
+    <button class="row-btn" (click)="showJobForm=false"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Job Position <span class="req">*</span></label>
+        <select class="field-select-full" formControlName="designation_id" (change)="onJobPositionChange()">
+          <option value="">Select job position</option>
+          <option *ngFor="let p of jobPositionList" [value]="p.id">
+            {{ p.title }}{{ p.department?.name ? ' - ' + p.department.name : '' }}
+          </option>
+        </select>
+        <input type="hidden" formControlName="title">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Employment Type <span class="req">*</span></label>
+        <select class="field-select-full" formControlName="employment_type">
+          <option *ngFor="let t of employmentTypes" [value]="t.value">{{ t.label }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Department</label>
+        <select class="field-select-full" formControlName="department_id" (change)="onJobDepartmentChange()" [disabled]="!!managerDepartmentId">
+          <option value="">— Select —</option>
+          <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Status</label>
+        <select class="field-select-full" formControlName="status">
+          <option *ngFor="let s of jobStatuses" [value]="s.value">{{ s.label }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Salary Min (SAR)</label>
+        <input class="field-input" type="number" formControlName="salary_min">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Salary Max (SAR)</label>
+        <input class="field-input" type="number" formControlName="salary_max">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Location</label>
+        <input class="field-input" placeholder="e.g. Riyadh, Remote" formControlName="location">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Closing Date</label>
+        <input class="field-input" type="date" formControlName="closing_date">
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Description</label>
+      <textarea class="field-textarea" rows="4" placeholder="Role overview and responsibilities…" formControlName="description"></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Requirements</label>
+      <textarea class="field-textarea" rows="3" placeholder="Qualifications, experience, skills…" formControlName="requirements"></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Benefits</label>
+      <textarea class="field-textarea" rows="2" placeholder="What the company offers…" formControlName="benefits"></textarea>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="field-err" *ngIf="errorMsg" style="margin-right:auto">{{ errorMsg }}</div>
+    <button class="btn-outline" (click)="showJobForm=false">Cancel</button>
+    <button class="btn-primary" (click)="saveJob()" [disabled]="submitting">
+      <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
+      {{ submitting ? 'Saving…' : (editJobId ? 'Update Job' : 'Post Job') }}
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       CV BANK TAB
+  ══════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="false">
+
+    <!-- Toolbar -->
+    <div class="cv-toolbar">
+      <div class="search-wrap">
+        <mat-icon class="search-ico">search</mat-icon>
+        <input class="search-input" placeholder="Search name, role, skills…"
+               [(ngModel)]="cvBankSearch" (keyup.enter)="loadCvBank()">
+      </div>
+      <select class="field-select" [(ngModel)]="cvBankRating" (change)="loadCvBank()">
+        <option value="">All Ratings</option>
+        <option *ngFor="let r of ratings" [value]="r.value">{{ r.label }}</option>
+      </select>
+      <select class="field-select" [(ngModel)]="cvBankSource" (change)="loadCvBank()">
+        <option value="">All Sources</option>
+        <option *ngFor="let s of sources" [value]="s">{{ s }}</option>
+      </select>
+      <select class="field-select" [(ngModel)]="cvBankDepartment" (change)="loadCvBank()">
+        <option value="">All Departments</option>
+        <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+      </select>
+      <button class="btn-primary" (click)="openCvForm()">
+        <mat-icon>person_add</mat-icon> Add CV
+      </button>
+    </div>
+
+    <!-- CV list -->
+    <div class="cv-list" *ngIf="!cvBankLoading">
+      <div class="cv-card" *ngFor="let cv of cvBankEntries" (click)="viewCv(cv)">
+
+        <!-- Rating bar -->
+        <div class="cv-rating-bar" [style.background]="ratingColor(cv.rating)"></div>
+
+        <div class="cv-card-body">
+          <div class="cv-card-top">
+            <div class="cv-avatar" [style.background]="avatarColor(cv.applicant_name)">
+              {{ initial(cv.applicant_name) }}
+            </div>
+            <div class="cv-info">
+              <div class="cv-name">{{ cv.applicant_name }}</div>
+              <div class="cv-role">{{ cvPositionLabel(cv) }}</div>
+              <div class="cv-meta">{{ cvDepartmentName(cv) }}</div>
+              <div class="cv-meta">
+                <span *ngIf="cv.experience_years">{{ cv.experience_years }}y exp</span>
+                <span *ngIf="cv.nationality"> · {{ cv.nationality }}</span>
+                <span *ngIf="cv.source"> · {{ cv.source }}</span>
+              </div>
+            </div>
+            <span class="cv-rating-badge" [style.background]="ratingColor(cv.rating)+'18'"
+                  [style.color]="ratingColor(cv.rating)">
+              {{ ratingLabel(cv.rating) }}
+            </span>
+          </div>
+
+          <div class="cv-skills" *ngIf="cv.skills">
+            <span class="skill-tag" *ngFor="let s of cv.skills.split(',').slice(0,4)">{{ s.trim() }}</span>
+            <span class="skill-more" *ngIf="cv.skills.split(',').length > 4">
+              +{{ cv.skills.split(',').length - 4 }}
+            </span>
+          </div>
+
+          <div class="cv-card-footer">
+            <div class="cv-date">{{ cv.cv_path ? 'CV uploaded' : 'No file uploaded' }} - {{ cv.created_at | date:'dd MMM yyyy' }}</div>
+            <div class="cv-actions" (click)="$event.stopPropagation()">
+              <a *ngIf="cv.cv_path" [href]="'/storage/'+cv.cv_path" target="_blank"
+                 class="cv-action-btn" matTooltip="View CV">
+                <mat-icon>description</mat-icon>
+              </a>
+              <button class="cv-action-btn" matTooltip="Link to Job" *ngIf="canManageRecruitment"
+                      (click)="openLinkModal(cv)">
+                <mat-icon>link</mat-icon>
+              </button>
+              <button class="cv-action-btn danger" matTooltip="Remove" *ngIf="canDeleteCv(cv)"
+                      (click)="deleteCv(cv)">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="cv-empty" *ngIf="!cvBankEntries.length">
+        <mat-icon>folder_open</mat-icon>
+        <div>No CVs in the bank yet</div>
+        <div class="cv-empty-sub">Add candidates even without an open position</div>
+        <button class="btn-primary" *ngIf="canManageRecruitment" (click)="openCvForm()">
+          <mat-icon>person_add</mat-icon> Add First CV
+        </button>
+      </div>
+    </div>
+
+    <div class="cv-loading" *ngIf="cvBankLoading">
+      <mat-spinner diameter="28"></mat-spinner>
+    </div>
+
+  </ng-container>
+
+
+</div>
+
+<!-- ═══ HIRE FORM MODAL ═══ -->
+<div class="modal-backdrop" *ngIf="showHireForm" (click)="showHireForm=false"></div>
+<div class="modal-panel wide-modal" *ngIf="showHireForm && selectedApp" [formGroup]="hireForm">
+  <div class="modal-hdr">
+    <h3><mat-icon style="color:var(--success)">how_to_reg</mat-icon> {{ selectedApp.stage === 'hired' ? 'Resend Hire Confirmation' : 'Confirm Hire' }}</h3>
+    <button class="icon-btn" (click)="showHireForm=false"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+
+    <!-- Candidate summary -->
+    <div class="hire-candidate-card">
+      <div class="cv-avatar" [style.background]="avatarColor(selectedApp.applicant_name)">
+        {{ initial(selectedApp.applicant_name) }}
+      </div>
+      <div>
+        <div class="name-main">{{ selectedApp.applicant_name }}</div>
+        <div class="name-sub">{{ selectedApp.applicant_email }}
+          <span *ngIf="selectedApp.applicant_phone"> · {{ selectedApp.applicant_phone }}</span>
+        </div>
+        <div class="name-sub" *ngIf="selectedApp.job_posting">
+          Applying for: <strong>{{ selectedApp.job_posting?.title }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="hire-info-box">
+      <mat-icon>info_outline</mat-icon>
+      {{ selectedApp.stage === 'hired'
+        ? 'This will reuse the existing employee and user account, generate a new password, and email a fresh onboarding link.'
+        : 'This will create an Employee record, generate login credentials, assign leave allocations, and create onboarding tasks automatically.' }}
+    </div>
+
+    <!-- Core fields -->
+    <div class="section-divider">Employment Details</div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Joining Date <span class="req">*</span></label>
+        <input class="field-input" type="date" formControlName="joining_date">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Basic Salary (SAR) <span class="req">*</span></label>
+        <input class="field-input" type="number" placeholder="e.g. 8000" formControlName="salary">
+        <div class="field-hint">Housing and travel allowance will default to 25% and 10% of basic salary.</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Department</label>
+        <div class="field-input">{{ hireDepartmentName() }}</div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Position</label>
+        <div class="field-input">{{ hirePositionName() }}</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Employment Type</label>
+        <select class="field-select-full" formControlName="employment_type">
+          <option *ngFor="let t of employmentTypes" [value]="t.value">{{ t.label }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Probation Period (days)</label>
+      <input class="field-input" type="number" formControlName="probation_period" min="0" max="365">
+      <div class="field-hint">Standard is 90 days. A probation review task will be created automatically.</div>
+    </div>
+
+    <!-- Onboarding tasks preview -->
+    <div class="section-divider">Onboarding Tasks — will be created automatically</div>
+    <div class="onboard-tasks-preview">
+      <div class="otp-item" *ngFor="let t of ['Company laptop and accessories','Email and system accounts','ID badge and access card','Workstation and desk allocation','Employment contract','Personal documents','Bank and payroll details','Compliance training','Team introduction']">
+        <mat-icon style="color:var(--success);font-size:14px;width:14px;height:14px">check_circle</mat-icon>
+        {{ t }}
+      </div>
+    </div>
+
+    <!-- Additional custom tasks -->
+    <div class="field-group">
+      <label class="field-label">Additional Custom Tasks <span class="field-hint">(one per line, optional)</span></label>
+      <textarea class="field-textarea" rows="3" formControlName="custom_tasks"
+                placeholder="e.g. Submit medical fitness certificate&#10;Complete safety induction&#10;Collect access badge from security"></textarea>
+    </div>
+
+    <div class="field-err" *ngIf="errorMsg">{{ errorMsg }}</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="showHireForm=false">Cancel</button>
+    <button class="btn-primary" (click)="confirmHire()" [disabled]="submitting || hireForm.invalid">
+      <mat-icon>{{ submitting ? 'hourglass_empty' : 'how_to_reg' }}</mat-icon>
+      {{ submitting
+        ? (selectedApp.stage === 'hired' ? 'Sending confirmation…' : 'Creating employee record…')
+        : (selectedApp.stage === 'hired' ? 'Update Password & Resend' : 'Confirm Hire & Create Employee') }}
+    </button>
+  </div>
+</div>
+
+<!-- HIRE SUCCESS PANEL -->
+<div class="modal-backdrop" *ngIf="showHireSuccess" (click)="showHireSuccess=false"></div>
+<div class="modal-panel" *ngIf="showHireSuccess && hireResult" style="max-width:500px">
+  <div class="modal-hdr" style="border-bottom-color:rgba(16,185,129,.3)">
+    <h3 style="color:var(--success)"><mat-icon>celebration</mat-icon> {{ hireResult.is_new_employee ? 'Employee Created!' : 'Confirmation Resent!' }}</h3>
+    <button class="icon-btn" (click)="showHireSuccess=false"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+
+    <!-- Employee card -->
+    <div class="hire-success-card">
+      <div class="hs-icon"><mat-icon>badge</mat-icon></div>
+      <div>
+        <div class="hs-name">{{ hireResult.employee?.first_name }} {{ hireResult.employee?.last_name }}</div>
+        <div class="hs-code">{{ hireResult.employee_code }} · {{ hireResult.employee?.department?.name || 'Department TBD' }}</div>
+      </div>
+    </div>
+
+    <!-- Login credentials (new or reset by this confirmation) -->
+    <div class="creds-box" *ngIf="hireResult.temp_password">
+      <div class="creds-title"><mat-icon>key</mat-icon> Login Credentials — share with employee</div>
+      <div class="cred-row">
+        <span class="cred-lbl">Email</span>
+        <span class="cred-val">{{ hireResult.login_email }}</span>
+      </div>
+      <div class="cred-row">
+        <span class="cred-lbl">Password</span>
+        <span class="cred-val mono">{{ hireResult.temp_password }}</span>
+      </div>
+      <div class="creds-note">
+        <mat-icon>warning_amber</mat-icon>
+        Employee must change their password on first login.
+      </div>
+    </div>
+
+    <div class="existing-account-note" *ngIf="!hireResult.is_new_account && !hireResult.temp_password">
+      <mat-icon>info_outline</mat-icon>
+      An account already existed for this email — employee can log in with their existing credentials.
+    </div>
+
+    <!-- Onboarding tasks -->
+    <div class="onboard-summary">
+      <mat-icon>assignment</mat-icon>
+      <strong>{{ hireResult.onboarding_tasks }}</strong> onboarding tasks {{ hireResult.is_new_employee ? 'created' : 'available' }} in the employee's profile.
+    </div>
+
+    <!-- Document requirements to communicate -->
+    <div class="section-divider">Documents to Request from Employee</div>
+    <div class="doc-checklist">
+      <div class="dc-item" *ngFor="let d of ['Copy of National ID / Iqama','Educational certificates (attested)','Bank account details for salary transfer','Signed employment contract','Passport copy (if applicable)','Medical fitness certificate']">
+        <mat-icon>description</mat-icon> {{ d }}
+      </div>
+    </div>
+
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="showHireSuccess=false">Close</button>
+    <a class="btn-primary" routerLink="/employees">
+      <mat-icon>open_in_new</mat-icon> View Employee Profile
+    </a>
+  </div>
+</div>
+<!-- ADD CV MODAL -->
+<div class="modal-backdrop" *ngIf="showCvForm" (click)="showCvForm=false"></div>
+<div class="modal-panel" *ngIf="showCvForm">
+  <div class="modal-hdr">
+    <h3><mat-icon>person_add</mat-icon> Add CV to Bank</h3>
+    <button class="icon-btn" (click)="showCvForm=false"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Full Name <span class="req">*</span></label>
+        <input class="field-input" [(ngModel)]="cvForm.applicant_name" placeholder="e.g. Ahmed Al-Rashidi">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Email <span class="req">*</span></label>
+        <input class="field-input" type="email" [(ngModel)]="cvForm.applicant_email">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Phone <span class="req">*</span></label>
+        <input class="field-input" [(ngModel)]="cvForm.applicant_phone" placeholder="+966 5x xxx xxxx">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Job Position</label>
+        <input class="field-input" [(ngModel)]="cvForm.position_applied" list="cv-position-options" placeholder="e.g. Software Engineer">
+        <datalist id="cv-position-options">
+          <option *ngFor="let p of jobPositionOptions" [value]="p"></option>
+        </datalist>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Nationality</label>
+        <input class="field-input" [(ngModel)]="cvForm.nationality" placeholder="e.g. Saudi, Indian">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Experience (years)</label>
+        <input class="field-input" type="number" [(ngModel)]="cvForm.experience_years" min="0" max="50">
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Department</label>
+      <select class="field-select-full" [(ngModel)]="cvForm.department_id" [disabled]="!!managerDepartmentId">
+        <option value="">No department</option>
+        <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+      </select>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Source</label>
+        <select class="field-select-full" [(ngModel)]="cvForm.source">
+          <option *ngFor="let s of sources" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Expected Salary (SAR)</label>
+        <input class="field-input" type="number" [(ngModel)]="cvForm.expected_salary">
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Skills <span class="field-hint">(comma separated)</span></label>
+      <input class="field-input" [(ngModel)]="cvForm.skills" placeholder="e.g. Angular, Laravel, MySQL">
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Available From</label>
+        <input class="field-input" type="date" [(ngModel)]="cvForm.available_from">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Rating</label>
+        <select class="field-select-full" [(ngModel)]="cvForm.rating">
+          <option *ngFor="let r of ratings" [value]="r.value">{{ r.label }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Notes</label>
+      <textarea class="field-textarea" rows="2" [(ngModel)]="cvForm.notes"
+                placeholder="Internal notes about this candidate…"></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">CV File <span class="field-hint">(PDF, DOC — max 5 MB)</span></label>
+      <input type="file" accept=".pdf,.doc,.docx" (change)="onCvFileSelected($event)"
+             style="font-size:12px;color:var(--text2)">
+      <div class="field-err" *ngIf="cvFileError">{{ cvFileError }}</div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="showCvForm=false">Cancel</button>
+    <button class="btn-primary" (click)="submitCv()"
+            [disabled]="cvFormSubmitting || !cvForm.applicant_name || !cvForm.applicant_email || !cvForm.applicant_phone">
+      <mat-icon>{{ cvFormSubmitting ? 'hourglass_empty' : 'save' }}</mat-icon>
+      {{ cvFormSubmitting ? 'Saving…' : 'Save to CV Bank' }}
+    </button>
+  </div>
+</div>
+
+<!-- LINK CV TO JOB MODAL -->
+<div class="modal-backdrop" *ngIf="showLinkModal" (click)="showLinkModal=false"></div>
+<div class="modal-panel" *ngIf="showLinkModal" style="max-width:400px">
+  <div class="modal-hdr">
+    <h3><mat-icon>link</mat-icon> Link CV to Job</h3>
+    <button class="icon-btn" (click)="showLinkModal=false"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">
+      Linking <strong>{{ selectedCv?.applicant_name }}</strong> to a job will move them into
+      the applicant pipeline for that position.
+    </p>
+    <div class="field-group">
+      <label class="field-label">Select Job Posting <span class="req">*</span></label>
+      <select class="field-select-full" [(ngModel)]="linkJobId">
+        <option value="">— Select a job —</option>
+        <option *ngFor="let j of jobs" [value]="j.id">
+          {{ j.title }} ({{ j.status }})
+        </option>
+      </select>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="showLinkModal=false">Cancel</button>
+    <button class="btn-primary" (click)="confirmLink()" [disabled]="!linkJobId">
+      <mat-icon>link</mat-icon> Link to Job
+    </button>
+  </div>
+</div>
+<!-- SEND OFFER MODAL -->
+<div class="modal-backdrop" *ngIf="showOfferForm" (click)="showOfferForm=false"></div>
+<div class="modal-panel" *ngIf="showOfferForm" style="max-width:440px">
+  <div class="modal-hdr">
+    <h3><mat-icon style="color:var(--accent)">local_offer</mat-icon> Send Job Offer</h3>
+    <button class="icon-btn" (click)="showOfferForm=false"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body" *ngIf="selectedApp">
+    <div class="approve-info">
+      <div class="name-main">{{ selectedApp.applicant_name }}</div>
+      <div class="name-sub">{{ selectedApp.job_posting?.title }}</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Basic Salary (SAR/month) <span class="req">*</span></label>
+      <input class="field-input" type="number" [(ngModel)]="offerForm.basic_salary"
+             (ngModelChange)="onOfferBasicSalaryChange($event)" placeholder="e.g. 8000">
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Housing Allowance</label>
+        <input class="field-input" type="number" [(ngModel)]="offerForm.housing_allowance"
+               placeholder="25% of basic">
+        <span class="field-hint">Default 25% of basic salary.</span>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Travel Allowance</label>
+        <input class="field-input" type="number" [(ngModel)]="offerForm.transport_allowance"
+               placeholder="10% of basic">
+        <span class="field-hint">Default 10% of basic salary.</span>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Other Allowance <span class="field-hint">(optional)</span></label>
+      <input class="field-input" type="number" [(ngModel)]="offerForm.other_allowance"
+             placeholder="e.g. 500">
+    </div>
+    <div class="salary-summary-box">
+      <span>Estimated Gross Salary</span>
+      <strong>SAR {{ offerGrossSalary() | number:'1.2-2' }}</strong>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Offer Notes <span class="field-hint">(optional)</span></label>
+      <textarea class="field-textarea" rows="3" [(ngModel)]="offerForm.notes"
+                placeholder="Joining date, benefits, any special terms…"></textarea>
+    </div>
+    <div class="field-err" *ngIf="errorMsg">{{ errorMsg }}</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="showOfferForm=false">Cancel</button>
+    <button class="btn-primary" (click)="sendOffer()" [disabled]="offerSubmitting || !offerForm.basic_salary">
+      <mat-icon>{{ offerSubmitting ? 'hourglass_empty' : 'send' }}</mat-icon>
+      {{ offerSubmitting ? 'Sending…' : 'Send Offer' }}
+    </button>
+  </div>
+</div>
+
+<!-- SCHEDULE INTERVIEW MODAL -->
+<div class="modal-backdrop" *ngIf="showInterviewForm" (click)="showInterviewForm=false"></div>
+<div class="modal-panel" *ngIf="showInterviewForm">
+  <div class="modal-hdr">
+    <h3><mat-icon style="color:var(--warning)">video_call</mat-icon> Schedule Interview</h3>
+    <button class="icon-btn" (click)="showInterviewForm=false"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body" *ngIf="selectedApp">
+    <div class="approve-info">
+      <div class="name-main">{{ selectedApp.applicant_name }}</div>
+      <div class="name-sub">{{ selectedApp.job_posting?.title }}</div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Round <span class="req">*</span></label>
+        <select class="field-select-full" [(ngModel)]="interviewForm.round">
+          <option>HR</option>
+          <option>Technical</option>
+          <option>Manager</option>
+          <option>Final</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Format</label>
+        <select class="field-select-full" [ngModel]="interviewForm.format" (ngModelChange)="onInterviewFormatChange($event)">
+          <option value="video">Video Call</option>
+          <option value="in_person">Face to Face</option>
+          <option value="phone">Phone</option>
+        </select>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Date & Time <span class="req">*</span></label>
+        <input class="field-input" type="datetime-local" [(ngModel)]="interviewForm.scheduled_at">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Duration (minutes)</label>
+        <input class="field-input" type="number" [(ngModel)]="interviewForm.duration_minutes" min="15" max="180">
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">{{ interviewLocationLabel() }} <span class="req">*</span></label>
+      <input class="field-input" [(ngModel)]="interviewForm.location_or_link"
+             [placeholder]="interviewLocationPlaceholder()">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Interviewers <span class="req">*</span></label>
+      <div class="interviewer-search-wrap">
+        <mat-icon>search</mat-icon>
+        <input class="field-input" [(ngModel)]="interviewerSearch"
+               placeholder="Search by name, code, department, or email">
+        <button type="button" class="interviewer-search-clear" *ngIf="interviewerSearch"
+                (click)="interviewerSearch=''" aria-label="Clear interviewer search">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="employee-checkbox-list">
+        <label class="employee-check-row" *ngFor="let e of filteredInterviewers()">
+          <input type="checkbox"
+                 [checked]="isInterviewerSelected(e.id)"
+                 (change)="toggleInterviewer(e.id, $any($event.target).checked)">
+          <span>
+            <strong>{{ e.first_name }} {{ e.last_name }}</strong>
+            <small>{{ e.employee_code }}{{ e.department?.name ? ' - ' + e.department.name : '' }}</small>
+          </span>
+        </label>
+        <div class="interviewer-empty" *ngIf="!filteredInterviewers().length">
+          No matching interviewers
+        </div>
+      </div>
+      <span class="field-hint" *ngIf="interviewForm.interviewer_employee_ids?.length">
+        Selected: {{ selectedInterviewersText() }}
+      </span>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="showInterviewForm=false">Cancel</button>
+    <button class="btn-primary" (click)="submitInterview()"
+            [disabled]="interviewSubmitting || !interviewForm.scheduled_at || !interviewForm.location_or_link || !interviewForm.interviewer_employee_ids?.length">
+      <mat-icon>{{ interviewSubmitting ? 'hourglass_empty' : 'event' }}</mat-icon>
+      {{ interviewSubmitting ? 'Scheduling…' : 'Schedule Interview' }}
+    </button>
+  </div>
+</div>
+<!-- ADD APPLICANT MODAL -->
+<div class="modal-backdrop" *ngIf="showAddApplicant" (click)="showAddApplicant=false"></div>
+<div class="modal-panel" *ngIf="showAddApplicant">
+  <div class="modal-hdr">
+    <h3><mat-icon>person_add</mat-icon> Add Applicant</h3>
+    <button class="icon-btn" (click)="showAddApplicant=false"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+
+    <div class="field-group">
+      <label class="field-label">Job Posting <span class="req">*</span></label>
+      <select class="field-select-full" [(ngModel)]="applicantForm.job_posting_id">
+        <option value="">— Select a job —</option>
+        <option *ngFor="let j of jobs" [value]="j.id">
+          {{ j.title }} <span *ngIf="j.department">({{ j.department?.name }})</span>
+        </option>
+      </select>
+    </div>
+
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Full Name <span class="req">*</span></label>
+        <input class="field-input" [(ngModel)]="applicantForm.applicant_name"
+               placeholder="e.g. Ahmed Al-Rashidi">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Email <span class="req">*</span></label>
+        <input class="field-input" type="email" [(ngModel)]="applicantForm.applicant_email"
+               placeholder="e.g. ahmed@email.com">
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Phone</label>
+        <input class="field-input" [(ngModel)]="applicantForm.applicant_phone"
+               placeholder="+966 5x xxx xxxx">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Expected Salary (SAR)</label>
+        <input class="field-input" type="number" [(ngModel)]="applicantForm.expected_salary">
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Available From</label>
+        <input class="field-input" type="date" [(ngModel)]="applicantForm.available_from">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Initial Stage</label>
+        <select class="field-select-full" [(ngModel)]="applicantForm.stage">
+          <option *ngFor="let s of stages.slice(0,4)" [value]="s.value">{{ s.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Cover Letter / Notes</label>
+      <textarea class="field-textarea" rows="3" [(ngModel)]="applicantForm.cover_letter_text"
+                placeholder="Notes about this candidate, referral source, etc…"></textarea>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">CV File <span class="field-hint">(PDF, DOC — max 5 MB)</span></label>
+      <input type="file" accept=".pdf,.doc,.docx" (change)="onApplicantFileSelected($event)"
+             style="font-size:12px;color:var(--text2)">
+      <div class="field-err" *ngIf="applicantFileError">{{ applicantFileError }}</div>
+    </div>
+
+    <div class="field-err" *ngIf="errorMsg">{{ errorMsg }}</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="showAddApplicant=false">Cancel</button>
+    <button class="btn-primary" (click)="submitApplicant()"
+            [disabled]="addApplicantBusy || !applicantForm.job_posting_id || !applicantForm.applicant_name || !applicantForm.applicant_email || !applicantForm.applicant_phone">
+      <mat-icon>{{ addApplicantBusy ? 'hourglass_empty' : 'person_add' }}</mat-icon>
+      {{ addApplicantBusy ? 'Adding…' : 'Add to Pipeline' }}
+    </button>
+  </div>
+</div>

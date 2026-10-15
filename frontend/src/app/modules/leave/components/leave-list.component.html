@@ -1,0 +1,1453 @@
+<div class="module-page">
+
+  <!-- ── Page Header ─────────────────────────────────────────────────────── -->
+  <div class="page-hdr">
+    <div>
+      <h1 class="page-title">Leave Management</h1>
+      <p class="page-sub" *ngIf="isHR">Requests · Calendar · Balances · Leave Types · Holidays</p>
+      <p class="page-sub" *ngIf="!isHR">Requests · Calendar · Balances · Holidays</p>
+    </div>
+    <button class="btn-primary" (click)="openNewRequest()">
+      <mat-icon>add</mat-icon> New Request
+    </button>
+  </div>
+
+  <!-- ── Stat Cards ──────────────────────────────────────────────────────── -->
+  <div class="stat-grid" *ngIf="statItems.length">
+    <div class="stat-card" *ngFor="let s of statItems">
+      <div class="stat-icon" [style.background]="s.color + '18'">
+        <mat-icon [style.color]="s.color">{{ s.icon }}</mat-icon>
+      </div>
+      <div>
+        <div class="stat-val">{{ s.value }}</div>
+        <div class="stat-lbl">{{ s.label }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── My Balance Cards ────────────────────────────────────────────────── -->
+  <div class="balance-row" *ngIf="myBalances.length || annualBalanceToday">
+    <div class="bal-card annual-today-card" *ngIf="annualBalanceToday">
+      <div class="bal-type-dot today-dot"></div>
+      <div class="bal-content">
+        <div class="bal-name">Annual Leave Today</div>
+        <div class="bal-numbers">
+          <span class="bal-remain">{{ annualBalanceToday.remaining_days | number:'1.1-1' }}</span>
+          <span class="bal-total">days remaining</span>
+        </div>
+        <div class="bal-track">
+          <div class="bal-fill today-fill" [style.width.%]="balancePct(annualBalanceToday)"></div>
+        </div>
+        <div class="bal-meta">
+          <span>As of {{ annualBalanceToday.balance_as_of | date:'dd MMM yyyy' }}</span>
+          <span>Earned {{ annualBalanceToday.allocated_days | number:'1.1-1' }}</span>
+          <span *ngIf="carryForwardSummary(annualBalanceToday)">{{ carryForwardSummary(annualBalanceToday) }}</span>
+          <span>Taken this period {{ (annualBalanceToday.approved_taken_contract_period || annualBalanceToday.used_days) | number:'1.1-1' }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="bal-card" *ngFor="let b of myBalances">
+      <div class="bal-type-dot" [style.background]="leaveTypeColor(b.leave_type?.name)"></div>
+      <div class="bal-content">
+        <div class="bal-name">{{ b.leave_type?.name }}</div>
+        <div class="bal-numbers">
+          <span class="bal-remain">{{ b.remaining_days | number:'1.1-1' }}</span>
+          <span class="bal-total">/ {{ balanceTotalDays(b) | number:'1.1-1' }} days</span>
+        </div>
+        <div class="bal-track">
+          <div class="bal-fill"
+            [style.width.%]="balancePct(b)"
+            [style.background]="balanceColor(balancePct(b))">
+          </div>
+        </div>
+        <div class="bal-meta">
+          <span *ngIf="isAnnualBalance(b)">Base {{ b.allocated_days | number:'1.1-1' }}</span>
+          <span *ngIf="carryForwardSummary(b)">{{ carryForwardSummary(b) }}</span>
+          <span>Used {{ b.used_days }}</span>
+          <span *ngIf="b.pending_days > 0" style="color:var(--warning)">Pending {{ b.pending_days }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main Tabs ───────────────────────────────────────────────────────── -->
+  <div class="main-tabs">
+    <ng-container *ngFor="let t of tabs">
+      <button *ngIf="(t.id !== 'types' || isHR) && (t.id !== 'my_requests' || showMyRequestsTab)" class="main-tab" [class.active]="activeTab===t.id" (click)="switchTab(t.id)">
+        <mat-icon>{{ t.icon }}</mat-icon>
+        {{ t.label }}
+      </button>
+    </ng-container>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: REQUESTS                                                          -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab==='requests' || activeTab==='my_requests'">
+
+    <!-- Status tabs + filters -->
+    <div class="toolbar">
+      <div class="status-tabs">
+        <button *ngFor="let t of requestStatusTabs()" class="stab" [class.active]="activeStatus===t.id"
+          (click)="switchStatus(t.id)">
+          {{ t.label }}
+          <span class="stab-badge" *ngIf="statusCount(t.id) > 0">
+            {{ statusCount(t.id) }}
+          </span>
+        </button>
+      </div>
+      <div class="filter-row">
+        <div class="search-wrap">
+          <mat-icon class="search-ico">search</mat-icon>
+          <input class="search-input" placeholder="Search employee…" [(ngModel)]="filterSearch" (ngModelChange)="onRequestSearchChange()" (keyup.enter)="load(1)">
+        </div>
+        <select class="field-select" [(ngModel)]="filterType" (change)="load(1)">
+          <option value="">All Types</option>
+          <option *ngFor="let t of leaveTypes" [value]="t.id">{{ t.name }}</option>
+        </select>
+        <button class="btn-outline" *ngIf="isHR" (click)="downloadLeaveDetailsReport()">
+          <mat-icon>download</mat-icon> Leave Report
+        </button>
+      </div>
+    </div>
+
+    <!-- Requests table -->
+    <div class="data-card">
+      <table mat-table [dataSource]="requests">
+
+        <ng-container matColumnDef="employee">
+          <th mat-header-cell *matHeaderCellDef>Employee</th>
+          <td mat-cell *matCellDef="let r">
+            <div class="emp-cell">
+              <div class="emp-avatar" [style.background]="avatarColor(r.employee?.first_name)">
+                {{ (r.employee?.first_name||'?')[0] }}{{ (r.employee?.last_name||'')[0] }}
+              </div>
+              <div>
+                <div class="name-main">{{ r.employee?.first_name }} {{ r.employee?.last_name }}</div>
+                <div class="name-sub">{{ r.employee?.department?.name || '—' }}</div>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <td mat-cell *matCellDef="let r">
+            <span class="type-pill" [style.background]="leaveTypeColor(r.leave_type?.name)+'22'"
+              [style.color]="leaveTypeColor(r.leave_type?.name)">
+              {{ r.leave_type?.name || '—' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="dates">
+          <th mat-header-cell *matHeaderCellDef>Date / Time</th>
+          <td mat-cell *matCellDef="let r">
+            <ng-container *ngIf="!r.leave_type?.is_hourly">
+              <div class="date-range">
+                <span>{{ r.start_date | date:'dd MMM' }}</span>
+                <mat-icon class="arrow-ico">arrow_forward</mat-icon>
+                <span>{{ r.end_date | date:'dd MMM yyyy' }}</span>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="r.leave_type?.is_hourly">
+              <div class="date-range">
+                <span>{{ r.start_date | date:'dd MMM yyyy' }}</span>
+              </div>
+              <div class="time-range">
+                {{ r.start_time }} – {{ r.end_time }}
+              </div>
+            </ng-container>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="days">
+          <th mat-header-cell *matHeaderCellDef>Duration</th>
+          <td mat-cell *matCellDef="let r">
+            <span class="days-badge half-badge" *ngIf="!r.leave_type?.is_hourly && r.is_half_day">
+              ½ {{ r.half_day_period || 'day' }}
+            </span>
+            <span class="days-badge" *ngIf="!r.leave_type?.is_hourly && !r.is_half_day">{{ r.total_days }} d</span>
+            <span class="hours-badge" *ngIf="r.leave_type?.is_hourly">
+              <mat-icon>timer</mat-icon>{{ r.total_hours }}h
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="reason">
+          <th mat-header-cell *matHeaderCellDef>Reason</th>
+          <td mat-cell *matCellDef="let r" class="reason-cell">
+            {{ r.reason | slice:0:50 }}{{ r.reason?.length > 50 ? '…' : '' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let r">
+            <div class="stage-badge-wrap">
+              <span class="status-badge" [class]="statusCls(r.status)">
+                <mat-icon class="sbadge-ico">{{ statusIcon(r.status) }}</mat-icon>
+                {{ stageLabel(r) }}
+              </span>
+              <!-- 2-stage progress dots -->
+              <div class="mini-progress" *ngIf="r.status === 'pending' || r.status === 'manager_approved'">
+                <span class="mp-dot done" matTooltip="Submitted"></span>
+                <span class="mp-line"></span>
+                <span class="mp-dot" [class.done]="r.status === 'manager_approved'"
+                      matTooltip="Manager"></span>
+                <span class="mp-line" [class.done]="r.status === 'manager_approved'"></span>
+                <span class="mp-dot" matTooltip="HR"></span>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let r">
+            <div class="row-actions">
+              <button class="row-btn" matTooltip="View Details" (click)="viewRequest(r)">
+                <mat-icon>open_in_new</mat-icon>
+              </button>
+              <button class="row-btn approve-btn" [matTooltip]="approveLabel(r)"
+                      *ngIf="canApprove(r)" [disabled]="isActionLoading()"
+                      [attr.aria-busy]="isActionLoading(r, 'approve')"
+                      (click)="approve(r); $event.stopPropagation()">
+                <mat-spinner *ngIf="isActionLoading(r, 'approve')" diameter="18"></mat-spinner>
+                <mat-icon *ngIf="!isActionLoading(r, 'approve')">{{ approveIcon(r) }}</mat-icon>
+              </button>
+              <button class="row-btn reject-btn" matTooltip="Reject"
+                      *ngIf="canReject(r)" [disabled]="isActionLoading()"
+                      [attr.aria-busy]="isActionLoading(r, 'reject')"
+                      (click)="openReject(r); $event.stopPropagation()">
+                <mat-spinner *ngIf="isActionLoading(r, 'reject')" diameter="18"></mat-spinner>
+                <mat-icon *ngIf="!isActionLoading(r, 'reject')">cancel</mat-icon>
+              </button>
+              <button class="row-btn" matTooltip="Cancel" *ngIf="canCancel(r)"
+                      [disabled]="isActionLoading()"
+                      [attr.aria-busy]="isActionLoading(r, 'cancel')"
+                      (click)="cancel(r)">
+                <mat-spinner *ngIf="isActionLoading(r, 'cancel')" diameter="18"></mat-spinner>
+                <mat-icon *ngIf="!isActionLoading(r, 'cancel')" style="color:var(--text3)">block</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky:true"></tr>
+        <tr mat-row *matRowDef="let row; columns:displayedColumns;" class="data-row clickable" (click)="viewRequest(row)"></tr>
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell empty-state" colspan="7">
+            <mat-spinner *ngIf="loading" diameter="28"></mat-spinner>
+            <ng-container *ngIf="!loading">
+              <mat-icon>event_note</mat-icon>
+              <span>No {{ activeTab==='my_requests' ? 'personal' : (activeStatus || '') }} leave requests</span>
+            </ng-container>
+          </td>
+        </tr>
+      </table>
+
+      <div class="pagination" *ngIf="pagination?.total">
+        <span class="page-info">{{ pagination?.from }}–{{ pagination?.to }} of {{ pagination?.total }}</span>
+        <label class="page-size-wrap">Rows
+          <select class="page-size-select" [(ngModel)]="pageSize" (change)="changePageSize()">
+            <option [ngValue]="10">10</option><option [ngValue]="25">25</option>
+            <option [ngValue]="50">50</option><option [ngValue]="100">100</option>
+          </select>
+        </label>
+        <button class="page-btn" [disabled]="currentPage===1" (click)="load(currentPage-1)"><mat-icon>chevron_left</mat-icon></button>
+        <button *ngFor="let p of pages" class="page-btn" [class.active]="p===currentPage" (click)="load(p)">{{ p }}</button>
+        <button class="page-btn" [disabled]="currentPage===pagination?.last_page" (click)="load(currentPage+1)"><mat-icon>chevron_right</mat-icon></button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: CALENDAR                                                          -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab==='calendar'">
+    <div class="calendar-header">
+      <button class="row-btn" (click)="prevMonth()"><mat-icon>chevron_left</mat-icon></button>
+      <h2 class="cal-month-title">{{ calMonthLabel }}</h2>
+      <button class="row-btn" (click)="nextMonth()"><mat-icon>chevron_right</mat-icon></button>
+      <button class="btn-outline"   *ngIf="canManageHolidays" style="margin-left:auto;font-size:12px" (click)="openHolidayForm()">
+        <mat-icon>add</mat-icon> Add Holiday
+      </button>
+    </div>
+
+    <div class="calendar-summary">
+      <div>
+        <div class="calendar-summary-title">{{ calendarScopeLabel }}</div>
+        <div class="calendar-summary-sub">Only fully approved leave requests are shown.</div>
+      </div>
+      <div class="calendar-summary-count">
+        <mat-spinner *ngIf="loadingCalendar" diameter="18"></mat-spinner>
+        <span *ngIf="!loadingCalendar">{{ approvedCalendarCount }}</span>
+        <small>approved</small>
+      </div>
+    </div>
+
+    <!-- Calendar grid -->
+    <div class="cal-grid">
+      <div class="cal-dow" *ngFor="let d of calWeekDays"
+        [class.weekend-dow]="d==='Fri'||d==='Sat'">{{ d }}</div>
+
+      <ng-container *ngFor="let cell of calDays">
+        <div *ngIf="!cell" class="cal-cell cal-empty"></div>
+        <div *ngIf="cell" class="cal-cell"
+          [class.today]="cell.isToday"
+          [class.weekend]="cell.isWeekend"
+          [class.has-holiday]="cell.holiday"
+          [class.has-leaves]="cell.leaves?.length > 0"
+          [class.selected]="selectedCalendarCell?.dateStr === cell.dateStr"
+          (click)="selectCalendarDay(cell)">
+
+          <div class="cal-date" [class.today-num]="cell.isToday">{{ cell.d }}</div>
+
+          <div class="cal-holiday" *ngIf="cell.holiday">
+            <mat-icon>star</mat-icon> {{ cell.holiday.name }}
+          </div>
+
+          <div class="cal-leave-chips" *ngIf="cell.leaves?.length">
+            <div *ngFor="let l of cell.leaves.slice(0,2)" class="cal-leave-chip"
+              [style.background]="leaveTypeColor(l.leave_type?.name)+'33'"
+              [style.color]="leaveTypeColor(l.leave_type?.name)"
+              [matTooltip]="(l.employee?.first_name || '') + ' ' + (l.employee?.last_name || '') + ' - ' + (l.leave_type?.name || 'Leave')"
+              (click)="viewRequest(l); $event.stopPropagation()">
+              {{ l.employee?.first_name }} {{ l.employee?.last_name?.charAt(0) }}.
+            </div>
+            <button type="button" class="cal-more" *ngIf="cell.leaves.length > 2"
+              (click)="selectCalendarDay(cell); $event.stopPropagation()">
+              +{{ cell.leaves.length - 2 }} more
+            </button>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <div class="data-card calendar-day-panel" *ngIf="selectedCalendarLeaves.length">
+      <div class="card-hdr">
+        <span class="card-title">
+          <mat-icon>event_available</mat-icon>
+          Approved leaves on {{ selectedCalendarCell?.dateStr | date:'EEE, dd MMM yyyy' }}
+        </span>
+        <span class="status-badge badge-green">{{ selectedCalendarLeaves.length }} approved</span>
+      </div>
+      <div class="calendar-day-list">
+        <button type="button" class="calendar-day-row" *ngFor="let l of selectedCalendarLeaves" (click)="viewRequest(l)">
+          <div class="emp-cell">
+            <div class="emp-avatar" [style.background]="avatarColor(l.employee?.first_name)">
+              {{ (l.employee?.first_name||'?')[0] }}{{ (l.employee?.last_name||'')[0] }}
+            </div>
+            <div>
+              <div class="name-main">{{ l.employee?.first_name }} {{ l.employee?.last_name }}</div>
+              <div class="name-sub">{{ l.employee?.department?.name || calendarMeta?.department?.name || '-' }}</div>
+            </div>
+          </div>
+          <span class="type-pill"
+            [style.background]="leaveTypeColor(l.leave_type?.name)+'22'"
+            [style.color]="leaveTypeColor(l.leave_type?.name)">
+            {{ l.leave_type?.name || 'Leave' }}
+          </span>
+          <div class="date-range">
+            <span>{{ l.start_date | date:'dd MMM' }}</span>
+            <mat-icon class="arrow-ico">arrow_forward</mat-icon>
+            <span>{{ l.end_date | date:'dd MMM yyyy' }}</span>
+          </div>
+          <span class="days-badge" *ngIf="!l.leave_type?.is_hourly">{{ l.total_days }} d</span>
+          <span class="hours-badge" *ngIf="l.leave_type?.is_hourly"><mat-icon>timer</mat-icon>{{ l.total_hours }}h</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="empty-state calendar-empty" *ngIf="!loadingCalendar && !approvedCalendarCount">
+      <mat-icon>event_available</mat-icon>
+      <span>No approved leave in this calendar scope for {{ calMonthLabel }}.</span>
+    </div>
+
+    <!-- Holidays list -->
+    <div class="data-card" style="margin-top:20px" *ngIf="holidays.length">
+      <div class="card-hdr"><span class="card-title"><mat-icon>star</mat-icon> Holidays {{ calYear }}</span></div>
+      <div class="holiday-list">
+        <div class="holiday-row" *ngFor="let h of holidays">
+          <div class="holiday-date">{{ formatHolidayDate(h.date, { weekday:'short', day:'2-digit', month:'short' }) }}</div>
+          <div class="holiday-name">{{ h.name }}</div>
+          <span class="status-badge badge-blue" *ngIf="h.is_recurring">Annual</span>
+          <button class="row-btn" *ngIf="canManageHolidays" (click)="openHolidayForm(h)"><mat-icon style="color:var(--accent);font-size:16px">edit</mat-icon></button>
+          <button class="row-btn" *ngIf="canManageHolidays" (click)="deleteHoliday(h.id)"><mat-icon style="color:var(--danger);font-size:16px">delete_outline</mat-icon></button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: BALANCES                                                          -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab==='holidays'">
+    <div class="toolbar">
+      <div class="filter-row" style="margin-left:0">
+        <div class="search-wrap">
+          <mat-icon class="search-ico">calendar_today</mat-icon>
+          <input class="search-input" type="number" min="2000" max="2100" [(ngModel)]="holidayYear" (change)="loadHolidayManagement()" placeholder="Year">
+        </div>
+        <button class="btn-outline" (click)="loadHolidayManagement()"><mat-icon>refresh</mat-icon></button>
+      </div>
+      <button class="btn-primary" *ngIf="canManageHolidays" style="margin-left:auto" (click)="openHolidayForm()">
+        <mat-icon>add</mat-icon> Add Holiday
+      </button>
+    </div>
+
+    <div class="data-card">
+      <div class="card-hdr">
+        <span class="card-title"><mat-icon>star</mat-icon> Yearly Holidays {{ holidayYear }}</span>
+        <span class="status-badge badge-blue">{{ managedHolidays.length }} holidays</span>
+      </div>
+      <div class="holiday-list" *ngIf="managedHolidays.length">
+        <div class="holiday-row" *ngFor="let h of managedHolidays">
+          <div class="holiday-date">
+            {{ formatHolidayDate(h.date) }}
+            <ng-container *ngIf="dateInputValue(h.end_date) && dateInputValue(h.end_date) !== dateInputValue(h.date)">
+              - {{ formatHolidayDate(h.end_date) }}
+            </ng-container>
+          </div>
+          <div class="holiday-name">{{ h.name }}</div>
+          <span class="status-badge badge-blue" *ngIf="h.is_recurring">Recurring</span>
+          <span class="status-badge badge-gray" *ngIf="!h.is_recurring">One time</span>
+          <div class="row-actions" *ngIf="canManageHolidays">
+            <button class="row-btn" matTooltip="Edit holiday" (click)="openHolidayForm(h)">
+              <mat-icon style="color:var(--accent)">edit</mat-icon>
+            </button>
+            <button class="row-btn" matTooltip="Delete holiday" (click)="deleteHoliday(h.id)">
+              <mat-icon style="color:var(--danger)">delete_outline</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="empty-state" *ngIf="!holidayLoading && !managedHolidays.length">
+        <mat-icon>event_busy</mat-icon>
+        <span>No holidays configured for {{ holidayYear }}.</span>
+      </div>
+      <div class="empty-state" *ngIf="holidayLoading">
+        <mat-spinner diameter="28"></mat-spinner>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="activeTab==='balances'">
+    <div class="toolbar">
+      <div class="search-wrap" *ngIf="isHR || isMgr">
+        <mat-icon class="search-ico">search</mat-icon>
+        <input class="search-input" placeholder="Search employee…" [(ngModel)]="filterSearch" (keyup.enter)="loadAllBalances()">
+      </div>
+      <div class="balance-year-filter">
+        <label>Contract Year</label>
+        <select [(ngModel)]="balanceYear" (change)="onBalanceYearChange()">
+          <option *ngFor="let year of balanceYears" [ngValue]="year">{{ year }}</option>
+        </select>
+      </div>
+      <button class="btn-outline" *ngIf="isHR" (click)="downloadAnnualBalanceReport()">
+        <mat-icon>download</mat-icon> Annual Report
+      </button>
+      <span *ngIf="!isHR && !isMgr" style="font-size:13px;color:var(--text2)">Your leave balance details</span>
+      <button class="btn-outline" (click)="loadAllBalances()"><mat-icon>refresh</mat-icon></button>
+    </div>
+
+    <div class="data-card">
+      <table mat-table [dataSource]="allBalances">
+        <ng-container matColumnDef="employee">
+          <th mat-header-cell *matHeaderCellDef>Employee</th>
+          <td mat-cell *matCellDef="let b">
+            <div class="emp-cell">
+              <div class="emp-avatar" [style.background]="avatarColor(b.employee?.first_name)">
+                {{ (b.employee?.first_name||'?')[0] }}{{ (b.employee?.last_name||'')[0] }}
+              </div>
+              <div>
+                <div class="name-main">{{ b.employee?.first_name }} {{ b.employee?.last_name }}</div>
+                <div class="name-sub">{{ b.employee?.department?.name }}</div>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="leave_type">
+          <th mat-header-cell *matHeaderCellDef>Leave Type</th>
+          <td mat-cell *matCellDef="let b">
+            <span class="type-pill"
+              [style.background]="leaveTypeColor(b.leave_type?.name)+'22'"
+              [style.color]="leaveTypeColor(b.leave_type?.name)">
+              {{ b.leave_type?.name }}
+            </span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="allocated">
+          <th mat-header-cell *matHeaderCellDef>Allocated / Earned</th>
+          <td mat-cell *matCellDef="let b" class="mono-val">
+            {{ b.allocated_days }}
+            <span *ngIf="contractYearAllocation(b) !== null">({{ contractYearAllocation(b) | number:'1.0-2' }})</span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="carry_forward">
+          <th mat-header-cell *matHeaderCellDef>Carry Forward</th>
+          <td mat-cell *matCellDef="let b">
+            <ng-container *ngIf="(b.carried_forward_days || 0) > 0; else noCarryForward">
+              <div class="mono-val" style="color:var(--accent)">{{ b.carried_forward_days }} d</div>
+              <div class="name-sub">
+                Active {{ b.active_carried_forward_days || 0 }} · Used {{ b.carry_forward_used_days || 0 }}
+              </div>
+            </ng-container>
+            <ng-template #noCarryForward>
+              <span class="status-badge badge-gray">No</span>
+            </ng-template>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="used">
+          <th mat-header-cell *matHeaderCellDef>Used</th>
+          <td mat-cell *matCellDef="let b" class="mono-val" style="color:var(--warning)">{{ b.used_days }}</td>
+        </ng-container>
+        <ng-container matColumnDef="pending">
+          <th mat-header-cell *matHeaderCellDef>Pending</th>
+          <td mat-cell *matCellDef="let b" class="mono-val" style="color:var(--accent)">{{ b.pending_days }}</td>
+        </ng-container>
+        <ng-container matColumnDef="remaining">
+          <th mat-header-cell *matHeaderCellDef>Remaining</th>
+          <td mat-cell *matCellDef="let b">
+            <span class="mono-val" [style.color]="b.remaining_days <= 2 ? 'var(--danger)' : 'var(--success)'">
+              {{ b.remaining_days }}
+            </span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="bar">
+          <th mat-header-cell *matHeaderCellDef>Usage</th>
+          <td mat-cell *matCellDef="let b" style="min-width:100px">
+            <div class="mini-track">
+              <div class="mini-fill" [style.width.%]="balancePct(b)" [style.background]="balanceColor(balancePct(b))"></div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">{{ balancePct(b) }}%</div>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="balanceColumns; sticky:true"></tr>
+        <tr mat-row *matRowDef="let row; columns:balanceColumns;" class="data-row"></tr>
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell empty-state" colspan="8">
+            <mat-icon>account_balance_wallet</mat-icon><span>No balance data. Load balances first.</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: LEAVE TYPES                                                       -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab==='types' && isHR">
+    <div class="toolbar">
+      <span style="font-size:13px;color:var(--text2)">{{ leaveTypes.length }} leave types configured</span>
+      <button class="btn-primary" *ngIf="isHR" style="margin-left:auto" (click)="openTypeForm()">
+        <mat-icon>add</mat-icon> Add Type
+      </button>
+    </div>
+
+    <div class="data-card">
+      <table mat-table [dataSource]="leaveTypes">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let t">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="type-dot" [style.background]="leaveTypeColor(t.name)"></div>
+              <div>
+                <div class="name-main">{{ t.name }}</div>
+                <div class="name-sub" *ngIf="t.description">{{ t.description | slice:0:50 }}</div>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="code">
+          <th mat-header-cell *matHeaderCellDef>Code</th>
+          <td mat-cell *matCellDef="let t"><span class="code-chip">{{ t.code }}</span></td>
+        </ng-container>
+        <ng-container matColumnDef="days">
+          <th mat-header-cell *matHeaderCellDef>Days/Year</th>
+          <td mat-cell *matCellDef="let t" class="mono-val">{{ t.days_allowed }}</td>
+        </ng-container>
+        <ng-container matColumnDef="paid">
+          <th mat-header-cell *matHeaderCellDef>Paid</th>
+          <td mat-cell *matCellDef="let t">
+            <mat-icon [style.color]="t.is_paid ? 'var(--success)' : 'var(--text3)'">
+              {{ t.is_paid ? 'check_circle' : 'radio_button_unchecked' }}
+            </mat-icon>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="carry">
+          <th mat-header-cell *matHeaderCellDef>Carry Forward</th>
+          <td mat-cell *matCellDef="let t">
+            <span *ngIf="t.carry_forward" class="status-badge badge-blue">{{ t.carry_forward_all ? 'All' : t.max_carry_forward + ' days' }}</span>
+            <span *ngIf="!t.carry_forward" class="status-badge badge-gray">No</span>
+            <span *ngIf="t.skip_manager_approval" class="status-badge badge-orange"
+                  matTooltip="Sick leave policy: goes directly to HR">
+              <mat-icon style="font-size:12px!important;width:12px!important;height:12px!important">skip_next</mat-icon>
+              Skip Manager
+            </span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="actions" *ngIf="isHR">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let t">
+            <div class="row-actions">
+              <button class="row-btn" matTooltip="Edit Type" (click)="openTypeForm(t)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button class="row-btn" matTooltip="Configure Department Visibility" (click)="openVisibilityPanel(t)">
+                <mat-icon style="color:var(--success)">visibility</mat-icon>
+              </button>
+              <button class="row-btn limits-btn" *ngIf="t.is_hourly"
+                matTooltip="Configure Department Limits" (click)="openLimitsPanel(t)">
+                <mat-icon style="color:var(--accent2)">tune</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="typeColumns; sticky:true"></tr>
+        <tr mat-row *matRowDef="let row; columns:typeColumns;" class="data-row"></tr>
+      </table>
+    </div>
+  </ng-container>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- REQUEST DETAIL DRAWER                                                    -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="drawer-backdrop" *ngIf="showDetail" (click)="showDetail=false"></div>
+<div class="detail-drawer" [class.open]="showDetail">
+  <ng-container *ngIf="selectedRequest">
+    <div class="drawer-hdr">
+      <div class="drawer-hdr-left">
+        <div class="drawer-avatar" [style.background]="avatarColor(selectedRequest.employee?.first_name)">
+          {{ (selectedRequest.employee?.first_name||'?')[0] }}{{ (selectedRequest.employee?.last_name||'')[0] }}
+        </div>
+        <div>
+          <div class="drawer-name">{{ selectedRequest.employee?.first_name }} {{ selectedRequest.employee?.last_name }}</div>
+          <div class="drawer-sub">{{ selectedRequest.employee?.department?.name }} · {{ selectedRequest.employee?.employee_code }}</div>
+        </div>
+      </div>
+      <button class="row-btn" (click)="showDetail=false"><mat-icon>close</mat-icon></button>
+    </div>
+
+    <div class="drawer-tabs" role="tablist" aria-label="Request information">
+      <button type="button" role="tab" [attr.aria-selected]="detailDrawerTab === 'details'"
+              [class.active]="detailDrawerTab === 'details'" (click)="detailDrawerTab = 'details'">
+        <mat-icon>description</mat-icon> Details
+      </button>
+      <button type="button" role="tab" [attr.aria-selected]="detailDrawerTab === 'activity'"
+              [class.active]="detailDrawerTab === 'activity'" (click)="detailDrawerTab = 'activity'">
+        <mat-icon>history</mat-icon> Activity
+        <span class="tab-count" *ngIf="selectedRequest.activities?.length">{{ selectedRequest.activities.length }}</span>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      <ng-container *ngIf="detailDrawerTab === 'details'">
+
+      <!-- Status hero -->
+      <div class="status-hero" [class]="'status-hero-'+selectedRequest.status">
+        <mat-icon>{{ statusIcon(selectedRequest.status) }}</mat-icon>
+        <div>
+          <div class="sh-status">{{ stageLabel(selectedRequest) }}</div>
+          <!-- Approval chain display -->
+          <div class="sh-approval-chain">
+            <!-- Step 1: Manager -->
+            <div class="sh-step" [class.done]="selectedRequest.status !== 'pending'"
+                 [class.current]="selectedRequest.status === 'pending'"
+                 [class.skipped]="selectedRequest.leave_type?.skip_manager_approval">
+              <div class="sh-dot">
+                <mat-icon *ngIf="selectedRequest.status !== 'pending' && !selectedRequest.leave_type?.skip_manager_approval">check</mat-icon>
+                <mat-icon *ngIf="selectedRequest.leave_type?.skip_manager_approval">skip_next</mat-icon>
+                <span *ngIf="selectedRequest.status === 'pending' && !selectedRequest.leave_type?.skip_manager_approval">1</span>
+              </div>
+              <div class="sh-step-info">
+                <div class="sh-step-label">Manager</div>
+                <div class="sh-step-sub" *ngIf="selectedRequest.leave_type?.skip_manager_approval" style="color:#f59e0b">Bypassed (sick leave policy)</div>
+                <div class="sh-step-sub" *ngIf="selectedRequest.manager_approved_by">{{ selectedRequest.managerApprover?.name || 'Approved' }}</div>
+              </div>
+            </div>
+            <div class="sh-line" [class.done]="selectedRequest.status !== 'pending'"></div>
+            <!-- Step 2: HR -->
+            <div class="sh-step"
+                 [class.done]="selectedRequest.status === 'approved'"
+                 [class.current]="selectedRequest.status === 'manager_approved'">
+              <div class="sh-dot">
+                <mat-icon *ngIf="selectedRequest.status === 'approved'">check</mat-icon>
+                <span *ngIf="selectedRequest.status !== 'approved'">2</span>
+              </div>
+              <div class="sh-step-info">
+                <div class="sh-step-label">HR</div>
+                <div class="sh-step-sub" *ngIf="selectedRequest.status === 'approved'">{{ selectedRequest.approver?.name || 'Approved' }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="sh-sub" *ngIf="selectedRequest.status==='rejected' && selectedRequest.rejection_reason">
+            Rejected: {{ selectedRequest.rejection_reason }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Details grid -->
+      <div class="detail-grid">
+        <div class="detail-block">
+          <div class="detail-lbl">Leave Type</div>
+          <span class="type-pill"
+            [style.background]="leaveTypeColor(selectedRequest.leave_type?.name)+'22'"
+            [style.color]="leaveTypeColor(selectedRequest.leave_type?.name)">
+            {{ selectedRequest.leave_type?.name }}
+          </span>
+        </div>
+        <div class="detail-block">
+          <div class="detail-lbl">Duration</div>
+          <div class="detail-val">
+            <span class="days-badge" *ngIf="!selectedRequest.leave_type?.is_hourly">{{ selectedRequest.total_days }} days</span>
+            <span class="hours-badge" *ngIf="selectedRequest.leave_type?.is_hourly">
+              <mat-icon>timer</mat-icon>{{ selectedRequest.total_hours }}h
+            </span>
+          </div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-lbl">Date</div>
+          <div class="detail-val">{{ selectedRequest.start_date | date:'EEE, dd MMM yyyy' }}</div>
+        </div>
+        <div class="detail-block" *ngIf="!selectedRequest.leave_type?.is_hourly">
+          <div class="detail-lbl">End Date</div>
+          <div class="detail-val">{{ selectedRequest.end_date | date:'EEE, dd MMM yyyy' }}</div>
+        </div>
+        <div class="detail-block" *ngIf="selectedRequest.leave_type?.is_hourly">
+          <div class="detail-lbl">Time</div>
+          <div class="detail-val time-val">
+            <mat-icon style="font-size:15px;width:15px;height:15px">schedule</mat-icon>
+            {{ selectedRequest.start_time }} – {{ selectedRequest.end_time }}
+          </div>
+        </div>
+        <div class="detail-block reason-block">
+          <div class="detail-lbl"><mat-icon>notes</mat-icon> Reason</div>
+          <div class="detail-val reason-text">{{ selectedRequest.reason }}</div>
+        </div>
+
+        <!-- Annual leave: travel requirements -->
+        <div class="travel-flags" *ngIf="selectedRequest.requires_exit_reentry || selectedRequest.requires_ticket">
+          <div class="tf-title"><mat-icon>card_travel</mat-icon> Travel Services</div>
+          <div class="tf-item" *ngIf="selectedRequest.requires_exit_reentry">
+            <mat-icon>swap_horiz</mat-icon> Exit Re-entry Visa Required
+          </div>
+          <div class="tf-item" *ngIf="selectedRequest.requires_ticket">
+            <mat-icon>flight</mat-icon> Air Ticket Required · {{ selectedRequest.ticket_count || 1 }} ticket(s)
+          </div>
+          <div class="tf-item" *ngFor="let passenger of selectedRequest.ticket_passengers">
+            <mat-icon>person</mat-icon> {{ passenger.passenger_name }} <span class="name-sub">({{ passenger.passenger_type }})</span>
+          </div>
+          <div class="tf-item" *ngIf="selectedRequest.destination_country">
+            <mat-icon>location_on</mat-icon> Destination: <strong>{{ selectedRequest.destination_country }}</strong>
+          </div>
+        </div>
+
+        <!-- Document attachment -->
+        <div class="detail-row" *ngIf="selectedRequest.document_path">
+          <div class="detail-lbl"><mat-icon>attach_file</mat-icon> Attachment</div>
+          <div class="detail-val">
+            <a class="doc-link"
+               [href]="'/storage/' + selectedRequest.document_path"
+               target="_blank" rel="noopener">
+              <mat-icon>open_in_new</mat-icon> View Document
+            </a>
+          </div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-lbl">Submitted</div>
+          <div class="detail-val">{{ selectedRequest.created_at | date:'dd MMM yyyy' }}</div>
+        </div>
+        <div class="detail-block" *ngIf="selectedRequest.approved_at">
+          <div class="detail-lbl">Actioned</div>
+          <div class="detail-val">{{ selectedRequest.approved_at | date:'dd MMM yyyy' }}</div>
+        </div>
+      </div>
+      </ng-container>
+
+      <div class="activity-timeline" *ngIf="detailDrawerTab === 'activity' && selectedRequest.activities?.length">
+        <div class="activity-title">
+          <mat-icon>history</mat-icon>
+          Activity Log
+        </div>
+        <div class="activity-row" *ngFor="let a of selectedRequest.activities">
+          <div class="activity-dot">
+            <mat-icon>{{ activityIcon(a.event) }}</mat-icon>
+          </div>
+          <div class="activity-copy">
+            <div class="activity-main">{{ a.description }}</div>
+            <div class="activity-meta">
+              <span>{{ a.causer_name }}</span>
+              <span *ngIf="activityStatus(a)">{{ activityStatus(a) }}</span>
+              <span>{{ a.created_at | date:'dd MMM yyyy, h:mm a' }}</span>
+            </div>
+            <div class="activity-note" *ngIf="a.notes">{{ a.notes }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="activity-empty" *ngIf="detailDrawerTab === 'activity' && !selectedRequest.activities?.length">
+        <mat-icon>history</mat-icon>
+        <strong>No activity yet</strong>
+        <span>Actions on this request will appear here.</span>
+      </div>
+
+    </div>
+
+    <div class="drawer-footer">
+      <button class="btn-outline" (click)="showDetail=false">Close</button>
+      <button class="row-btn" [matTooltip]="approveLabel(selectedRequest)" *ngIf="canApprove(selectedRequest)"
+              [disabled]="isActionLoading()"
+              [attr.aria-busy]="isActionLoading(selectedRequest, 'approve')"
+              (click)="approve(selectedRequest)">
+        <mat-spinner *ngIf="isActionLoading(selectedRequest, 'approve')" diameter="18"></mat-spinner>
+        <mat-icon *ngIf="!isActionLoading(selectedRequest, 'approve')" style="color:var(--success);font-size:22px">check_circle</mat-icon>
+      </button>
+      <button class="btn-outline" style="color:var(--danger)" *ngIf="canReject(selectedRequest)"
+              [disabled]="isActionLoading()"
+              [attr.aria-busy]="isActionLoading(selectedRequest, 'reject')"
+              (click)="openReject(selectedRequest)">
+        <mat-spinner *ngIf="isActionLoading(selectedRequest, 'reject')" diameter="18"></mat-spinner>
+        <mat-icon *ngIf="!isActionLoading(selectedRequest, 'reject')">cancel</mat-icon>
+        {{ isActionLoading(selectedRequest, 'reject') ? 'Rejecting...' : 'Reject' }}
+      </button>
+      <button class="btn-outline" style="color:var(--text3)"  *ngIf="canCancel(selectedRequest)"
+              [disabled]="isActionLoading()"
+              [attr.aria-busy]="isActionLoading(selectedRequest, 'cancel')"
+              (click)="cancel(selectedRequest)">
+        <mat-spinner *ngIf="isActionLoading(selectedRequest, 'cancel')" diameter="18"></mat-spinner>
+        <mat-icon *ngIf="!isActionLoading(selectedRequest, 'cancel')">block</mat-icon>
+        {{ isActionLoading(selectedRequest, 'cancel') ? 'Cancelling...' : 'Cancel' }}
+      </button>
+    </div>
+  </ng-container>
+</div>
+
+<!-- ── New Request Modal ─────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showNewRequest" (click)="showNewRequest=false"></div>
+<div class="modal-panel" *ngIf="showNewRequest">
+  <div class="modal-hdr">
+    <h3><mat-icon>event_available</mat-icon> New Leave Request</h3>
+    <button class="row-btn" (click)="showNewRequest=false"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+
+    <!-- Leave Type Selector -->
+    <div class="field-group">
+      <label class="field-label">Leave Type <span class="req">*</span></label>
+      <select class="field-select" [(ngModel)]="form.leave_type_id" (change)="onLeaveTypeChange()">
+        <option value="">Select type…</option>
+        <option *ngFor="let t of leaveTypes" [value]="t.id">
+          {{ t.name }}{{ t.is_hourly ? ' (Hourly)' : '' }}
+        </option>
+      </select>
+      <!-- Daily balance hint -->
+      <div class="balance-hint" *ngIf="selectedTypeBalance() && !isHourlyExcuse">
+        <mat-icon>account_balance_wallet</mat-icon>
+        {{ balanceHintLabel() }}:
+        <strong>{{ selectedTypeBalance().remaining_days }}</strong> days
+        <ng-container *ngIf="isAnnualLeave">
+          (
+          <ng-container *ngIf="selectedTypeBalance().carried_forward_days > 0">
+            carry forward {{ selectedTypeBalance().carried_forward_days }} +
+          </ng-container>
+          earned {{ selectedTypeBalance().allocated_days }} - approved taken {{ selectedTypeBalance().used_days }})
+        </ng-container>
+        <ng-container *ngIf="!isAnnualLeave">
+          of {{ selectedTypeBalance().allocated_days }} days
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- ── HOURLY EXCUSE FIELDS ──────────────────────────────────────────── -->
+    <ng-container *ngIf="isHourlyExcuse">
+
+      <!-- Monthly usage banner -->
+      <div class="excuse-usage-card" *ngIf="excuseUsage">
+        <div class="eu-header">
+          <mat-icon>timer</mat-icon>
+          <span>{{ excuseUsage.leave_type || selectedType?.name }} Usage — {{ excuseUsage.month }}</span>
+        </div>
+        <div class="eu-body">
+          <div class="eu-stat">
+            <span class="eu-val" style="color:var(--warning)">{{ excuseUsage.used_hours }}h</span>
+            <span class="eu-lbl">Used this month</span>
+          </div>
+          <ng-container *ngIf="!excuseUsage.is_unlimited">
+            <div class="eu-divider"></div>
+            <div class="eu-stat">
+              <span class="eu-val" style="color:var(--success)">{{ excuseUsage.remaining_hours }}h</span>
+              <span class="eu-lbl">Remaining of {{ excuseUsage.limit_hours }}h</span>
+            </div>
+            <div class="eu-divider"></div>
+            <div class="eu-stat">
+              <span class="eu-val">{{ excuseUsage.limit_hours }}h</span>
+              <span class="eu-lbl">Monthly limit</span>
+            </div>
+            <!-- Progress bar -->
+            <div class="eu-bar-wrap">
+              <div class="eu-bar-fill"
+                [style.width.%]="excuseUsagePercent()"
+                [style.background]="excuseUsage.remaining_hours <= 2 ? 'var(--danger)' : 'var(--accent)'">
+              </div>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="excuseUsage.is_unlimited">
+            <div class="eu-divider"></div>
+            <div class="eu-stat">
+              <span class="eu-val" style="color:var(--accent)">∞</span>
+              <span class="eu-lbl">No monthly limit</span>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+      <div *ngIf="loadingUsage" style="text-align:center;padding:8px">
+        <mat-spinner diameter="20" style="margin:auto"></mat-spinner>
+      </div>
+
+      <!-- Date (single day for excuse) -->
+      <div class="field-group">
+        <label class="field-label">Date <span class="req">*</span></label>
+        <input class="field-input" type="date" [(ngModel)]="form.start_date">
+        <div class="field-hint">Working days only (Sunday – Thursday)</div>
+      </div>
+
+      <!-- Time range -->
+      <div class="two-col">
+        <div class="field-group">
+          <label class="field-label">From <span class="req">*</span></label>
+          <input class="field-input time-input" type="time" [(ngModel)]="form.start_time"
+            min="08:00" max="16:00" step="900">
+          <div class="field-hint">From 08:00</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">To <span class="req">*</span></label>
+          <input class="field-input time-input" type="time" [(ngModel)]="form.end_time"
+            min="08:00" max="16:00" step="900">
+          <div class="field-hint">Up to 16:00</div>
+        </div>
+      </div>
+
+      <!-- Hours preview -->
+      <div class="hours-preview" *ngIf="excuseHoursPreview() > 0">
+        <mat-icon>timer</mat-icon>
+        <strong>{{ excuseHoursPreview() }}</strong> hour{{ excuseHoursPreview() !== 1 ? 's' : '' }}
+        <span style="color:var(--text3);font-size:12px">
+          ({{ form.start_time }} – {{ form.end_time }})
+        </span>
+      </div>
+
+    </ng-container>
+
+    <!-- ── STANDARD LEAVE FIELDS ─────────────────────────────────────────── -->
+    <ng-container *ngIf="!isHourlyExcuse">
+
+      <!-- Half-day toggle -->
+      <div class="half-day-row">
+        <label class="hd-toggle">
+          <input type="checkbox" [(ngModel)]="form.is_half_day" (change)="onHalfDayChange()">
+          <span class="hd-toggle-track"></span>
+          <span class="hd-toggle-label">Half Day</span>
+        </label>
+        <div class="hd-periods" *ngIf="form.is_half_day">
+          <button class="period-btn" [class.active]="form.half_day_period==='morning'"
+                  type="button" (click)="form.half_day_period='morning'">
+            <mat-icon>wb_sunny</mat-icon> Morning
+          </button>
+          <button class="period-btn" [class.active]="form.half_day_period==='afternoon'"
+                  type="button" (click)="form.half_day_period='afternoon'">
+            <mat-icon>nights_stay</mat-icon> Afternoon
+          </button>
+        </div>
+      </div>
+
+      <!-- Date fields -->
+      <div class="two-col">
+        <div class="field-group">
+          <label class="field-label">{{ form.is_half_day ? 'Date' : 'Start Date' }} <span class="req">*</span></label>
+          <input class="field-input" type="date" [(ngModel)]="form.start_date" (change)="onLeaveStartDateChange()">
+        </div>
+        <div class="field-group" *ngIf="!form.is_half_day">
+          <label class="field-label">End Date <span class="req">*</span></label>
+          <input class="field-input" type="date" [(ngModel)]="form.end_date" (change)="onLeaveEndDateChange()">
+        </div>
+      </div>
+
+      <!-- Duration preview -->
+      <div class="days-preview" *ngIf="form.start_date && (form.is_half_day || form.end_date)">
+        <mat-icon>event_available</mat-icon>
+        <ng-container *ngIf="form.is_half_day">
+          <strong>0.5</strong> day &nbsp;·&nbsp; {{ form.half_day_period === 'afternoon' ? 'Afternoon' : 'Morning' }}
+          <span style="color:var(--text3);font-size:11px">&nbsp;· Deducted from annual leave</span>
+        </ng-container>
+        <ng-container *ngIf="!form.is_half_day && workingDaysPreview() > 0">
+          <strong>{{ workingDaysPreview() }}</strong> working days (Sun–Thu)
+          <span *ngIf="formHolidays.length" style="color:var(--text3);font-size:11px">
+            &nbsp;· excluding {{ formHolidays.length }} holiday{{ formHolidays.length === 1 ? '' : 's' }}
+          </span>
+        </ng-container>
+      </div>
+    </ng-container>
+
+
+    <!-- Annual Leave — Exit Re-entry & Ticket (only for annual leave type) -->
+    <div class="annual-options" *ngIf="isAnnualLeave && !isHourlyExcuse && !form.is_half_day">
+      <div class="ao-header">
+        <mat-icon>flight_takeoff</mat-icon>
+        Annual Leave Requirements
+        <span class="ao-header-hint">Select what you need HR to arrange</span>
+      </div>
+
+      <div class="ao-cards">
+        <!-- Exit Re-entry Visa -->
+        <label class="ao-card" [class.ao-selected]="form.requires_exit_reentry">
+          <input type="checkbox" [(ngModel)]="form.requires_exit_reentry">
+          <div class="ao-card-icon"><mat-icon>badge</mat-icon></div>
+          <div class="ao-card-body">
+            <div class="ao-card-title">Exit Re-entry Visa</div>
+            <div class="ao-card-sub">HR will process your visa before departure</div>
+          </div>
+          <div class="ao-card-check" *ngIf="form.requires_exit_reentry">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+        </label>
+
+        <!-- Air Ticket -->
+        <label class="ao-card" [class.ao-selected]="form.requires_ticket">
+          <input type="checkbox" [(ngModel)]="form.requires_ticket" (change)="onTicketRequirementChange()">
+          <div class="ao-card-icon"><mat-icon>airplane_ticket</mat-icon></div>
+          <div class="ao-card-body">
+            <div class="ao-card-title">Is ticket needed?</div>
+            <div class="ao-card-sub">Request your yearly annual ticket entitlement</div>
+          </div>
+          <div class="ao-card-check" *ngIf="form.requires_ticket">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+        </label>
+      </div>
+
+      <div class="ticket-passengers" *ngIf="form.requires_ticket">
+        <div class="ticket-loading" *ngIf="ticketOptionsLoading"><mat-spinner diameter="22"></mat-spinner> Loading ticket eligibility...</div>
+        <ng-container *ngIf="ticketOptions && !ticketOptionsLoading">
+          <div class="ticket-used" *ngIf="ticketOptions.already_used"><mat-icon>error_outline</mat-icon> Ticket entitlement for {{ ticketOptions.year }} has already been used.</div>
+          <div class="passenger-heading">Ticket passengers <span>{{ 1 + (form.ticket_dependent_ids?.length || 0) }} ticket(s)</span></div>
+          <label class="passenger-row selected fixed"><input type="checkbox" checked disabled><mat-icon>person</mat-icon><div><strong>{{ ticketOptions.employee.name }}</strong><small>Employee · Automatically selected</small></div><mat-icon>check_circle</mat-icon></label>
+          <ng-container *ngIf="!ticketOptions.is_saudi">
+            <div class="dependent-limit">Select up to {{ ticketOptions.max_dependents }} dependents.</div>
+            <label class="passenger-row" *ngFor="let d of ticketOptions.dependents" [class.selected]="form.ticket_dependent_ids.includes(d.id)" [class.disabled]="!form.ticket_dependent_ids.includes(d.id) && form.ticket_dependent_ids.length >= ticketOptions.max_dependents">
+              <input type="checkbox" [checked]="form.ticket_dependent_ids.includes(d.id)" [disabled]="!form.ticket_dependent_ids.includes(d.id) && form.ticket_dependent_ids.length >= ticketOptions.max_dependents" (change)="toggleTicketDependent(d.id)">
+              <mat-icon>family_restroom</mat-icon><div><strong>{{ d.full_name }}</strong><small>{{ d.relationship | titlecase }}</small></div><mat-icon *ngIf="form.ticket_dependent_ids.includes(d.id)">check_circle</mat-icon>
+            </label>
+            <div class="dependent-limit" *ngIf="!ticketOptions.dependents.length">No dependents are registered. Contact HR to add dependent details.</div>
+          </ng-container>
+        </ng-container>
+      </div>
+
+      <!-- Destination (shown when either is checked) -->
+      <div class="field-group" *ngIf="form.requires_exit_reentry || form.requires_ticket">
+        <label class="field-label">Destination Country</label>
+        <input class="field-input" [(ngModel)]="form.destination_country"
+               placeholder="e.g. India, Philippines, Egypt…">
+        <div class="field-hint">Where are you travelling to?</div>
+      </div>
+
+      <!-- Auto-request notice -->
+      <div class="ao-notice" *ngIf="form.requires_exit_reentry || form.requires_ticket">
+        <mat-icon>auto_awesome</mat-icon>
+        <div>
+          <strong>Automatic HR request will be created</strong>
+          <span *ngIf="form.requires_exit_reentry"> — Exit re-entry visa</span>
+          <span *ngIf="form.requires_exit_reentry && form.requires_ticket"> and</span>
+          <span *ngIf="form.requires_ticket"> — Air ticket</span>
+          will appear in HR's request queue automatically when you submit.
+        </div>
+      </div>
+    </div>
+
+    <!-- Reason (both types) -->
+    <div class="field-group">
+      <label class="field-label">Reason <span class="req">*</span></label>
+      <textarea class="field-textarea" rows="3" [(ngModel)]="form.reason"
+        [placeholder]="isHourlyExcuse ? 'Brief description of the excuse...' : 'Provide a reason (min 10 characters)...'">
+      </textarea>
+      <div class="char-count" [class.warn]="form.reason.length > 0 && form.reason.length < (isHourlyExcuse ? 5 : 10)">
+        {{ form.reason.length }} chars
+      </div>
+    </div>
+
+    <div class="form-err" *ngIf="formError"><mat-icon>error_outline</mat-icon> {{ formError }}</div>
+  </div>
+    <!-- ── Document upload (shown when leave type requires_document=true) ── -->
+    <div class="field-group doc-upload-group" *ngIf="selectedType?.requires_document">
+      <label class="field-label">
+        Supporting Document <span class="req">*</span>
+        <span class="field-hint-inline"> — PDF, JPG or PNG, max 5 MB</span>
+      </label>
+      <div class="file-drop-zone" [class.has-file]="selectedFile" [class.error]="fileError">
+        <input type="file" #fileInput id="leaveDocInput"
+               accept=".pdf,.jpg,.jpeg,.png"
+               (change)="onFileSelected($event)" style="display:none">
+        <mat-icon>{{ selectedFile ? 'description' : 'cloud_upload' }}</mat-icon>
+        <div *ngIf="!selectedFile">
+          <div class="fdz-label">Drop file here or <a (click)="fileInput.click()" class="fdz-link">browse</a></div>
+          <div class="fdz-hint">PDF, JPG, PNG — max 5 MB</div>
+        </div>
+        <div *ngIf="selectedFile" class="fdz-selected">
+          <span class="fdz-name">{{ selectedFile.name }}</span>
+          <span class="fdz-size">({{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB)</span>
+          <button class="fdz-clear" type="button" (click)="selectedFile=null; fileInput.value=''">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+      <div class="file-error" *ngIf="fileError"><mat-icon>error_outline</mat-icon> {{ fileError }}</div>
+    </div>
+
+    <!-- Optional upload for non-required types -->
+    <div class="field-group doc-upload-group" *ngIf="selectedType && !selectedType.requires_document">
+      <label class="field-label">
+        Attach Document <span class="field-hint-inline">(optional)</span>
+      </label>
+      <div class="file-drop-zone" [class.has-file]="selectedFile">
+        <input type="file" #fileInputOpt id="leaveDocInputOpt"
+               accept=".pdf,.jpg,.jpeg,.png"
+               (change)="onFileSelected($event)" style="display:none">
+        <mat-icon>{{ selectedFile ? 'description' : 'attach_file' }}</mat-icon>
+        <div *ngIf="!selectedFile">
+          <div class="fdz-label"><a (click)="fileInputOpt.click()" class="fdz-link">Click to attach a file</a></div>
+          <div class="fdz-hint">PDF, JPG, PNG — max 5 MB</div>
+        </div>
+        <div *ngIf="selectedFile" class="fdz-selected">
+          <span class="fdz-name">{{ selectedFile.name }}</span>
+          <button class="fdz-clear" type="button" (click)="selectedFile=null; fileInputOpt.value=''">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="showNewRequest=false">Cancel</button>
+    <button class="btn-primary" (click)="submitRequest()" [disabled]="submitting">
+      <mat-icon>{{ submitting ? 'hourglass_empty' : 'send' }}</mat-icon>
+      {{ submitting ? 'Submitting…' : 'Submit Request' }}
+    </button>
+  </div>
+</div>
+
+<!-- ── Reject Modal ──────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showReject" (click)="!isActionLoading(rejectTarget, 'reject') && (showReject=false)"></div>
+<div class="modal-panel" *ngIf="showReject">
+  <div class="modal-hdr">
+    <h3><mat-icon style="color:var(--danger)">cancel</mat-icon> Reject Leave Request</h3>
+    <button class="row-btn" (click)="showReject=false" [disabled]="isActionLoading(rejectTarget, 'reject')"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="reject-info" *ngIf="rejectTarget">
+      <div>{{ rejectTarget.employee?.first_name }} {{ rejectTarget.employee?.last_name }}</div>
+      <div class="name-sub">{{ rejectTarget.leave_type?.name }} · {{ rejectTarget.total_days }} days</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Rejection Reason <span class="req">*</span></label>
+      <textarea class="field-textarea" rows="3" [(ngModel)]="rejectReason"
+        [disabled]="isActionLoading(rejectTarget, 'reject')"
+        placeholder="Provide a clear reason…"></textarea>
+    </div>
+    <div class="form-err" *ngIf="rejectError"><mat-icon>error_outline</mat-icon> {{ rejectError }}</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="showReject=false" [disabled]="isActionLoading(rejectTarget, 'reject')">Cancel</button>
+    <button class="btn-danger" (click)="confirmReject()"
+            [disabled]="!rejectReason.trim() || isActionLoading(rejectTarget, 'reject')"
+            [attr.aria-busy]="isActionLoading(rejectTarget, 'reject')">
+      <mat-spinner *ngIf="isActionLoading(rejectTarget, 'reject')" diameter="18"></mat-spinner>
+      <mat-icon *ngIf="!isActionLoading(rejectTarget, 'reject')">cancel</mat-icon>
+      {{ isActionLoading(rejectTarget, 'reject') ? 'Rejecting...' : 'Reject Request' }}
+    </button>
+  </div>
+</div>
+
+<!-- ── Leave Type Form Modal ─────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showTypeForm" (click)="showTypeForm=false"></div>
+<div class="modal-panel" *ngIf="showTypeForm">
+  <div class="modal-hdr">
+    <h3><mat-icon>tune</mat-icon> {{ typeEditId ? 'Edit' : 'Add' }} Leave Type</h3>
+    <button class="row-btn" (click)="showTypeForm=false"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Name <span class="req">*</span></label>
+        <input class="field-input" [(ngModel)]="typeForm.name" placeholder="e.g. Annual Leave">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Code <span class="req">*</span></label>
+        <input class="field-input" [(ngModel)]="typeForm.code" placeholder="e.g. AL" style="text-transform:uppercase">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Days Allowed / Year</label>
+        <input class="field-input" type="number" [(ngModel)]="typeForm.days_allowed" min="0">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Carry Forward Rule</label>
+        <select class="field-input" [(ngModel)]="typeForm.carry_forward_all" [disabled]="!typeForm.carry_forward">
+          <option [ngValue]="true">All</option>
+          <option [ngValue]="false">Number</option>
+        </select>
+        <input *ngIf="!typeForm.carry_forward_all" class="field-input" type="number" aria-label="Maximum carry forward days" [(ngModel)]="typeForm.max_carry_forward" min="0" max="65535" step="1" [disabled]="!typeForm.carry_forward">
+        <small>Carried forward days are added to next year's allowance and are used before it.</small>
+      </div>
+    </div>
+    <div class="checkbox-row">
+      <label class="chk-label"><input type="checkbox" [(ngModel)]="typeForm.is_paid"> Paid Leave</label>
+      <label class="chk-label"><input type="checkbox" [(ngModel)]="typeForm.carry_forward"> Allow Carry Forward</label>
+      <label class="chk-label"><input type="checkbox" [(ngModel)]="typeForm.requires_document"> Requires Document</label>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Description</label>
+      <textarea class="field-textarea" rows="2" [(ngModel)]="typeForm.description"></textarea>
+    </div>
+    <div class="form-err" *ngIf="typeError"><mat-icon>error_outline</mat-icon> {{ typeError }}</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="showTypeForm=false">Cancel</button>
+    <button class="btn-primary" (click)="saveType()" [disabled]="typeSaving">
+      <mat-icon>{{ typeSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
+      {{ typeSaving ? 'Saving…' : 'Save Type' }}
+    </button>
+  </div>
+</div>
+
+<!-- ── Add Holiday Modal ─────────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showHolidayForm" (click)="closeHolidayForm()"></div>
+<div class="modal-panel" *ngIf="showHolidayForm">
+  <div class="modal-hdr">
+    <h3><mat-icon>star</mat-icon> {{ holidayEditId ? 'Edit' : 'Add' }} Holiday</h3>
+    <button class="row-btn" (click)="closeHolidayForm()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="field-group">
+      <label class="field-label">Holiday Name <span class="req">*</span></label>
+      <input class="field-input" [(ngModel)]="holidayForm.name" placeholder="e.g. National Day">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Start Date <span class="req">*</span></label>
+      <input class="field-input" type="date" [(ngModel)]="holidayForm.date">
+    </div>
+    <div class="field-group">
+      <label class="field-label">End Date</label>
+      <input class="field-input" type="date" [(ngModel)]="holidayForm.end_date">
+    </div>
+    <label class="chk-label"><input type="checkbox" [(ngModel)]="holidayForm.is_recurring"> Recurring annually</label>
+    <div class="form-err" *ngIf="holidayError"><mat-icon>error_outline</mat-icon> {{ holidayError }}</div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="closeHolidayForm()">Cancel</button>
+    <button class="btn-primary" (click)="saveHoliday()" [disabled]="holidaySaving">
+      <mat-icon>save</mat-icon> Save Holiday
+    </button>
+  </div>
+</div>
+
+<!-- DEPARTMENT VISIBILITY PANEL -->
+<div class="drawer-backdrop" *ngIf="showVisibilityPanel" (click)="showVisibilityPanel=false"></div>
+<div class="detail-drawer limits-drawer" [class.open]="showVisibilityPanel">
+  <div class="drawer-hdr">
+    <div class="drawer-hdr-left">
+      <div class="stat-icon" style="background:rgba(16,185,129,.12);width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <mat-icon style="color:var(--success)">visibility</mat-icon>
+      </div>
+      <div>
+        <div class="drawer-name">Department Visibility</div>
+        <div class="drawer-sub" *ngIf="visibilityLeaveType">
+          {{ visibilityLeaveType.name }} &nbsp;·&nbsp; Choose departments that can apply
+        </div>
+      </div>
+    </div>
+    <button class="row-btn" (click)="showVisibilityPanel=false"><mat-icon>close</mat-icon></button>
+  </div>
+
+  <div class="drawer-body">
+    <div *ngIf="visibilityLoading" style="display:flex;justify-content:center;padding:32px">
+      <mat-spinner diameter="28"></mat-spinner>
+    </div>
+
+    <ng-container *ngIf="!visibilityLoading">
+      <div class="limits-help">
+        <mat-icon>info_outline</mat-icon>
+        <span>Departments set to <strong>Visible</strong> can choose this leave type while applying.
+          Departments set to <strong>Hidden</strong> will not see it in the apply form.</span>
+      </div>
+
+      <div class="limit-rows">
+        <div class="limit-row" *ngFor="let row of deptVisibility">
+          <div class="limit-dept">
+            <div class="code-chip">{{ row.department_code }}</div>
+            <div>
+              <div class="name-main">{{ row.department_name }}</div>
+              <div class="name-sub" *ngIf="row.is_visible" style="color:var(--success)">Visible during leave apply</div>
+              <div class="name-sub" *ngIf="!row.is_visible" style="color:var(--danger)">Hidden during leave apply</div>
+            </div>
+          </div>
+
+          <div class="limit-controls">
+            <div class="limit-toggle visibility-toggle" [class.is-limited]="row.is_visible" (click)="toggleDeptVisibility(row)">
+              <div class="toggle-knob"></div>
+              <span class="toggle-label">{{ row.is_visible ? 'Visible' : 'Hidden' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="limits-summary">
+        <div class="ls-item">
+          <span class="ls-val" style="color:var(--success)">{{ visibleDepartmentCount() }}</span>
+          <span class="ls-lbl">Departments visible</span>
+        </div>
+        <div class="ls-sep"></div>
+        <div class="ls-item">
+          <span class="ls-val" style="color:var(--danger)">{{ hiddenDepartmentCount() }}</span>
+          <span class="ls-lbl">Departments hidden</span>
+        </div>
+      </div>
+
+      <div class="form-err" *ngIf="visibilityError">
+        <mat-icon>error_outline</mat-icon> {{ visibilityError }}
+      </div>
+      <div class="form-success" *ngIf="visibilityMessage">
+        <mat-icon>check_circle</mat-icon> {{ visibilityMessage }}
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="drawer-footer">
+    <button class="btn-outline" (click)="showVisibilityPanel=false">Close</button>
+    <div *ngIf="visibilityDirty" class="dirty-badge">
+      <mat-icon>edit</mat-icon> Unsaved changes
+    </div>
+    <button class="btn-primary" (click)="saveVisibility()" [disabled]="visibilitySaving || !visibilityDirty">
+      <mat-icon>{{ visibilitySaving ? 'hourglass_empty' : 'save' }}</mat-icon>
+      {{ visibilitySaving ? 'Saving...' : 'Save Visibility' }}
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- DEPARTMENT LIMITS PANEL (slide-in drawer)                               -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="drawer-backdrop" *ngIf="showLimitsPanel" (click)="showLimitsPanel=false"></div>
+<div class="detail-drawer limits-drawer" [class.open]="showLimitsPanel">
+
+  <div class="drawer-hdr">
+    <div class="drawer-hdr-left">
+      <div class="stat-icon" style="background:rgba(99,102,241,.12);width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <mat-icon style="color:var(--accent2)">tune</mat-icon>
+      </div>
+      <div>
+        <div class="drawer-name">Department Limits</div>
+        <div class="drawer-sub" *ngIf="limitsLeaveType">
+          {{ limitsLeaveType.name }} &nbsp;·&nbsp; Monthly hour caps per department
+        </div>
+      </div>
+    </div>
+    <button class="row-btn" (click)="showLimitsPanel=false"><mat-icon>close</mat-icon></button>
+  </div>
+
+  <div class="drawer-body">
+
+    <!-- Loading -->
+    <div *ngIf="limitsLoading" style="display:flex;justify-content:center;padding:32px">
+      <mat-spinner diameter="28"></mat-spinner>
+    </div>
+
+    <ng-container *ngIf="!limitsLoading">
+
+      <!-- Legend / help text -->
+      <div class="limits-help">
+        <mat-icon>info_outline</mat-icon>
+        <span>Toggle a department to <strong>Limited</strong> and set its monthly cap.
+          Set to <strong>Unlimited</strong> to make that department an exception.</span>
+      </div>
+
+      <!-- Department rows -->
+      <div class="limit-rows">
+        <div class="limit-row" *ngFor="let row of deptLimits">
+
+          <div class="limit-dept">
+            <div class="code-chip">{{ row.department_code }}</div>
+            <div>
+              <div class="name-main">{{ row.department_name }}</div>
+              <div class="name-sub" *ngIf="!row.is_limited" style="color:var(--accent2)">
+                No cap — unlimited hours
+              </div>
+              <div class="name-sub" *ngIf="row.is_limited" style="color:var(--warning)">
+                Capped at {{ row.monthly_hours_limit }}h / month
+              </div>
+            </div>
+          </div>
+
+          <div class="limit-controls">
+            <!-- Toggle switch -->
+            <div class="limit-toggle" [class.is-limited]="row.is_limited" (click)="toggleDeptLimit(row)">
+              <div class="toggle-knob"></div>
+              <span class="toggle-label">{{ row.is_limited ? 'Limited' : 'Unlimited' }}</span>
+            </div>
+
+            <!-- Hours input (only when limited) -->
+            <div class="limit-hours-wrap" *ngIf="row.is_limited">
+              <input class="limit-hours-input" type="number"
+                [(ngModel)]="row.monthly_hours_limit"
+                (ngModelChange)="onLimitHoursChange(row)"
+                min="0.5" max="200" step="0.5"
+                placeholder="Hours">
+              <span class="limit-hours-unit">h/mo</span>
+            </div>
+            <div class="limit-unlimited-badge" *ngIf="!row.is_limited">
+              <mat-icon>all_inclusive</mat-icon>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="limits-summary">
+        <div class="ls-item">
+          <span class="ls-val" style="color:var(--warning)">
+            {{ deptLimits | limitedCount }}
+          </span>
+          <span class="ls-lbl">Departments limited</span>
+        </div>
+        <div class="ls-sep"></div>
+        <div class="ls-item">
+          <span class="ls-val" style="color:var(--accent2)">
+            {{ deptLimits.length - (deptLimits | limitedCount) }}
+          </span>
+          <span class="ls-lbl">Departments unlimited</span>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="form-err" *ngIf="limitsError">
+        <mat-icon>error_outline</mat-icon> {{ limitsError }}
+      </div>
+
+    </ng-container>
+  </div>
+
+  <div class="drawer-footer">
+    <button class="btn-outline" (click)="showLimitsPanel=false">Close</button>
+    <div *ngIf="limitsDirty" class="dirty-badge">
+      <mat-icon>edit</mat-icon> Unsaved changes
+    </div>
+    <button class="btn-primary" (click)="saveLimits()" [disabled]="limitsSaving || !limitsDirty">
+      <mat-icon>{{ limitsSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
+      {{ limitsSaving ? 'Saving…' : 'Save Limits' }}
+    </button>
+  </div>
+
+</div>
