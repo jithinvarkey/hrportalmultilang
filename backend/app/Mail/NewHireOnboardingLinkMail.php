@@ -4,14 +4,14 @@ namespace App\Mail;
 
 use App\Models\Employee;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 
-class NewHireOnboardingLinkMail extends Mailable
+class NewHireOnboardingLinkMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
+    /** @param string|null $expiresAt link expiry as a parseable date-time (ISO 8601); formatted in the recipient's language */
     public function __construct(
         public Employee $employee,
         public string $onboardingUrl,
@@ -24,7 +24,7 @@ class NewHireOnboardingLinkMail extends Mailable
 
     public function build(): self
     {
-        $mail = $this->subject('Complete your employee onboarding details')
+        $mail = $this->subject(__('mail_onboarding.link.subject'))
             ->view('emails.new-hire-onboarding-link');
 
         foreach ($this->attachmentsMeta as $attachment) {

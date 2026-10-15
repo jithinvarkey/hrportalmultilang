@@ -73,7 +73,7 @@ class LegacyMigrationService
                         $moduleSummary['skipped']++;
                         $moduleSummary['skipped_rows'][] = [
                             'row' => $line,
-                            'message' => 'Empty row.',
+                            'message' => __('Empty row.'),
                             'data' => $this->publicRow($row),
                         ];
                         continue;
@@ -93,7 +93,7 @@ class LegacyMigrationService
                         $moduleSummary['skipped']++;
                         $skippedRow = [
                             'row' => $line,
-                            'message' => $this->skipReason ?: 'Skipped because no migration change was needed.',
+                            'message' => $this->skipReason ?: __('Skipped because no migration change was needed.'),
                             'data' => $this->publicRow($row),
                         ];
                         $moduleSummary['skipped_rows'][] = $skippedRow;
@@ -150,14 +150,14 @@ class LegacyMigrationService
             return $this->readXlsx($file->getRealPath(), $scope);
         }
 
-        throw new \RuntimeException('Unsupported file type. Upload CSV or Excel file.');
+        throw new \RuntimeException(__('Unsupported file type. Upload CSV or Excel file.'));
     }
 
     private function readCsv(string $path): array
     {
         $handle = fopen($path, 'r');
         if (!$handle) {
-            throw new \RuntimeException('Unable to read uploaded CSV file.');
+            throw new \RuntimeException(__('Unable to read uploaded CSV file.'));
         }
 
         $headers = null;
@@ -187,12 +187,12 @@ class LegacyMigrationService
     private function readXlsx(string $path, string $scope): array
     {
         if (!class_exists(ZipArchive::class)) {
-            throw new \RuntimeException('Excel import requires PHP ZipArchive. CSV upload is still supported.');
+            throw new \RuntimeException(__('Excel import requires PHP ZipArchive. CSV upload is still supported.'));
         }
 
         $zip = new ZipArchive();
         if ($zip->open($path) !== true) {
-            throw new \RuntimeException('Unable to read uploaded Excel file.');
+            throw new \RuntimeException(__('Unable to read uploaded Excel file.'));
         }
 
         $sharedStrings = $this->readSharedStrings($zip);
@@ -343,7 +343,7 @@ class LegacyMigrationService
             'leave_records' => $this->leaveRecord($row),
             'loan_records' => $this->loanRecord($row),
             'documents' => $this->document($row),
-            default => throw new \InvalidArgumentException('Unknown migration module.'),
+            default => throw new \InvalidArgumentException(__('Unknown migration module.')),
         };
     }
 
@@ -362,7 +362,7 @@ class LegacyMigrationService
         };
         foreach ($required as $field) {
             if (($row[$field] ?? '') === '') {
-                throw new \InvalidArgumentException("Missing required field: {$field}");
+                throw new \InvalidArgumentException(__('Missing required field: :field', ['field' => $field]));
             }
         }
 
@@ -543,11 +543,11 @@ class LegacyMigrationService
         }
 
         if ((int) $employee->id === (int) $manager->id) {
-            throw new \InvalidArgumentException('Employee cannot be their own manager.');
+            throw new \InvalidArgumentException(__('Employee cannot be their own manager.'));
         }
 
         if ($this->managerAssignmentCreatesCycle($employee, $manager)) {
-            throw new \InvalidArgumentException('Manager assignment would create a reporting cycle.');
+            throw new \InvalidArgumentException(__('Manager assignment would create a reporting cycle.'));
         }
 
         if ((int) $employee->manager_id === (int) $manager->id) {
@@ -569,7 +569,7 @@ class LegacyMigrationService
         $employee = $this->employeeByCodeOrEmail($employeeCode, $employeeEmail);
         if (!$employee) {
             $identifier = $employeeEmail ? "{$employeeCode} / {$employeeEmail}" : $employeeCode;
-            $this->skipReason = "Employee not found for code/email [{$identifier}].";
+            $this->skipReason = __('Employee not found for code/email [:code].', ['code' => $identifier]);
             Log::warning('Legacy leave record skipped: employee not found.', [
                 'employee_code' => $employeeCode,
                 'employee_email' => $employeeEmail,
@@ -588,7 +588,7 @@ class LegacyMigrationService
             $startDate = $endDate;
         }
         if (!$startDate) {
-            throw new \InvalidArgumentException('Missing from/start date.');
+            throw new \InvalidArgumentException(__('Missing from/start date.'));
         }
         if (!$endDate || strcmp($endDate, $startDate) < 0) {
             $endDate = $startDate;
@@ -660,7 +660,7 @@ class LegacyMigrationService
             $employeeCode = $this->cleanLegacyValue($row['employee_code'] ?? null);
             $employeeEmail = $this->cleanLegacyValue($row['email'] ?? null);
             $identifier = $employeeEmail ? "{$employeeCode} / {$employeeEmail}" : $employeeCode;
-            $this->skipReason = "Employee not found for code/email [{$identifier}].";
+            $this->skipReason = __('Employee not found for code/email [:code].', ['code' => $identifier]);
             Log::warning('Legacy loan record skipped: employee not found.', [
                 'employee_code' => $employeeCode,
                 'employee_email' => $employeeEmail,
@@ -732,7 +732,7 @@ class LegacyMigrationService
         $title = trim((string) $row['document_name']);
 
         if ($legacyId && Policy::where('legacy_document_id', $legacyId)->exists()) {
-            $this->skipReason = "Legacy document {$legacyId} has already been migrated.";
+            $this->skipReason = __('Legacy document :id has already been migrated.', ['id' => $legacyId]);
             return 'skipped';
         }
 
@@ -742,7 +742,7 @@ class LegacyMigrationService
         $stream = fopen($source, 'rb');
         if (!$stream || !Storage::disk('local')->put($destination, $stream)) {
             if (is_resource($stream)) fclose($stream);
-            throw new \RuntimeException("Unable to copy source file [{$originalName}] into document storage.");
+            throw new \RuntimeException(__('Unable to copy source file [:file] into document storage.', ['file' => $originalName]));
         }
         fclose($stream);
 
@@ -781,7 +781,7 @@ class LegacyMigrationService
 
         if (!unlink($source)) {
             Storage::disk('local')->delete($destination);
-            throw new \RuntimeException("Document was copied but the source file could not be removed: {$originalName}");
+            throw new \RuntimeException(__('Document was copied but the source file could not be removed: :file', ['file' => $originalName]));
         }
 
         return 'success';
@@ -792,14 +792,14 @@ class LegacyMigrationService
         $folder = trim((string) $folder);
         if ($folder === '') {
             if ($scope === 'documents') {
-                throw new \InvalidArgumentException('Source document folder is required for document migration.');
+                throw new \InvalidArgumentException(__('Source document folder is required for document migration.'));
             }
             return null;
         }
 
         $resolved = realpath($folder);
         if (!$resolved || !is_dir($resolved) || !is_readable($resolved) || !is_writable($resolved)) {
-            throw new \InvalidArgumentException('Source document folder does not exist or is not readable and writable by the server.');
+            throw new \InvalidArgumentException(__('Source document folder does not exist or is not readable and writable by the server.'));
         }
         return rtrim($resolved, DIRECTORY_SEPARATOR);
     }
@@ -807,16 +807,16 @@ class LegacyMigrationService
     private function documentSourcePath(string $relativeName): string
     {
         if (!$this->documentSourceFolder) {
-            throw new \InvalidArgumentException('Source document folder is required when the migration file contains Documents.');
+            throw new \InvalidArgumentException(__('Source document folder is required when the migration file contains Documents.'));
         }
         $relativeName = trim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativeName));
         if ($relativeName === '' || preg_match('/^(?:[A-Za-z]:|[\\\\\/])/', $relativeName)) {
-            throw new \InvalidArgumentException('file_name must be a relative path inside the source document folder.');
+            throw new \InvalidArgumentException(__('file_name must be a relative path inside the source document folder.'));
         }
         $resolved = realpath($this->documentSourceFolder . DIRECTORY_SEPARATOR . $relativeName);
         $root = strtolower($this->documentSourceFolder . DIRECTORY_SEPARATOR);
         if (!$resolved || !is_file($resolved) || !str_starts_with(strtolower($resolved), $root)) {
-            throw new \InvalidArgumentException("Source document not found inside the selected folder: {$relativeName}");
+            throw new \InvalidArgumentException(__('Source document not found inside the selected folder: :file', ['file' => $relativeName]));
         }
         return $resolved;
     }
@@ -825,12 +825,12 @@ class LegacyMigrationService
     {
         $files = json_decode(trim($json), true);
         if (!is_array($files) || count($files) !== 1 || !is_array($files[0])) {
-            throw new \InvalidArgumentException('file_name must contain one valid legacy file JSON object.');
+            throw new \InvalidArgumentException(__('file_name must contain one valid legacy file JSON object.'));
         }
         $newName = trim((string) ($files[0]['new_name'] ?? ''));
         $originalName = trim((string) ($files[0]['original_name'] ?? ''));
         if ($newName === '') {
-            throw new \InvalidArgumentException('The file_name JSON is missing new_name.');
+            throw new \InvalidArgumentException(__('The file_name JSON is missing new_name.'));
         }
         return [
             'new_name' => $newName,
@@ -1166,7 +1166,7 @@ class LegacyMigrationService
             return $employee;
         }
 
-        throw new \InvalidArgumentException("Employee not found for code/email [{$code}].");
+        throw new \InvalidArgumentException(__('Employee not found for code/email [:code].', ['code' => $code]));
     }
 
     private function employeeByCodeOrEmail(?string $code, ?string $email): ?Employee
@@ -1199,7 +1199,7 @@ class LegacyMigrationService
         $name = $this->cleanLegacyValue($name);
 
         if (!$code && !$email && !$name) {
-            throw new \InvalidArgumentException("Missing {$label} empnum/email/name.");
+            throw new \InvalidArgumentException(__('Missing :label empnum/email/name.', ['label' => __($label)]));
         }
 
         $byCode = $code ? Employee::whereIn('employee_code', array_values(array_unique(array_filter([$formattedCode, $code]))))->first() : null;
@@ -1207,20 +1207,20 @@ class LegacyMigrationService
         $byName = $name ? $this->findEmployeeByLegacyName($name, $label) : null;
 
         if ($byCode && $byEmail && (int) $byCode->id !== (int) $byEmail->id) {
-            throw new \InvalidArgumentException("Conflicting {$label} empnum/email identify different employees.");
+            throw new \InvalidArgumentException(__('Conflicting :label empnum/email identify different employees.', ['label' => __($label)]));
         }
         if ($byCode && $byName && (int) $byCode->id !== (int) $byName->id) {
-            throw new \InvalidArgumentException("Conflicting {$label} empnum/name identify different employees.");
+            throw new \InvalidArgumentException(__('Conflicting :label empnum/name identify different employees.', ['label' => __($label)]));
         }
         if ($byEmail && $byName && (int) $byEmail->id !== (int) $byName->id) {
-            throw new \InvalidArgumentException("Conflicting {$label} email/name identify different employees.");
+            throw new \InvalidArgumentException(__('Conflicting :label email/name identify different employees.', ['label' => __($label)]));
         }
 
         $employee = $byCode ?: $byEmail ?: $byName;
 
         if (!$employee && !$allowMissing) {
             $identifier = $code ?: $email ?: $name;
-            throw new \InvalidArgumentException(ucfirst($label) . " not found: {$identifier}");
+            throw new \InvalidArgumentException(__(':Label not found: :identifier', ['label' => __($label), 'identifier' => $identifier]));
         }
 
         return $employee;
@@ -1236,7 +1236,7 @@ class LegacyMigrationService
             ->values();
 
         if ($matches->count() > 1) {
-            throw new \InvalidArgumentException("Ambiguous {$label} name: {$name}");
+            throw new \InvalidArgumentException(__('Ambiguous :label name: :name', ['label' => __($label), 'name' => $name]));
         }
 
         return $matches->first();

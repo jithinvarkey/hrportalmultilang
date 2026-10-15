@@ -11,7 +11,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
-class InterviewInviteMail extends Mailable
+class InterviewInviteMail extends BaseMailable
 {
     use Queueable;
 
@@ -22,10 +22,10 @@ class InterviewInviteMail extends Mailable
         $application = $this->interview->application;
         $posting = $this->interview->application?->jobPosting;
         return new Envelope(
-            subject: 'Interview Invitation — '
-                . ($application?->applicant_name ?? 'Candidate')
-                . ' — '
-                . ($posting?->title ?? 'Position at Diamond Insurance Broker')
+            subject: __('mail_recruitment.interview.subject', [
+                'name'     => $application?->applicant_name ?: __('mail_recruitment.candidate'),
+                'position' => $posting?->title ?? __('mail_recruitment.position_fallback', ['company' => __('mail.company')]),
+            ])
         );
     }
 
@@ -48,11 +48,14 @@ class InterviewInviteMail extends Mailable
         $posting = $application?->jobPosting;
         $start = $this->interview->scheduled_at;
         $end = $start?->copy()->addMinutes((int) ($this->interview->duration_minutes ?: 60));
-        $summary = 'Interview: '
-            . ($application?->applicant_name ?? 'Candidate')
-            . ' — '
-            . ($posting?->title ?? 'Candidate Interview');
-        $description = trim('Interview with ' . ($application?->applicant_name ?? 'candidate') . ' for ' . ($posting?->title ?? 'the applied position') . '.');
+        $summary = __('mail_recruitment.interview.ics_summary', [
+            'name'     => $application?->applicant_name ?: __('mail_recruitment.candidate'),
+            'position' => $posting?->title ?? __('mail_recruitment.interview.ics_position'),
+        ]);
+        $description = trim(__('mail_recruitment.interview.ics_description', [
+            'name'     => $application?->applicant_name ?: __('mail_recruitment.interview.ics_candidate'),
+            'position' => $posting?->title ?? __('mail_recruitment.interview.ics_applied'),
+        ]));
         $uid = 'interview-' . $this->interview->id . '@' . parse_url(config('app.url'), PHP_URL_HOST);
 
         $lines = [
@@ -75,11 +78,11 @@ class InterviewInviteMail extends Mailable
             'CLASS:PUBLIC',
             'PRIORITY:5',
             'X-MICROSOFT-CDO-BUSYSTATUS:BUSY',
-            'ORGANIZER;CN=HR Team:MAILTO:' . config('mail.from.address'),
+            'ORGANIZER;CN=' . $this->escapeCalendarText(__('mail_recruitment.interview.ics_organizer')) . ':MAILTO:' . config('mail.from.address'),
         ];
 
         if ($application?->applicant_email) {
-            $lines[] = $this->attendeeLine($application->applicant_name ?: 'Candidate', $application->applicant_email, true);
+            $lines[] = $this->attendeeLine($application->applicant_name ?: __('mail_recruitment.candidate'), $application->applicant_email, true);
         }
 
         foreach ($this->interviewerEmployees as $employee) {

@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["ng", "serve", "--proxy-config", "proxy.conf.json", "--port", "4200"],
+      "cwd": "frontend",
+      "port": 4200
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "E:/Xampp_new/php/php.exe",
+      "runtimeArgs": ["artisan", "serve", "--port", "8090"],
+      "cwd": "backend",
+      "port": 8090
+    }
+  ]
+}

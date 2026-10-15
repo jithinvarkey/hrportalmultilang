@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { ReactiveFormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { ContractRenewalsComponent } from './contract-renewals.component';
@@ -22,7 +23,7 @@ describe('ContractRenewalsComponent — document upload', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       declarations: [ContractRenewalsComponent],
-      imports: [HttpClientTestingModule, ReactiveFormsModule],
+      imports: [HttpClientTestingModule, ReactiveFormsModule, TranslateModule.forRoot()],
       providers: [{ provide: AuthService, useValue: authStub }],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -83,7 +84,7 @@ describe('ContractRenewalsComponent — document upload', () => {
     flushInit();
     const bad = { files: [fileOf('x.txt', 'text/plain')], value: 'x' } as any;
     component.onRowFileSelected({ target: bad } as unknown as Event, { id: 9 } as any);
-    expect(component.errorMsg).toContain('PDF');
+    expect(component.errorMsg).toContain('FILE_TYPE');
     httpMock.expectNone('/api/v1/contracts/renewals/9/document');
   });
 

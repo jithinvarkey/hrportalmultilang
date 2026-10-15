@@ -3,11 +3,11 @@
 namespace App\Mail;
 
 use App\Models\Employee;
+use App\Support\Locale\LocalName;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class NewHireItNotificationMail extends Mailable
+class NewHireItNotificationMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
@@ -17,7 +17,7 @@ class NewHireItNotificationMail extends Mailable
 
     public function build(): self
     {
-        return $this->subject('New Hire Onboarding Submitted - ' . $this->employee->full_name)
+        return $this->subject(__('mail_onboarding.it.subject', ['name' => LocalName::employee($this->employee)]))
             ->view('emails.new-hire-it-notification');
     }
 }

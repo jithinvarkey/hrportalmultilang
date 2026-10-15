@@ -114,7 +114,7 @@ class PerformanceController extends Controller
     public function initiate(Request $request, int $id): JsonResponse
     {
         if (!$this->isHRAdmin()) {
-            return response()->json(['message' => 'Only HR can initiate a cycle.'], 403);
+            return response()->json(['message' => __('Only HR can initiate a cycle.')], 403);
         }
 
         $cycle = PerformanceCycle::findOrFail($id);
@@ -138,7 +138,7 @@ class PerformanceController extends Controller
 
         $cycle->update(['status' => 'active']);
         return response()->json([
-            'message' => "Cycle initiated. {$created} review records created.",
+            'message' => __('Cycle initiated. :count review records created.', ['count' => $created]),
             'cycle'   => $cycle->fresh(),
         ]);
     }
@@ -154,7 +154,7 @@ class PerformanceController extends Controller
 
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return response()->json(['message' => 'No employee record linked.'], 422);
+            return response()->json(['message' => __('No employee record linked.')], 422);
         }
 
         $review = PerformanceReview::where('id', $reviewId)
@@ -162,7 +162,7 @@ class PerformanceController extends Controller
             ->firstOrFail();
 
         if ($review->status === 'finalized') {
-            return response()->json(['message' => 'Review is already finalized.'], 422);
+            return response()->json(['message' => __('Review is already finalized.')], 422);
         }
 
         $review->update([
@@ -172,14 +172,14 @@ class PerformanceController extends Controller
             'status'         => 'self_submitted',
         ]);
 
-        return response()->json(['message' => 'Self assessment submitted.', 'review' => $review->fresh()]);
+        return response()->json(['message' => __('Self assessment submitted.'), 'review' => $review->fresh()]);
     }
 
     // ── Manager Review ────────────────────────────────────────────────────
     public function managerReview(Request $request, int $reviewId): JsonResponse
     {
         if (!$this->isHRAdmin() && !in_array('department_manager', $this->userRoles())) {
-            return response()->json(['message' => 'Only managers and HR can submit manager reviews.'], 403);
+            return response()->json(['message' => __('Only managers and HR can submit manager reviews.')], 403);
         }
 
         $request->validate([
@@ -191,7 +191,7 @@ class PerformanceController extends Controller
         $review = PerformanceReview::findOrFail($reviewId);
 
         if (!in_array($review->status, ['self_submitted', 'pending'])) {
-            return response()->json(['message' => 'Review is not ready for manager assessment.'], 422);
+            return response()->json(['message' => __('Review is not ready for manager assessment.')], 422);
         }
 
         $review->update([
@@ -202,14 +202,14 @@ class PerformanceController extends Controller
             'status'            => 'manager_reviewed',
         ]);
 
-        return response()->json(['message' => 'Manager review submitted.', 'review' => $review->fresh(['employee', 'reviewer'])]);
+        return response()->json(['message' => __('Manager review submitted.'), 'review' => $review->fresh(['employee', 'reviewer'])]);
     }
 
     // ── Finalize ──────────────────────────────────────────────────────────
     public function finalize(Request $request, int $reviewId): JsonResponse
     {
         if (!$this->isHRAdmin()) {
-            return response()->json(['message' => 'Only HR can finalize reviews.'], 403);
+            return response()->json(['message' => __('Only HR can finalize reviews.')], 403);
         }
 
         $request->validate([
@@ -229,7 +229,7 @@ class PerformanceController extends Controller
             'status'           => 'finalized',
         ]);
 
-        return response()->json(['message' => 'Review finalized.', 'review' => $review->fresh(['employee', 'cycle'])]);
+        return response()->json(['message' => __('Review finalized.'), 'review' => $review->fresh(['employee', 'cycle'])]);
     }
 
     // ── KPIs ──────────────────────────────────────────────────────────────
@@ -264,7 +264,7 @@ class PerformanceController extends Controller
     public function deleteKpi(int $id): JsonResponse
     {
         Kpi::findOrFail($id)->delete();
-        return response()->json(['message' => 'KPI deleted.']);
+        return response()->json(['message' => __('KPI deleted.')]);
     }
 
     // ── Employee report ───────────────────────────────────────────────────

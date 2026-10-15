@@ -2,15 +2,15 @@
 
   <div class="page-hdr">
     <div>
-      <h1 class="page-title">Administration</h1>
-      <p class="page-sub">Users · Roles · Permissions · Access Control</p>
+      <h1 class="page-title">{{ 'ADMIN.TITLE' | translate }}</h1>
+      <p class="page-sub">{{ 'ADMIN.SUBTITLE' | translate }}</p>
     </div>
   </div>
 
   <!-- Tabs -->
-  <div class="main-tabs">
-    <button *ngFor="let t of tabs" class="main-tab" [class.active]="activeTab===t.id" (click)="switchTab(t.id)">
-      <mat-icon>{{ t.icon }}</mat-icon>{{ t.label }}
+  <div class="main-tabs" role="tablist" [attr.aria-label]="'ADMIN.TABS_ARIA' | translate">
+    <button *ngFor="let t of tabs" class="main-tab" role="tab" [attr.aria-selected]="activeTab===t.id" [class.active]="activeTab===t.id" (click)="switchTab(t.id)">
+      <mat-icon>{{ t.icon }}</mat-icon>{{ t.label | translate }}
     </button>
   </div>
 
@@ -26,47 +26,47 @@
       <div class="ov-kpi" style="--c:#3b82f6">
         <mat-icon>people</mat-icon>
         <div class="ov-kpi-val">{{ overview.total_users || 0 }}</div>
-        <div class="ov-kpi-lbl">Total Users</div>
+        <div class="ov-kpi-lbl">{{ 'ADMIN.OVERVIEW.TOTAL_USERS' | translate }}</div>
       </div>
       <div class="ov-kpi" style="--c:#10b981">
         <mat-icon>how_to_reg</mat-icon>
         <div class="ov-kpi-val">{{ overview.total_active_employees || 0 }}</div>
-        <div class="ov-kpi-lbl">Active Employees</div>
+        <div class="ov-kpi-lbl">{{ 'ADMIN.OVERVIEW.ACTIVE_EMPLOYEES' | translate }}</div>
       </div>
       <div class="ov-kpi" style="--c:#6366f1">
         <mat-icon>security</mat-icon>
         <div class="ov-kpi-val">{{ overview.total_roles || 0 }}</div>
-        <div class="ov-kpi-lbl">Roles</div>
+        <div class="ov-kpi-lbl">{{ 'ADMIN.OVERVIEW.ROLES' | translate }}</div>
       </div>
       <div class="ov-kpi" style="--c:#f59e0b">
         <mat-icon>lock</mat-icon>
         <div class="ov-kpi-val">{{ overview.total_permissions || 0 }}</div>
-        <div class="ov-kpi-lbl">Permissions</div>
+        <div class="ov-kpi-lbl">{{ 'ADMIN.OVERVIEW.PERMISSIONS' | translate }}</div>
       </div>
       <div class="ov-kpi" [attr.style]="(overview.unassigned_users>0 ? '--c:#ef4444' : '--c:#484f58')">
         <mat-icon>person_off</mat-icon>
         <div class="ov-kpi-val">{{ overview.unassigned_users || 0 }}</div>
-        <div class="ov-kpi-lbl">Unassigned Users</div>
+        <div class="ov-kpi-lbl">{{ 'ADMIN.OVERVIEW.UNASSIGNED_USERS' | translate }}</div>
       </div>
       <div class="ov-kpi" style="--c:#0ea5e9">
         <mat-icon>fingerprint</mat-icon>
         <div class="ov-kpi-val">{{ overview.attendance_today?.rate || 0 }}%</div>
-        <div class="ov-kpi-lbl">Attendance Today</div>
+        <div class="ov-kpi-lbl">{{ 'ADMIN.OVERVIEW.ATTENDANCE_TODAY' | translate }}</div>
       </div>
       <div class="ov-kpi" style="--c:#10b981">
         <mat-icon>person_add</mat-icon>
         <div class="ov-kpi-val">{{ overview.new_this_month || 0 }}</div>
-        <div class="ov-kpi-lbl">New Hires</div>
+        <div class="ov-kpi-lbl">{{ 'ADMIN.OVERVIEW.NEW_HIRES' | translate }}</div>
       </div>
       <div class="ov-kpi" [attr.style]="(overview.terminated_this_month>0 ? '--c:#ef4444' : '--c:#484f58')">
         <mat-icon>person_remove</mat-icon>
         <div class="ov-kpi-val">{{ overview.terminated_this_month || 0 }}</div>
-        <div class="ov-kpi-lbl">Exits This Month</div>
+        <div class="ov-kpi-lbl">{{ 'ADMIN.OVERVIEW.EXITS_THIS_MONTH' | translate }}</div>
       </div>
     </div>
 
     <!-- ── Needs Attention ────────────────────────────────────────── -->
-    <div class="section-label"><mat-icon>warning_amber</mat-icon> Needs Attention</div>
+    <div class="section-label"><mat-icon>warning_amber</mat-icon> {{ 'ADMIN.OVERVIEW.NEEDS_ATTENTION' | translate }}</div>
     <div class="attention-grid">
       <a class="att-item" *ngFor="let a of (overview.attention || [])"
            [routerLink]="a.route" [class.att-zero]="a.value === 0">
@@ -83,14 +83,14 @@
     <div class="overview-grid">
       <!-- Role distribution -->
       <div class="role-dist-card">
-        <div class="rdc-title">Users by Role</div>
+        <div class="rdc-title">{{ 'ADMIN.OVERVIEW.USERS_BY_ROLE' | translate }}</div>
         <div class="rdc-list">
           <div class="rdc-item" *ngFor="let r of overviewRoles()">
             <div class="rdc-role-icon" [style.background]="r.color+'18'">
               <mat-icon [style.color]="r.color">{{ roleData(r.role).icon }}</mat-icon>
             </div>
             <div class="rdc-info">
-              <div class="rdc-name">{{ r.label }}</div>
+              <div class="rdc-name">{{ roleLabel(r.role, r.label) }}</div>
               <div class="rdc-bar-wrap">
                 <div class="rdc-bar" [style.width.%]="overview.total_users ? (r.count/overview.total_users*100) : 0"
                   [style.background]="r.color"></div>
@@ -103,18 +103,18 @@
 
       <!-- Portal access map -->
       <div class="access-map-card">
-        <div class="rdc-title">Portal Access Matrix</div>
+        <div class="rdc-title">{{ 'ADMIN.OVERVIEW.ACCESS_MATRIX' | translate }}</div>
         <div class="access-grid">
           <div class="ag-header">
             <div class="ag-role-col"></div>
-            <div class="ag-mod" *ngFor="let m of permModules" matTooltip="{{ m.label }}">
+            <div class="ag-mod" *ngFor="let m of permModules" [matTooltip]="m.label | translate">
               <mat-icon>{{ m.icon }}</mat-icon>
             </div>
           </div>
           <div class="ag-row" *ngFor="let role of roles">
             <div class="ag-role-col">
               <span class="role-badge" [style.background]="roleData(role.name).color+'1a'" [style.color]="roleData(role.name).color">
-                <mat-icon>{{ roleData(role.name).icon }}</mat-icon>{{ roleData(role.name).label }}
+                <mat-icon>{{ roleData(role.name).icon }}</mat-icon>{{ roleLabel(role.name) }}
               </span>
             </div>
             <div class="ag-mod" *ngFor="let m of permModules">
@@ -131,64 +131,65 @@
   <ng-container *ngIf="activeTab==='users'">
     <div class="toolbar">
       <div class="status-tabs">
-        <button class="stab" [class.active]="filterRole===''" (click)="filterRole=''; loadUsers()">All</button>
+        <button class="stab" [class.active]="filterRole===''" (click)="filterRole=''; loadUsers()">{{ 'COMMON.ALL' | translate }}</button>
         <button *ngFor="let r of roles" class="stab" [class.active]="filterRole===r.name"
-          (click)="filterRole=r.name; loadUsers()">{{ roleData(r.name).label }}</button>
+          (click)="filterRole=r.name; loadUsers()">{{ roleLabel(r.name) }}</button>
       </div>
       <div class="filter-row">
         <div class="search-wrap">
           <mat-icon class="search-ico">search</mat-icon>
-          <input class="search-input" placeholder="Search name / email…" [(ngModel)]="filterSearch" (keyup.enter)="loadUsers()">
+          <input class="search-input" [placeholder]="'ADMIN.USERS.SEARCH_PLACEHOLDER' | translate" [(ngModel)]="filterSearch" (keyup.enter)="loadUsers()">
         </div>
-        <button class="btn-primary" (click)="openUserForm()"><mat-icon>add</mat-icon> Add User</button>
+        <button class="btn-primary" (click)="openUserForm()"><mat-icon>add</mat-icon> {{ 'ADMIN.USERS.ADD_USER' | translate }}</button>
       </div>
     </div>
 
     <div class="data-card">
+      <div class="table-scroll">
       <table mat-table [dataSource]="users">
         <ng-container matColumnDef="user">
-          <th mat-header-cell *matHeaderCellDef>User</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.USERS.COL_USER' | translate }}</th>
           <td mat-cell *matCellDef="let u">
             <div class="emp-cell">
               <div class="emp-avatar" [style.background]="avatarColor(u.name)">{{ (u.name||'?')[0] }}</div>
               <div>
                 <div class="name-main">{{ u.name }}</div>
-                <div class="name-sub">{{ u.email }}</div>
+                <div class="name-sub ltr">{{ u.email }}</div>
               </div>
             </div>
           </td>
         </ng-container>
         <ng-container matColumnDef="role">
-          <th mat-header-cell *matHeaderCellDef>Role</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.USERS.COL_ROLE' | translate }}</th>
           <td mat-cell *matCellDef="let u">
             <select class="role-select" [ngModel]="roleName(u.roles?.[0])||''" (change)="quickAssignRole(u.id, $any($event.target).value)">
-              <option value="">No Role</option>
-              <option *ngFor="let r of roles" [value]="r.name">{{ roleData(r.name).label }}</option>
+              <option value="">{{ 'ADMIN.USERS.NO_ROLE' | translate }}</option>
+              <option *ngFor="let r of roles" [value]="r.name">{{ roleLabel(r.name) }}</option>
             </select>
           </td>
         </ng-container>
         <ng-container matColumnDef="employee">
-          <th mat-header-cell *matHeaderCellDef>Linked Employee</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.USERS.COL_EMPLOYEE' | translate }}</th>
           <td mat-cell *matCellDef="let u">
             <span *ngIf="u.employee" class="linked-chip">
               <mat-icon>person</mat-icon>{{ u.employee?.first_name }} {{ u.employee?.last_name }}
-              <span class="name-sub"> · {{ u.employee?.department?.name }}</span>
+              <span class="name-sub"> · {{ u.employee?.department | locName }}</span>
             </span>
-            <span *ngIf="!u.employee" style="font-size:11px;color:var(--text3)">Not linked</span>
+            <span *ngIf="!u.employee" style="font-size:11px;color:var(--text3)">{{ 'ADMIN.USERS.NOT_LINKED' | translate }}</span>
           </td>
         </ng-container>
         <ng-container matColumnDef="otp">
-          <th mat-header-cell *matHeaderCellDef>OTP Login</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.USERS.COL_OTP' | translate }}</th>
           <td mat-cell *matCellDef="let u">
             <button
               type="button"
               class="otp-toggle"
               [class.exempt]="isOtpExempt(u)"
               [disabled]="roleName(u.roles?.[0])==='super_admin'"
-              [matTooltip]="roleName(u.roles?.[0])==='super_admin' ? 'Super Admin is always excluded from OTP login' : (isOtpExempt(u) ? 'Click to require OTP login' : 'Click to exclude from OTP login')"
+              [matTooltip]="(roleName(u.roles?.[0])==='super_admin' ? 'ADMIN.USERS.OTP_SUPER_ADMIN_TIP' : (isOtpExempt(u) ? 'ADMIN.USERS.OTP_REQUIRE_TIP' : 'ADMIN.USERS.OTP_EXCLUDE_TIP')) | translate"
               (click)="toggleOtpExemption(u)">
               <mat-icon>{{ isOtpExempt(u) ? 'shield' : 'lock' }}</mat-icon>
-              {{ isOtpExempt(u) ? 'Excluded' : 'Required' }}
+              {{ (isOtpExempt(u) ? 'ADMIN.USERS.OTP_EXCLUDED' : 'ADMIN.USERS.OTP_REQUIRED') | translate }}
             </button>
           </td>
         </ng-container>
@@ -196,8 +197,8 @@
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let u">
             <div class="row-actions">
-              <button class="row-btn" matTooltip="View" (click)="viewUser(u)"><mat-icon>open_in_new</mat-icon></button>
-              <button class="row-btn" matTooltip="Edit" (click)="openUserForm(u)"><mat-icon>edit</mat-icon></button>
+              <button class="row-btn" [matTooltip]="'COMMON.VIEW' | translate" [attr.aria-label]="'COMMON.VIEW' | translate" (click)="viewUser(u)"><mat-icon>open_in_new</mat-icon></button>
+              <button class="row-btn" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate" (click)="openUserForm(u)"><mat-icon>edit</mat-icon></button>
             </div>
           </td>
         </ng-container>
@@ -206,77 +207,78 @@
         <tr class="mat-row" *matNoDataRow>
           <td class="mat-cell empty-state" colspan="5">
             <mat-spinner *ngIf="loading" diameter="28"></mat-spinner>
-            <ng-container *ngIf="!loading"><mat-icon>people</mat-icon><span>No users found</span></ng-container>
+            <ng-container *ngIf="!loading"><mat-icon>people</mat-icon><span>{{ 'ADMIN.USERS.EMPTY' | translate }}</span></ng-container>
           </td>
         </tr>
       </table>
+      </div>
       <div class="pagination" *ngIf="pagination?.last_page > 1">
-        <button class="page-btn" [disabled]="currentPage===1" (click)="loadUsers(currentPage-1)"><mat-icon>chevron_left</mat-icon></button>
+        <button class="page-btn" [disabled]="currentPage===1" (click)="loadUsers(currentPage-1)" [attr.aria-label]="'ADMIN.USERS.PREV_PAGE' | translate"><mat-icon class="flip-rtl">chevron_left</mat-icon></button>
         <button *ngFor="let p of pages" class="page-btn" [class.active]="p===currentPage" (click)="loadUsers(p)">{{ p }}</button>
-        <button class="page-btn" [disabled]="currentPage===pagination?.last_page" (click)="loadUsers(currentPage+1)"><mat-icon>chevron_right</mat-icon></button>
-        <span class="page-info">{{ pagination?.from }}–{{ pagination?.to }} of {{ pagination?.total }}</span>
+        <button class="page-btn" [disabled]="currentPage===pagination?.last_page" (click)="loadUsers(currentPage+1)" [attr.aria-label]="'ADMIN.USERS.NEXT_PAGE' | translate"><mat-icon class="flip-rtl">chevron_right</mat-icon></button>
+        <span class="page-info">{{ 'COMMON.SHOWING' | translate:{ from: pagination?.from, to: pagination?.to, total: pagination?.total } }}</span>
       </div>
     </div>
   </ng-container>
 
-  <!-- ═══════════ ROLES ═══════════ -->
+  <!-- ═══════════ LOGIN HISTORY ═══════════ -->
   <ng-container *ngIf="activeTab==='login-history'">
     <div class="toolbar">
       <div class="filter-row login-filter-row">
         <div class="search-wrap">
           <mat-icon class="search-ico">search</mat-icon>
-          <input class="search-input" placeholder="Search user / email / IP" [(ngModel)]="loginActivityFilters.search" (keyup.enter)="loadLoginActivities()">
+          <input class="search-input" [placeholder]="'ADMIN.LOGIN.SEARCH_PLACEHOLDER' | translate" [(ngModel)]="loginActivityFilters.search" (keyup.enter)="loadLoginActivities()">
         </div>
         <select class="field-select-compact" [(ngModel)]="loginActivityFilters.event" (change)="loadLoginActivities()">
-          <option value="">All Events</option>
+          <option value="">{{ 'ADMIN.LOGIN.ALL_EVENTS' | translate }}</option>
           <option *ngFor="let event of loginActivityEvents" [value]="event">{{ loginEventLabel(event) }}</option>
         </select>
         <select class="field-select-compact" [(ngModel)]="loginActivityFilters.status" (change)="loadLoginActivities()">
-          <option value="">All Status</option>
-          <option value="success">Success</option>
-          <option value="failed">Failed</option>
-          <option value="pending">Pending</option>
+          <option value="">{{ 'ADMIN.LOGIN.ALL_STATUS' | translate }}</option>
+          <option value="success">{{ 'success' | statusLabel }}</option>
+          <option value="failed">{{ 'failed' | statusLabel }}</option>
+          <option value="pending">{{ 'pending' | statusLabel }}</option>
         </select>
-        <input class="field-date-compact" type="date" [(ngModel)]="loginActivityFilters.from" (change)="loadLoginActivities()">
-        <input class="field-date-compact" type="date" [(ngModel)]="loginActivityFilters.to" (change)="loadLoginActivities()">
-        <button class="btn-primary" (click)="loadLoginActivities()"><mat-icon>refresh</mat-icon> Fetch</button>
-        <button class="btn-outline" (click)="clearLoginActivityFilters()"><mat-icon>filter_alt_off</mat-icon> Clear</button>
+        <input class="field-date-compact" type="date" [(ngModel)]="loginActivityFilters.from" (change)="loadLoginActivities()" [attr.aria-label]="'ADMIN.LOGIN.FROM_DATE' | translate">
+        <input class="field-date-compact" type="date" [(ngModel)]="loginActivityFilters.to" (change)="loadLoginActivities()" [attr.aria-label]="'ADMIN.LOGIN.TO_DATE' | translate">
+        <button class="btn-primary" (click)="loadLoginActivities()"><mat-icon>refresh</mat-icon> {{ 'ADMIN.LOGIN.FETCH' | translate }}</button>
+        <button class="btn-outline" (click)="clearLoginActivityFilters()"><mat-icon>filter_alt_off</mat-icon> {{ 'COMMON.CLEAR' | translate }}</button>
       </div>
     </div>
 
     <div class="data-card">
-      <div class="login-table-wrap">
+      <div class="login-table-wrap table-scroll">
         <table class="login-table">
           <thead>
             <tr>
-              <th>User</th>
-              <th>Event</th>
-              <th>Status</th>
-              <th>Time</th>
-              <th>IP Address</th>
-              <th>Browser / Device</th>
+              <th>{{ 'ADMIN.USERS.COL_USER' | translate }}</th>
+              <th>{{ 'ADMIN.LOGIN.COL_EVENT' | translate }}</th>
+              <th>{{ 'COMMON.STATUS' | translate }}</th>
+              <th>{{ 'ADMIN.LOGIN.COL_TIME' | translate }}</th>
+              <th>{{ 'ADMIN.LOGIN.COL_IP' | translate }}</th>
+              <th>{{ 'ADMIN.LOGIN.COL_AGENT' | translate }}</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let activity of loginActivities">
               <td>
                 <div class="name-main">{{ loginActor(activity) }}</div>
-                <div class="name-sub">{{ activity.user?.email || activity.login_identifier }}</div>
+                <div class="name-sub ltr">{{ activity.user?.email || activity.login_identifier }}</div>
                 <div class="name-sub" *ngIf="loginEmployee(activity)">{{ loginEmployee(activity) }}</div>
               </td>
               <td><span class="login-event">{{ loginEventLabel(activity.event) }}</span></td>
               <td>
                 <span class="login-status" [class.success]="activity.status==='success'" [class.failed]="activity.status==='failed'" [class.pending]="activity.status==='pending'">
-                  {{ activity.status | titlecase }}
+                  {{ activity.status | statusLabel }}
                 </span>
               </td>
-              <td>{{ activity.occurred_at | date:'medium' }}</td>
-              <td><span class="code-chip">{{ activity.ip_address || '-' }}</span></td>
-              <td><div class="login-agent">{{ activity.user_agent || '-' }}</div></td>
+              <td>{{ activity.occurred_at | locDate:'medium' }}</td>
+              <td><span class="code-chip" dir="ltr">{{ activity.ip_address || '-' }}</span></td>
+              <td><div class="login-agent" dir="ltr">{{ activity.user_agent || '-' }}</div></td>
             </tr>
             <tr *ngIf="!loading && !loginActivities.length">
               <td class="empty-state" colspan="6">
-                <mat-icon>manage_search</mat-icon><span>No login history found</span>
+                <mat-icon>manage_search</mat-icon><span>{{ 'ADMIN.LOGIN.EMPTY' | translate }}</span>
               </td>
             </tr>
             <tr *ngIf="loading">
@@ -289,14 +291,15 @@
       </div>
 
       <div class="pagination" *ngIf="loginActivityPagination?.last_page > 1">
-        <button class="page-btn" [disabled]="loginActivityPage===1" (click)="loadLoginActivities(loginActivityPage-1)"><mat-icon>chevron_left</mat-icon></button>
+        <button class="page-btn" [disabled]="loginActivityPage===1" (click)="loadLoginActivities(loginActivityPage-1)" [attr.aria-label]="'ADMIN.USERS.PREV_PAGE' | translate"><mat-icon class="flip-rtl">chevron_left</mat-icon></button>
         <button *ngFor="let p of loginActivityPages" class="page-btn" [class.active]="p===loginActivityPage" (click)="loadLoginActivities(p)">{{ p }}</button>
-        <button class="page-btn" [disabled]="loginActivityPage===loginActivityPagination?.last_page" (click)="loadLoginActivities(loginActivityPage+1)"><mat-icon>chevron_right</mat-icon></button>
-        <span class="page-info">{{ loginActivityPagination?.from }}-{{ loginActivityPagination?.to }} of {{ loginActivityPagination?.total }}</span>
+        <button class="page-btn" [disabled]="loginActivityPage===loginActivityPagination?.last_page" (click)="loadLoginActivities(loginActivityPage+1)" [attr.aria-label]="'ADMIN.USERS.NEXT_PAGE' | translate"><mat-icon class="flip-rtl">chevron_right</mat-icon></button>
+        <span class="page-info">{{ 'COMMON.SHOWING' | translate:{ from: loginActivityPagination?.from, to: loginActivityPagination?.to, total: loginActivityPagination?.total } }}</span>
       </div>
     </div>
   </ng-container>
 
+  <!-- ═══════════ ROLES ═══════════ -->
   <ng-container *ngIf="activeTab==='roles'">
     <div class="roles-grid">
       <div class="role-card" *ngFor="let role of roles">
@@ -305,23 +308,23 @@
             <mat-icon [style.color]="roleData(role.name).color">{{ roleData(role.name).icon }}</mat-icon>
           </div>
           <div class="rc-info">
-            <div class="rc-name">{{ roleData(role.name).label }}</div>
-            <div class="rc-users">{{ role.users_count }} user{{ role.users_count!==1?'s':'' }}</div>
+            <div class="rc-name">{{ roleLabel(role.name) }}</div>
+            <div class="rc-users">{{ 'ADMIN.ROLES.USER_COUNT' | translate:{ count: role.users_count } }}</div>
           </div>
-          <button class="row-btn" *ngIf="role.name!=='super_admin'" matTooltip="Edit Permissions" (click)="openRoleEditor(role)">
+          <button class="row-btn" *ngIf="role.name!=='super_admin'" [matTooltip]="'ADMIN.ROLES.EDIT_PERMISSIONS' | translate" [attr.aria-label]="'ADMIN.ROLES.EDIT_PERMISSIONS' | translate" (click)="openRoleEditor(role)">
             <mat-icon>edit</mat-icon>
           </button>
-          <span *ngIf="role.name==='super_admin'" style="font-size:10px;color:var(--danger);font-weight:700">SYSTEM</span>
+          <span *ngIf="role.name==='super_admin'" style="font-size:10px;color:var(--danger);font-weight:700">{{ 'ADMIN.ROLES.SYSTEM' | translate }}</span>
         </div>
         <div class="rc-desc">{{ roleData(role.name).description || role.description }}</div>
         <div class="rc-perms">
-          <div class="rcp-label">Permissions ({{ role.permissions?.length || 0 }})</div>
+          <div class="rcp-label">{{ 'ADMIN.ROLES.PERMISSIONS_COUNT' | translate:{ count: role.permissions?.length || 0 } }}</div>
           <div class="rcp-modules">
             <span *ngFor="let m of permModules" class="rcp-mod"
               [class.active]="roleHasModule(role, m.key)"
               [style.borderColor]="moduleBorder(role, m.key)"
               [style.color]="moduleColor(role, m.key)">
-              <mat-icon>{{ m.icon }}</mat-icon>{{ m.label }}
+              <mat-icon>{{ m.icon }}</mat-icon>{{ m.label | translate }}
             </span>
           </div>
         </div>
@@ -333,23 +336,23 @@
   <ng-container *ngIf="activeTab==='permissions'">
     <div class="perm-info">
       <mat-icon>info_outline</mat-icon>
-      <span>Showing all {{ overview.total_permissions }} permissions. Edit permissions per role in the Roles tab.</span>
+      <span>{{ 'ADMIN.PERMS.INFO' | translate:{ count: overview.total_permissions } }}</span>
     </div>
     <div class="data-card perm-matrix-card" *ngFor="let m of permModules">
       <div class="pm-module-header">
         <mat-icon>{{ m.icon }}</mat-icon>
-        <span>{{ m.label }}</span>
-        <span class="pm-count">{{ modulePerms(m.key).length }} permissions</span>
+        <span>{{ m.label | translate }}</span>
+        <span class="pm-count">{{ 'ADMIN.PERMS.COUNT' | translate:{ count: modulePerms(m.key).length } }}</span>
       </div>
-      <div class="pm-table-wrap" *ngIf="modulePerms(m.key).length">
+      <div class="pm-table-wrap table-scroll" *ngIf="modulePerms(m.key).length">
         <table class="pm-table">
           <thead>
             <tr>
-              <th class="pm-perm-col">Permission</th>
+              <th class="pm-perm-col">{{ 'ADMIN.PERMS.COL_PERMISSION' | translate }}</th>
               <th *ngFor="let role of roles" class="pm-role-col">
                 <div class="pmrc-inner" [style.color]="roleData(role.name).color">
                   <mat-icon>{{ roleData(role.name).icon }}</mat-icon>
-                  {{ roleData(role.name).label }}
+                  {{ roleLabel(role.name) }}
                 </div>
               </th>
             </tr>
@@ -357,7 +360,7 @@
           <tbody>
             <tr *ngFor="let perm of modulePerms(m.key)">
               <td class="pm-perm-name">
-                <span class="perm-chip">{{ permLabel(perm) }}</span>
+                <span class="perm-chip" dir="ltr">{{ permLabel(perm) }}</span>
               </td>
               <td *ngFor="let role of roles" class="pm-cell">
                 <mat-icon *ngIf="roleHasPerm(role, perm)" style="color:var(--success)">check_circle</mat-icon>
@@ -370,50 +373,59 @@
     </div>
   </ng-container>
 
-  <!-- ── Departments ──────────────────────────────────────────────────────── -->
+  <!-- ── Units ────────────────────────────────────────────────────────────── -->
   <ng-container *ngIf="activeTab==='units'">
     <div class="section-head">
       <div>
-        <h2 class="section-title">Units / Branches</h2>
-        <p class="section-sub">Manage branch or unit masters used to identify employees branch-wise.</p>
+        <h2 class="section-title">{{ 'ADMIN.UNITS.TITLE' | translate }}</h2>
+        <p class="section-sub">{{ 'ADMIN.UNITS.SUBTITLE' | translate }}</p>
       </div>
-      <button class="btn-primary" (click)="openUnitForm()"><mat-icon>add</mat-icon> Add Unit</button>
+      <button class="btn-primary" (click)="openUnitForm()"><mat-icon>add</mat-icon> {{ 'ADMIN.UNITS.ADD' | translate }}</button>
     </div>
 
     <div class="data-card">
+      <div class="table-scroll">
       <table mat-table [dataSource]="units">
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Unit</th>
-          <td mat-cell *matCellDef="let u"><strong>{{ u.name }}</strong></td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.UNITS.COL_UNIT' | translate }}</th>
+          <td mat-cell *matCellDef="let u"><strong dir="auto">{{ u.name }}</strong></td>
+        </ng-container>
+        <ng-container matColumnDef="name_ar">
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.COL_ARABIC_NAME' | translate }}</th>
+          <td mat-cell *matCellDef="let u">
+            <span class="ar-name" lang="ar" dir="rtl" *ngIf="u.name_ar; else noAr">{{ u.name_ar }}</span>
+            <ng-template #noAr><span class="ar-missing">{{ 'ADMIN.ARABIC_NOT_SET' | translate }}</span></ng-template>
+          </td>
         </ng-container>
         <ng-container matColumnDef="code">
-          <th mat-header-cell *matHeaderCellDef>Code</th>
-          <td mat-cell *matCellDef="let u"><span class="code-chip">{{ u.code }}</span></td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.CODE' | translate }}</th>
+          <td mat-cell *matCellDef="let u"><span class="code-chip" dir="ltr">{{ u.code }}</span></td>
         </ng-container>
         <ng-container matColumnDef="legacy">
-          <th mat-header-cell *matHeaderCellDef>Legacy Unit ID</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.UNITS.COL_LEGACY' | translate }}</th>
           <td mat-cell *matCellDef="let u">{{ u.legacy_unitid || '—' }}</td>
         </ng-container>
         <ng-container matColumnDef="counts">
-          <th mat-header-cell *matHeaderCellDef>Usage</th>
-          <td mat-cell *matCellDef="let u">{{ u.employees_count || 0 }} employees</td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.UNITS.COL_USAGE' | translate }}</th>
+          <td mat-cell *matCellDef="let u">{{ 'ADMIN.UNITS.EMPLOYEE_COUNT' | translate:{ count: u.employees_count || 0 } }}</td>
         </ng-container>
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
-          <td mat-cell *matCellDef="let u"><span class="status-pill" [class.on]="u.is_active" [class.off]="!u.is_active">{{ u.is_active ? 'Active' : 'Inactive' }}</span></td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.STATUS' | translate }}</th>
+          <td mat-cell *matCellDef="let u"><span class="status-pill" [class.on]="u.is_active" [class.off]="!u.is_active">{{ (u.is_active ? 'active' : 'inactive') | statusLabel }}</span></td>
         </ng-container>
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef style="text-align:right">Actions</th>
-          <td mat-cell *matCellDef="let u" style="text-align:right">
-            <button class="row-btn" matTooltip="Edit" (click)="openUnitForm(u)"><mat-icon>edit</mat-icon></button>
-            <button class="row-btn danger" matTooltip="Delete" (click)="deleteUnit(u)"><mat-icon>delete_outline</mat-icon></button>
+          <th mat-header-cell *matHeaderCellDef style="text-align:end">{{ 'COMMON.ACTIONS' | translate }}</th>
+          <td mat-cell *matCellDef="let u" style="text-align:end">
+            <button class="row-btn" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate" (click)="openUnitForm(u)"><mat-icon>edit</mat-icon></button>
+            <button class="row-btn danger" [matTooltip]="'COMMON.DELETE' | translate" [attr.aria-label]="'COMMON.DELETE' | translate" (click)="deleteUnit(u)"><mat-icon>delete_outline</mat-icon></button>
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="unitColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: unitColumns;"></tr>
       </table>
+      </div>
       <div class="empty-state" *ngIf="!loading && !units.length">
-        <mat-icon>business</mat-icon><span>No units yet</span>
+        <mat-icon>business</mat-icon><span>{{ 'ADMIN.UNITS.EMPTY' | translate }}</span>
       </div>
     </div>
   </ng-container>
@@ -421,54 +433,69 @@
   <ng-container *ngIf="activeTab==='departments'">
     <div class="section-head">
       <div>
-        <h2 class="section-title">Departments</h2>
-        <p class="section-sub">Organizational units. Manage hierarchy, managers, and headcount budgets.</p>
+        <h2 class="section-title">{{ 'ADMIN.DEPTS.TITLE' | translate }}</h2>
+        <p class="section-sub">{{ 'ADMIN.DEPTS.SUBTITLE' | translate }}</p>
       </div>
-      <button class="btn-primary" (click)="openDeptForm()"><mat-icon>add</mat-icon> Add Department</button>
+      <button class="btn-primary" (click)="openDeptForm()"><mat-icon>add</mat-icon> {{ 'ADMIN.DEPTS.ADD' | translate }}</button>
     </div>
 
     <div class="data-card">
+      <div class="table-scroll">
       <table mat-table [dataSource]="departments">
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Department</th>
-          <td mat-cell *matCellDef="let d"><strong>{{ d.name }}</strong></td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.DEPARTMENT' | translate }}</th>
+          <td mat-cell *matCellDef="let d"><strong dir="auto">{{ d.name }}</strong></td>
+        </ng-container>
+        <ng-container matColumnDef="name_ar">
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.COL_ARABIC_NAME' | translate }}</th>
+          <td mat-cell *matCellDef="let d">
+            <span class="ar-name" lang="ar" dir="rtl" *ngIf="d.name_ar; else noAr">{{ d.name_ar }}</span>
+            <ng-template #noAr><span class="ar-missing">{{ 'ADMIN.ARABIC_NOT_SET' | translate }}</span></ng-template>
+          </td>
         </ng-container>
         <ng-container matColumnDef="code">
-          <th mat-header-cell *matHeaderCellDef>Code</th>
-          <td mat-cell *matCellDef="let d"><span class="code-chip">{{ d.code }}</span></td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.CODE' | translate }}</th>
+          <td mat-cell *matCellDef="let d"><span class="code-chip" dir="ltr">{{ d.code }}</span></td>
         </ng-container>
         <ng-container matColumnDef="manager">
-          <th mat-header-cell *matHeaderCellDef>Manager</th>
-          <td mat-cell *matCellDef="let d">{{ d.manager ? (d.manager.first_name + ' ' + d.manager.last_name) : '—' }}</td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.DEPTS.COL_MANAGER' | translate }}</th>
+          <td mat-cell *matCellDef="let d">
+            <ng-container *ngIf="d.manager; else noManager">
+              <div>{{ d.manager.first_name + ' ' + d.manager.last_name }}</div>
+              <div class="name-sub" lang="ar" dir="rtl" *ngIf="d.manager.arabic_name">{{ d.manager.arabic_name }}</div>
+            </ng-container>
+            <ng-template #noManager>—</ng-template>
+          </td>
         </ng-container>
         <ng-container matColumnDef="parent">
-          <th mat-header-cell *matHeaderCellDef>Parent</th>
-          <td mat-cell *matCellDef="let d">{{ d.parent?.name || '—' }}</td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.DEPTS.COL_PARENT' | translate }}</th>
+          <td mat-cell *matCellDef="let d"><app-bi-name [item]="d.parent"></app-bi-name></td>
         </ng-container>
         <ng-container matColumnDef="headcount">
-          <th mat-header-cell *matHeaderCellDef>Budget</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.DEPTS.COL_BUDGET' | translate }}</th>
           <td mat-cell *matCellDef="let d">{{ d.headcount_budget ?? '—' }}</td>
         </ng-container>
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.STATUS' | translate }}</th>
           <td mat-cell *matCellDef="let d">
             <span class="status-pill" [class.on]="d.is_active" [class.off]="!d.is_active">
-              {{ d.is_active ? 'Active' : 'Inactive' }}
+              {{ (d.is_active ? 'active' : 'inactive') | statusLabel }}
             </span>
           </td>
         </ng-container>
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef style="text-align:right">Actions</th>
-          <td mat-cell *matCellDef="let d" style="text-align:right">
-            <button class="row-btn" matTooltip="Edit" (click)="openDeptForm(d)"><mat-icon>edit</mat-icon></button>
-            <button class="row-btn danger" matTooltip="Delete" (click)="deleteDept(d)"><mat-icon>delete_outline</mat-icon></button>
+          <th mat-header-cell *matHeaderCellDef style="text-align:end">{{ 'COMMON.ACTIONS' | translate }}</th>
+          <td mat-cell *matCellDef="let d" style="text-align:end">
+            <button class="row-btn" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate" (click)="openDeptForm(d)"><mat-icon>edit</mat-icon></button>
+            <button class="row-btn danger" [matTooltip]="'COMMON.DELETE' | translate" [attr.aria-label]="'COMMON.DELETE' | translate" (click)="deleteDept(d)"><mat-icon>delete_outline</mat-icon></button>
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="deptColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: deptColumns;"></tr>
       </table>
+      </div>
       <div class="empty-state" *ngIf="!loading && !departments.length">
-        <mat-icon>corporate_fare</mat-icon><span>No departments yet</span>
+        <mat-icon>corporate_fare</mat-icon><span>{{ 'ADMIN.DEPTS.EMPTY' | translate }}</span>
       </div>
       <div class="empty-state" *ngIf="loading"><mat-spinner diameter="28"></mat-spinner></div>
     </div>
@@ -478,50 +505,59 @@
   <ng-container *ngIf="activeTab==='designations'">
     <div class="section-head">
       <div>
-        <h2 class="section-title">Job Positions</h2>
-        <p class="section-sub">Positions available for recruitment and employee records, optionally scoped to a department with salary bands.</p>
+        <h2 class="section-title">{{ 'ADMIN.DESIG.TITLE' | translate }}</h2>
+        <p class="section-sub">{{ 'ADMIN.DESIG.SUBTITLE' | translate }}</p>
       </div>
-      <button class="btn-primary" (click)="openDesigForm()"><mat-icon>add</mat-icon> Add Job Position</button>
+      <button class="btn-primary" (click)="openDesigForm()"><mat-icon>add</mat-icon> {{ 'ADMIN.DESIG.ADD' | translate }}</button>
     </div>
 
     <div class="data-card">
+      <div class="table-scroll">
       <table mat-table [dataSource]="designations">
         <ng-container matColumnDef="title">
-          <th mat-header-cell *matHeaderCellDef>Title</th>
-          <td mat-cell *matCellDef="let d"><strong>{{ d.title }}</strong></td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.DESIG.COL_TITLE' | translate }}</th>
+          <td mat-cell *matCellDef="let d"><strong dir="auto">{{ d.title }}</strong></td>
+        </ng-container>
+        <ng-container matColumnDef="title_ar">
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.COL_ARABIC_NAME' | translate }}</th>
+          <td mat-cell *matCellDef="let d">
+            <span class="ar-name" lang="ar" dir="rtl" *ngIf="d.title_ar; else noAr">{{ d.title_ar }}</span>
+            <ng-template #noAr><span class="ar-missing">{{ 'ADMIN.ARABIC_NOT_SET' | translate }}</span></ng-template>
+          </td>
         </ng-container>
         <ng-container matColumnDef="level">
-          <th mat-header-cell *matHeaderCellDef>Level</th>
-          <td mat-cell *matCellDef="let d"><span class="code-chip" *ngIf="d.level">{{ d.level }}</span><span *ngIf="!d.level">—</span></td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.DESIG.COL_LEVEL' | translate }}</th>
+          <td mat-cell *matCellDef="let d"><span class="code-chip" *ngIf="d.level">{{ levelLabel(d.level) }}</span><span *ngIf="!d.level">—</span></td>
         </ng-container>
         <ng-container matColumnDef="department">
-          <th mat-header-cell *matHeaderCellDef>Department</th>
-          <td mat-cell *matCellDef="let d">{{ d.department?.name || '—' }}</td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.DEPARTMENT' | translate }}</th>
+          <td mat-cell *matCellDef="let d"><app-bi-name [item]="d.department"></app-bi-name></td>
         </ng-container>
         <ng-container matColumnDef="salary">
-          <th mat-header-cell *matHeaderCellDef>Salary Range</th>
-          <td mat-cell *matCellDef="let d">{{ salaryRange(d) }}</td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'ADMIN.DESIG.COL_SALARY' | translate }}</th>
+          <td mat-cell *matCellDef="let d"><span dir="ltr">{{ salaryRange(d) }}</span></td>
         </ng-container>
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.STATUS' | translate }}</th>
           <td mat-cell *matCellDef="let d">
             <span class="status-pill" [class.on]="d.is_active" [class.off]="!d.is_active">
-              {{ d.is_active ? 'Active' : 'Inactive' }}
+              {{ (d.is_active ? 'active' : 'inactive') | statusLabel }}
             </span>
           </td>
         </ng-container>
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef style="text-align:right">Actions</th>
-          <td mat-cell *matCellDef="let d" style="text-align:right">
-            <button class="row-btn" matTooltip="Edit" (click)="openDesigForm(d)"><mat-icon>edit</mat-icon></button>
-            <button class="row-btn danger" matTooltip="Delete" (click)="deleteDesig(d)"><mat-icon>delete_outline</mat-icon></button>
+          <th mat-header-cell *matHeaderCellDef style="text-align:end">{{ 'COMMON.ACTIONS' | translate }}</th>
+          <td mat-cell *matCellDef="let d" style="text-align:end">
+            <button class="row-btn" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate" (click)="openDesigForm(d)"><mat-icon>edit</mat-icon></button>
+            <button class="row-btn danger" [matTooltip]="'COMMON.DELETE' | translate" [attr.aria-label]="'COMMON.DELETE' | translate" (click)="deleteDesig(d)"><mat-icon>delete_outline</mat-icon></button>
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="desigColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: desigColumns;"></tr>
       </table>
+      </div>
       <div class="empty-state" *ngIf="!loading && !designations.length">
-        <mat-icon>badge</mat-icon><span>No job positions yet</span>
+        <mat-icon>badge</mat-icon><span>{{ 'ADMIN.DESIG.EMPTY' | translate }}</span>
       </div>
       <div class="empty-state" *ngIf="loading"><mat-spinner diameter="28"></mat-spinner></div>
     </div>
@@ -530,8 +566,8 @@
   <ng-container *ngIf="activeTab==='migration'">
     <div class="section-head">
       <div>
-        <h2 class="section-title">Legacy Data Migration</h2>
-        <p class="section-sub">Upload CSV or Excel files and migrate records in the required dependency order.</p>
+        <h2 class="section-title">{{ 'ADMIN.MIGRATION.TITLE' | translate }}</h2>
+        <p class="section-sub">{{ 'ADMIN.MIGRATION.SUBTITLE' | translate }}</p>
       </div>
     </div>
 
@@ -540,55 +576,55 @@
         <div class="settings-heading">
           <div class="settings-icon"><mat-icon>upload_file</mat-icon></div>
           <div>
-            <div class="settings-title">Upload migration file</div>
-            <div class="settings-sub">Excel sheets can contain Departments, Job Positions, Employees, Leave Records, Loan Records, Documents, and other supported migration modules.</div>
+            <div class="settings-title">{{ 'ADMIN.MIGRATION.UPLOAD_TITLE' | translate }}</div>
+            <div class="settings-sub">{{ 'ADMIN.MIGRATION.UPLOAD_SUB' | translate }}</div>
           </div>
         </div>
 
         <div class="migration-order">
           <div class="mo-step" *ngFor="let item of migrationOrder; let i = index">
-            <span>{{ i + 1 }}</span>{{ item }}
+            <span>{{ i + 1 }}</span>{{ item | translate }}
           </div>
         </div>
 
         <div class="two-col">
           <div class="field-group">
-            <label class="field-label">Migration Scope</label>
+            <label class="field-label">{{ 'ADMIN.MIGRATION.SCOPE' | translate }}</label>
             <select class="field-select-full" [(ngModel)]="migrationScope">
-              <option *ngFor="let scope of migrationScopes" [value]="scope.id">{{ scope.label }}</option>
+              <option *ngFor="let scope of migrationScopes" [value]="scope.id">{{ scope.label | translate }}</option>
             </select>
           </div>
           <div class="field-group">
-            <label class="field-label">CSV / Excel File</label>
+            <label class="field-label">{{ 'ADMIN.MIGRATION.FILE' | translate }}</label>
             <label class="file-picker">
               <input type="file" accept=".csv,.txt,.xlsx" (change)="onMigrationFile($event)">
               <mat-icon>attach_file</mat-icon>
-              <span>{{ migrationFile?.name || 'Choose file' }}</span>
+              <span>{{ migrationFile?.name || ('ADMIN.MIGRATION.CHOOSE_FILE' | translate) }}</span>
             </label>
           </div>
         </div>
 
         <div class="field-group" *ngIf="migrationScope === 'documents' || migrationScope === 'all'">
-          <label class="field-label">Document Category</label>
+          <label class="field-label">{{ 'ADMIN.MIGRATION.DOC_CATEGORY' | translate }}</label>
           <select class="field-select-full" [(ngModel)]="migrationCategoryId">
-            <option *ngFor="let category of migrationCategories" [ngValue]="category.id">{{ category.label }}</option>
+            <option *ngFor="let category of migrationCategories" [ngValue]="category.id">{{ category.label | translate }}</option>
           </select>
-          <div class="settings-sub">Applies only to the Documents sheet. Choose All Categories to migrate every document row.</div>
+          <div class="settings-sub">{{ 'ADMIN.MIGRATION.DOC_CATEGORY_HINT' | translate }}</div>
         </div>
 
         <div class="field-group" *ngIf="migrationScope === 'documents' || migrationScope === 'all'">
-          <label class="field-label">Source Document Folder</label>
-          <input class="field-input" type="text" [(ngModel)]="migrationSourceFolder" placeholder="Example: E:\LegacyHR\Documents">
-          <div class="settings-sub">Server folder containing the files listed in the Documents sheet. File names may include subfolders. Successful imports move the source files into policy document storage.</div>
+          <label class="field-label">{{ 'ADMIN.MIGRATION.SOURCE_FOLDER' | translate }}</label>
+          <input class="field-input" type="text" dir="ltr" [(ngModel)]="migrationSourceFolder" [placeholder]="'ADMIN.MIGRATION.SOURCE_FOLDER_PH' | translate">
+          <div class="settings-sub">{{ 'ADMIN.MIGRATION.SOURCE_FOLDER_HINT' | translate }}</div>
         </div>
 
         <div class="migration-actions">
           <button class="btn-outline" (click)="runMigration(true)" [disabled]="migrationRunning || !migrationFile">
-            <mat-icon>rule</mat-icon> Validate Only
+            <mat-icon>rule</mat-icon> {{ 'ADMIN.MIGRATION.VALIDATE_ONLY' | translate }}
           </button>
           <button class="btn-primary" (click)="runMigration(false)" [disabled]="migrationRunning || !migrationFile">
             <mat-icon>{{ migrationRunning ? 'hourglass_empty' : 'cloud_upload' }}</mat-icon>
-            {{ migrationRunning ? 'Processing...' : 'Run Migration' }}
+            {{ (migrationRunning ? 'ADMIN.MIGRATION.PROCESSING' : 'ADMIN.MIGRATION.RUN') | translate }}
           </button>
         </div>
 
@@ -597,46 +633,46 @@
       </div>
 
       <div class="migration-panel template-panel">
-        <div class="settings-title">Expected columns</div>
+        <div class="settings-title">{{ 'ADMIN.MIGRATION.EXPECTED_COLUMNS' | translate }}</div>
         <div class="template-list">
-          <div><strong>Departments</strong><span>deptname/name, deptcode/code, unitid, description, isactive/is_active</span></div>
-          <div><strong>Job Positions</strong><span>positionname/title, department_code, department, level, min_salary, max_salary, is_active</span></div>
-          <div><strong>Employees</strong><span>employee_code/empnum, first_name/firstname, last_name/lastname, email/emailaddress, emppassword, phone/contactnumber, hire_date/date_of_joining, department_name, businessunit_name, position_name, salary</span></div>
-          <div><strong>Employee Managers</strong><span>employee_code/empnum, email/emailaddress, manager_empnum, manager_email, reporting_manager_name</span></div>
-          <div><strong>Leave Records</strong><span>employeeId/employee_code, leavetype_name/leave_type, appliedleavescount/total_days, from_date/start_date, to_date/end_date, leavestatus, hr_status, reason</span></div>
-          <div><strong>Loan Records</strong><span>emailaddress/employee_code, empnum, loanId/reference, amount, loantype_name/loan_type, installmentnumber, emi_amount, emi_date, finance/reporting manager status</span></div>
-          <div><strong>Documents</strong><span>id, category_id, subcategory_id, document_name, document_version, description, document_type, file_name (legacy JSON), isactive, modifiedby, createdby, modifieddate, createddate. Department visibility is not changed.</span></div>
+          <div><strong>{{ 'ADMIN.MIGRATION.STEPS.DEPARTMENTS' | translate }}</strong><span dir="ltr">deptname/name, deptcode/code, unitid, description, isactive/is_active</span></div>
+          <div><strong>{{ 'ADMIN.MIGRATION.STEPS.JOB_POSITIONS' | translate }}</strong><span dir="ltr">positionname/title, department_code, department, level, min_salary, max_salary, is_active</span></div>
+          <div><strong>{{ 'ADMIN.MIGRATION.STEPS.EMPLOYEES' | translate }}</strong><span dir="ltr">employee_code/empnum, first_name/firstname, last_name/lastname, email/emailaddress, emppassword, phone/contactnumber, hire_date/date_of_joining, department_name, businessunit_name, position_name, salary</span></div>
+          <div><strong>{{ 'ADMIN.MIGRATION.STEPS.EMPLOYEE_MANAGERS' | translate }}</strong><span dir="ltr">employee_code/empnum, email/emailaddress, manager_empnum, manager_email, reporting_manager_name</span></div>
+          <div><strong>{{ 'ADMIN.MIGRATION.STEPS.LEAVE_RECORDS' | translate }}</strong><span dir="ltr">employeeId/employee_code, leavetype_name/leave_type, appliedleavescount/total_days, from_date/start_date, to_date/end_date, leavestatus, hr_status, reason</span></div>
+          <div><strong>{{ 'ADMIN.MIGRATION.STEPS.LOAN_RECORDS' | translate }}</strong><span dir="ltr">emailaddress/employee_code, empnum, loanId/reference, amount, loantype_name/loan_type, installmentnumber, emi_amount, emi_date, finance/reporting manager status</span></div>
+          <div><strong>{{ 'ADMIN.MIGRATION.STEPS.DOCUMENTS' | translate }}</strong><span dir="ltr">id, category_id, subcategory_id, document_name, document_version, description, document_type, file_name (legacy JSON), isactive, modifiedby, createdby, modifieddate, createddate.</span><span class="template-note">{{ 'ADMIN.MIGRATION.DOCS_VISIBILITY_NOTE' | translate }}</span></div>
         </div>
       </div>
     </div>
 
     <div class="migration-summary" *ngIf="migrationSummary">
       <div class="summary-total">
-        <div><strong>{{ migrationSummary.totals?.processed || 0 }}</strong><span>Processed</span></div>
-        <div><strong>{{ migrationSummary.totals?.success || 0 }}</strong><span>Migrated</span></div>
-        <div><strong>{{ migrationSummary.totals?.skipped || 0 }}</strong><span>Skipped</span></div>
-        <div><strong>{{ migrationSummary.totals?.failed || 0 }}</strong><span>Failed</span></div>
+        <div><strong>{{ migrationSummary.totals?.processed || 0 }}</strong><span>{{ 'ADMIN.MIGRATION.PROCESSED' | translate }}</span></div>
+        <div><strong>{{ migrationSummary.totals?.success || 0 }}</strong><span>{{ 'ADMIN.MIGRATION.MIGRATED' | translate }}</span></div>
+        <div><strong>{{ migrationSummary.totals?.skipped || 0 }}</strong><span>{{ 'ADMIN.MIGRATION.SKIPPED' | translate }}</span></div>
+        <div><strong>{{ migrationSummary.totals?.failed || 0 }}</strong><span>{{ 'ADMIN.MIGRATION.FAILED' | translate }}</span></div>
       </div>
 
       <div class="module-summary" *ngFor="let mod of migrationSummary.modules">
         <div class="module-summary-head">
           <strong>{{ mod.label }}</strong>
-          <span>{{ mod.processed }} processed · {{ mod.success }} success · {{ mod.skipped }} skipped · {{ mod.failed }} failed</span>
+          <span>{{ 'ADMIN.MIGRATION.MODULE_COUNTS' | translate:{ processed: mod.processed, success: mod.success, skipped: mod.skipped, failed: mod.failed } }}</span>
         </div>
         <div class="error-table" *ngIf="mod.errors?.length">
-          <div class="error-row header"><span>Row</span><span>Error</span><span>Data</span></div>
+          <div class="error-row header"><span>{{ 'ADMIN.MIGRATION.COL_ROW' | translate }}</span><span>{{ 'ADMIN.MIGRATION.COL_ERROR' | translate }}</span><span>{{ 'ADMIN.MIGRATION.COL_DATA' | translate }}</span></div>
           <div class="error-row" *ngFor="let e of mod.errors">
             <span>{{ e.row }}</span>
             <span>{{ e.message }}</span>
-            <span>{{ e.data | json }}</span>
+            <span dir="ltr">{{ e.data | json }}</span>
           </div>
         </div>
         <div class="error-table" *ngIf="mod.skipped_rows?.length">
-          <div class="error-row header skipped"><span>Row</span><span>Skipped Reason</span><span>Data</span></div>
+          <div class="error-row header skipped"><span>{{ 'ADMIN.MIGRATION.COL_ROW' | translate }}</span><span>{{ 'ADMIN.MIGRATION.COL_SKIPPED_REASON' | translate }}</span><span>{{ 'ADMIN.MIGRATION.COL_DATA' | translate }}</span></div>
           <div class="error-row skipped" *ngFor="let s of mod.skipped_rows">
             <span>{{ s.row }}</span>
             <span>{{ s.message }}</span>
-            <span>{{ s.data | json }}</span>
+            <span dir="ltr">{{ s.data | json }}</span>
           </div>
         </div>
       </div>
@@ -646,8 +682,8 @@
   <ng-container *ngIf="activeTab==='settings'">
     <div class="section-head">
       <div>
-        <h2 class="section-title">Workflow Settings</h2>
-        <p class="section-sub">Manage leave policies, approval routing, and notifications.</p>
+        <h2 class="section-title">{{ 'ADMIN.SETTINGS.TITLE' | translate }}</h2>
+        <p class="section-sub">{{ 'ADMIN.SETTINGS.SUBTITLE' | translate }}</p>
       </div>
     </div>
 
@@ -655,8 +691,8 @@
       <div class="settings-heading">
         <div class="settings-icon"><mat-icon>description</mat-icon></div>
         <div>
-          <div class="settings-title">HDF Template</div>
-          <div class="settings-sub">The active HDF is attached when HR confirms a hire and must be uploaded completed during onboarding.</div>
+          <div class="settings-title">{{ 'ADMIN.SETTINGS.HDF.TITLE' | translate }}</div>
+          <div class="settings-sub">{{ 'ADMIN.SETTINGS.HDF.SUB' | translate }}</div>
         </div>
       </div>
 
@@ -664,18 +700,18 @@
         <div class="hdf-current" [class.available]="hdfTemplate.exists">
           <mat-icon>{{ hdfTemplate.exists ? 'check_circle' : 'info' }}</mat-icon>
           <span>
-            <strong>{{ hdfTemplate.exists ? hdfTemplate.name : 'No HDF uploaded' }}</strong>
-            <small>{{ hdfTemplate.exists ? 'Uploading another file will permanently replace this template.' : 'Confirm-hire onboarding emails will not include an HDF until one is uploaded.' }}</small>
+            <strong>{{ hdfTemplate.exists ? hdfTemplate.name : ('ADMIN.SETTINGS.HDF.NONE' | translate) }}</strong>
+            <small>{{ (hdfTemplate.exists ? 'ADMIN.SETTINGS.HDF.REPLACE_WARNING' : 'ADMIN.SETTINGS.HDF.NONE_HINT') | translate }}</small>
           </span>
         </div>
         <label class="file-picker hdf-picker">
           <input type="file" accept=".pdf,.doc,.docx" (change)="onHdfFile($event)">
           <mat-icon>attach_file</mat-icon>
-          <span>{{ hdfFile?.name || 'Choose PDF or Word file' }}</span>
+          <span>{{ hdfFile?.name || ('ADMIN.SETTINGS.HDF.CHOOSE' | translate) }}</span>
         </label>
         <button class="btn-primary" (click)="uploadHdfTemplate()" [disabled]="hdfUploading || !hdfFile">
           <mat-icon>{{ hdfUploading ? 'hourglass_empty' : 'cloud_upload' }}</mat-icon>
-          {{ hdfUploading ? 'Uploading...' : (hdfTemplate.exists ? 'Replace HDF' : 'Upload HDF') }}
+          {{ (hdfUploading ? 'ADMIN.SETTINGS.HDF.UPLOADING' : (hdfTemplate.exists ? 'ADMIN.SETTINGS.HDF.REPLACE' : 'ADMIN.SETTINGS.HDF.UPLOAD')) | translate }}
         </button>
       </div>
       <div class="settings-feedback success" *ngIf="hdfMessage"><mat-icon>check_circle</mat-icon>{{ hdfMessage }}</div>
@@ -686,8 +722,8 @@
       <div class="settings-heading">
         <div class="settings-icon"><mat-icon>account_balance</mat-icon></div>
         <div>
-          <div class="settings-title">Loan Approval Levels</div>
-          <div class="settings-sub">Choose the approval path used when an employee submits a new loan request.</div>
+          <div class="settings-title">{{ 'ADMIN.SETTINGS.LOAN.TITLE' | translate }}</div>
+          <div class="settings-sub">{{ 'ADMIN.SETTINGS.LOAN.SUB' | translate }}</div>
         </div>
       </div>
 
@@ -696,13 +732,13 @@
           [class.selected]="loanSettings.approval_levels===2"
           (click)="loanSettings.approval_levels=2; loanSettingsMessage=''">
           <span class="option-check"><mat-icon>{{ loanSettings.approval_levels===2 ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon></span>
-          <span><strong>2 Levels</strong><small>HR Manager → Finance Manager</small></span>
+          <span><strong>{{ 'ADMIN.SETTINGS.LOAN.TWO_LEVELS' | translate }}</strong><small>{{ 'ADMIN.SETTINGS.LOAN.TWO_PATH' | translate }}</small></span>
         </button>
         <button type="button" class="approval-option"
           [class.selected]="loanSettings.approval_levels===3"
           (click)="loanSettings.approval_levels=3; loanSettingsMessage=''">
           <span class="option-check"><mat-icon>{{ loanSettings.approval_levels===3 ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon></span>
-          <span><strong>3 Levels</strong><small>Direct Manager → HR Manager → Finance Manager</small></span>
+          <span><strong>{{ 'ADMIN.SETTINGS.LOAN.THREE_LEVELS' | translate }}</strong><small>{{ 'ADMIN.SETTINGS.LOAN.THREE_PATH' | translate }}</small></span>
         </button>
       </div>
 
@@ -716,7 +752,7 @@
       <div class="settings-actions">
         <button class="btn-primary" (click)="saveLoanSettings()" [disabled]="settingsSaving || settingsLoading">
           <mat-icon>{{ settingsSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
-          {{ settingsSaving ? 'Saving...' : 'Save Changes' }}
+          {{ (settingsSaving ? 'COMMON.SAVING' : 'COMMON.SAVE_CHANGES') | translate }}
         </button>
       </div>
     </div>
@@ -724,30 +760,30 @@
     <div class="settings-panel ticket-policy-panel">
       <div class="settings-heading">
         <div class="settings-icon"><mat-icon>flight</mat-icon></div>
-        <div><div class="settings-title">Yearly Annual Ticket Policy</div><div class="settings-sub">Calendar-year entitlement used with annual leave.</div></div>
+        <div><div class="settings-title">{{ 'ADMIN.SETTINGS.TICKET.TITLE' | translate }}</div><div class="settings-sub">{{ 'ADMIN.SETTINGS.TICKET.SUB' | translate }}</div></div>
       </div>
       <div class="ticket-policy-grid">
-        <div class="policy-group"><strong>Saudi employees</strong><span>Ticket request is optional.</span><label>Employee tickets <input type="number" min="1" max="1" [(ngModel)]="annualTicketSettings.saudi_employee_tickets"></label></div>
-        <div class="policy-group"><strong>Non-Saudi employees</strong><span>Employee ticket is mandatory when tickets are requested.</span><label>Employee tickets <input type="number" min="1" max="1" [(ngModel)]="annualTicketSettings.non_saudi_employee_tickets"></label><label>Maximum dependent tickets <input type="number" min="0" max="3" [(ngModel)]="annualTicketSettings.non_saudi_max_dependents"></label></div>
+        <div class="policy-group"><strong>{{ 'ADMIN.SETTINGS.TICKET.SAUDI' | translate }}</strong><span>{{ 'ADMIN.SETTINGS.TICKET.SAUDI_HINT' | translate }}</span><label>{{ 'ADMIN.SETTINGS.TICKET.EMPLOYEE_TICKETS' | translate }} <input type="number" dir="ltr" min="1" max="1" [(ngModel)]="annualTicketSettings.saudi_employee_tickets"></label></div>
+        <div class="policy-group"><strong>{{ 'ADMIN.SETTINGS.TICKET.NON_SAUDI' | translate }}</strong><span>{{ 'ADMIN.SETTINGS.TICKET.NON_SAUDI_HINT' | translate }}</span><label>{{ 'ADMIN.SETTINGS.TICKET.EMPLOYEE_TICKETS' | translate }} <input type="number" dir="ltr" min="1" max="1" [(ngModel)]="annualTicketSettings.non_saudi_employee_tickets"></label><label>{{ 'ADMIN.SETTINGS.TICKET.MAX_DEPENDENTS' | translate }} <input type="number" dir="ltr" min="0" max="3" [(ngModel)]="annualTicketSettings.non_saudi_max_dependents"></label></div>
       </div>
       <div class="settings-feedback success" *ngIf="ticketSettingsMessage"><mat-icon>check_circle</mat-icon>{{ ticketSettingsMessage }}</div>
       <div class="settings-feedback error" *ngIf="ticketSettingsError"><mat-icon>error_outline</mat-icon>{{ ticketSettingsError }}</div>
-      <div class="settings-actions"><button class="btn-primary" (click)="saveAnnualTicketSettings()" [disabled]="ticketSettingsSaving"><mat-icon>{{ ticketSettingsSaving ? 'hourglass_empty' : 'save' }}</mat-icon>{{ ticketSettingsSaving ? 'Saving...' : 'Save Ticket Policy' }}</button></div>
+      <div class="settings-actions"><button class="btn-primary" (click)="saveAnnualTicketSettings()" [disabled]="ticketSettingsSaving"><mat-icon>{{ ticketSettingsSaving ? 'hourglass_empty' : 'save' }}</mat-icon>{{ (ticketSettingsSaving ? 'COMMON.SAVING' : 'ADMIN.SETTINGS.TICKET.SAVE') | translate }}</button></div>
     </div>
 
     <div class="settings-panel">
       <div class="settings-heading">
         <div class="settings-icon"><mat-icon>alternate_email</mat-icon></div>
         <div>
-          <div class="settings-title">Email Notification Replies</div>
-          <div class="settings-sub">Replies to all outgoing HR portal notifications will be sent to this address.</div>
+          <div class="settings-title">{{ 'ADMIN.SETTINGS.EMAIL.TITLE' | translate }}</div>
+          <div class="settings-sub">{{ 'ADMIN.SETTINGS.EMAIL.SUB' | translate }}</div>
         </div>
       </div>
       <div class="ticket-policy-grid">
         <div class="policy-group">
-          <strong>Reply-to address</strong>
-          <label>Email
-            <input type="email" autocomplete="email" [(ngModel)]="emailSettings.reply_to_email" placeholder="hr@example.com">
+          <strong>{{ 'ADMIN.SETTINGS.EMAIL.REPLY_TO' | translate }}</strong>
+          <label>{{ 'COMMON.EMAIL' | translate }}
+            <input type="email" dir="ltr" autocomplete="email" [(ngModel)]="emailSettings.reply_to_email" placeholder="hr@example.com">
           </label>
         </div>
       </div>
@@ -756,7 +792,7 @@
       <div class="settings-actions">
         <button class="btn-primary" (click)="saveEmailSettings()" [disabled]="emailSettingsSaving || !emailSettings.reply_to_email">
           <mat-icon>{{ emailSettingsSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
-          {{ emailSettingsSaving ? 'Saving...' : 'Save Email Settings' }}
+          {{ (emailSettingsSaving ? 'COMMON.SAVING' : 'ADMIN.SETTINGS.EMAIL.SAVE') | translate }}
         </button>
       </div>
     </div>
@@ -765,31 +801,31 @@
       <div class="settings-heading">
         <div class="settings-icon"><mat-icon>sms</mat-icon></div>
         <div>
-          <div class="settings-title">Unifonic SMS OTP</div>
-          <div class="settings-sub">Mobile OTP delivery for login and forgot password.</div>
+          <div class="settings-title">{{ 'ADMIN.SETTINGS.SMS.TITLE' | translate }}</div>
+          <div class="settings-sub">{{ 'ADMIN.SETTINGS.SMS.SUB' | translate }}</div>
         </div>
       </div>
 
       <div class="ticket-policy-grid">
         <div class="policy-group">
-          <strong>Connection</strong>
-          <label>Enabled
+          <strong>{{ 'ADMIN.SETTINGS.SMS.CONNECTION' | translate }}</strong>
+          <label>{{ 'ADMIN.SETTINGS.SMS.ENABLED' | translate }}
             <select [(ngModel)]="unifonicSettings.enabled">
-              <option [ngValue]="true">Yes</option>
-              <option [ngValue]="false">No</option>
+              <option [ngValue]="true">{{ 'COMMON.YES' | translate }}</option>
+              <option [ngValue]="false">{{ 'COMMON.NO' | translate }}</option>
             </select>
           </label>
-          <label>API URL
-            <input [(ngModel)]="unifonicSettings.api_url">
+          <label>{{ 'ADMIN.SETTINGS.SMS.API_URL' | translate }}
+            <input dir="ltr" [(ngModel)]="unifonicSettings.api_url">
           </label>
         </div>
         <div class="policy-group">
-          <strong>Credentials</strong>
-          <label>AppSid
-            <input type="password" autocomplete="new-password" [(ngModel)]="unifonicSettings.app_sid">
+          <strong>{{ 'ADMIN.SETTINGS.SMS.CREDENTIALS' | translate }}</strong>
+          <label>{{ 'ADMIN.SETTINGS.SMS.APP_SID' | translate }}
+            <input type="password" dir="ltr" autocomplete="new-password" [(ngModel)]="unifonicSettings.app_sid">
           </label>
-          <label>SenderID
-            <input [(ngModel)]="unifonicSettings.sender">
+          <label>{{ 'ADMIN.SETTINGS.SMS.SENDER_ID' | translate }}
+            <input dir="ltr" [(ngModel)]="unifonicSettings.sender">
           </label>
         </div>
       </div>
@@ -799,7 +835,7 @@
       <div class="settings-actions">
         <button class="btn-primary" (click)="saveUnifonicSettings()" [disabled]="unifonicSaving">
           <mat-icon>{{ unifonicSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
-          {{ unifonicSaving ? 'Saving...' : 'Save SMS Settings' }}
+          {{ (unifonicSaving ? 'COMMON.SAVING' : 'ADMIN.SETTINGS.SMS.SAVE') | translate }}
         </button>
       </div>
     </div>
@@ -808,33 +844,42 @@
       <div class="settings-heading">
         <div class="settings-icon"><mat-icon>event_note</mat-icon></div>
         <div>
-          <div class="settings-title">Monthly Leave Entry Reminder</div>
-          <div class="settings-sub">Email all active employees to submit current-month leave entries before payroll.</div>
+          <div class="settings-title">{{ 'ADMIN.SETTINGS.REMINDER.TITLE' | translate }}</div>
+          <div class="settings-sub">{{ 'ADMIN.SETTINGS.REMINDER.SUB' | translate }}</div>
         </div>
       </div>
 
       <div class="ticket-policy-grid">
-        <div class="policy-group">
-          <strong>Reminder schedule</strong>
-          <label>Enabled
+        <div class="policy-group reminder-schedule">
+          <strong>{{ 'ADMIN.SETTINGS.REMINDER.SCHEDULE' | translate }}</strong>
+          <label>{{ 'ADMIN.SETTINGS.SMS.ENABLED' | translate }}
             <select [(ngModel)]="monthlyLeaveReminderSettings.enabled">
-              <option [ngValue]="true">Yes</option>
-              <option [ngValue]="false">No</option>
+              <option [ngValue]="true">{{ 'COMMON.YES' | translate }}</option>
+              <option [ngValue]="false">{{ 'COMMON.NO' | translate }}</option>
             </select>
           </label>
-          <label>Send day of month
-            <input type="number" min="1" max="31" [(ngModel)]="monthlyLeaveReminderSettings.day">
+          <label>{{ 'ADMIN.SETTINGS.REMINDER.DAY' | translate }}
+            <input type="number" dir="ltr" min="1" max="31" [(ngModel)]="monthlyLeaveReminderSettings.day">
           </label>
-          <span>If the selected day does not exist in a month, the reminder sends on that month's last day.</span>
+          <span>{{ 'ADMIN.SETTINGS.REMINDER.DAY_HINT' | translate }}</span>
         </div>
         <div class="policy-group">
-          <strong>Email content</strong>
-          <label>Subject <input [(ngModel)]="monthlyLeaveReminderSettings.subject"></label>
-          <label>Body
-            <textarea rows="5" [(ngModel)]="monthlyLeaveReminderSettings.body"></textarea>
+          <strong>{{ 'ADMIN.SETTINGS.REMINDER.CONTENT_EN' | translate }}</strong>
+          <label>{{ 'ADMIN.SETTINGS.REMINDER.SUBJECT' | translate }} <input dir="ltr" lang="en" [(ngModel)]="monthlyLeaveReminderSettings.subject"></label>
+          <label>{{ 'ADMIN.SETTINGS.REMINDER.BODY' | translate }}
+            <textarea rows="5" dir="ltr" lang="en" [(ngModel)]="monthlyLeaveReminderSettings.body"></textarea>
           </label>
-          <span>Available tags: {{ '{{first_name}}' }}, {{ '{{employee_name}}' }}, {{ '{{month_name}}' }}, {{ '{{year}}' }}</span>
+          <span>{{ 'ADMIN.SETTINGS.REMINDER.TAGS' | translate }} <bdi dir="ltr">{{ '{{first_name}}' }}, {{ '{{employee_name}}' }}, {{ '{{month_name}}' }}, {{ '{{year}}' }}</bdi></span>
         </div>
+        <div class="policy-group">
+          <strong>{{ 'ADMIN.SETTINGS.REMINDER.CONTENT_AR' | translate }}</strong>
+          <label>{{ 'ADMIN.SETTINGS.REMINDER.SUBJECT' | translate }} <input dir="rtl" lang="ar" [(ngModel)]="monthlyLeaveReminderSettings.subject_ar"></label>
+          <label>{{ 'ADMIN.SETTINGS.REMINDER.BODY' | translate }}
+            <textarea rows="5" dir="rtl" lang="ar" [(ngModel)]="monthlyLeaveReminderSettings.body_ar"></textarea>
+          </label>
+          <span>{{ 'ADMIN.SETTINGS.REMINDER.TAGS' | translate }} <bdi dir="ltr">{{ '{{first_name}}' }}, {{ '{{employee_name}}' }}, {{ '{{month_name}}' }}, {{ '{{year}}' }}</bdi></span>
+        </div>
+        <p class="reminder-lang-note">{{ 'ADMIN.SETTINGS.REMINDER.LANG_NOTE' | translate }}</p>
       </div>
 
       <div class="settings-feedback success" *ngIf="leaveReminderMessage"><mat-icon>check_circle</mat-icon>{{ leaveReminderMessage }}</div>
@@ -842,7 +887,7 @@
       <div class="settings-actions">
         <button class="btn-primary" (click)="saveMonthlyLeaveReminderSettings()" [disabled]="leaveReminderSaving">
           <mat-icon>{{ leaveReminderSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
-          {{ leaveReminderSaving ? 'Saving...' : 'Save Leave Reminder' }}
+          {{ (leaveReminderSaving ? 'COMMON.SAVING' : 'ADMIN.SETTINGS.REMINDER.SAVE') | translate }}
         </button>
       </div>
     </div>
@@ -851,27 +896,27 @@
       <div class="settings-heading">
         <div class="settings-icon"><mat-icon>event_repeat</mat-icon></div>
         <div>
-          <div class="settings-title">Annual Leave Carryforward</div>
-          <div class="settings-sub">Choose how much remaining annual leave can carry forward to the next year. Carried days do not expire during that year and are used before the new entitlement, but they do not carry a second time.</div>
+          <div class="settings-title">{{ 'ADMIN.SETTINGS.CARRY.TITLE' | translate }}</div>
+          <div class="settings-sub">{{ 'ADMIN.SETTINGS.CARRY.SUB' | translate }}</div>
         </div>
       </div>
-      <p *ngIf="carryForwardLoading" role="status">Loading carryforward rule...</p>
+      <p *ngIf="carryForwardLoading" role="status">{{ 'ADMIN.SETTINGS.CARRY.LOADING' | translate }}</p>
       <fieldset class="carryforward-fields" [disabled]="carryForwardLoading || carryForwardSaving || !carryForwardTypeId">
-        <legend>Carryforward rule</legend>
+        <legend>{{ 'ADMIN.SETTINGS.CARRY.RULE' | translate }}</legend>
         <div class="approval-options">
           <label class="approval-option" [class.selected]="carryForwardSettings.all">
             <input type="radio" name="carryForwardRule" [value]="true" [(ngModel)]="carryForwardSettings.all" (ngModelChange)="carryForwardMessage=''">
-            <span><strong>All</strong><small>Carry forward all remaining annual leave.</small></span>
+            <span><strong>{{ 'ADMIN.SETTINGS.CARRY.ALL' | translate }}</strong><small>{{ 'ADMIN.SETTINGS.CARRY.ALL_HINT' | translate }}</small></span>
           </label>
           <label class="approval-option" [class.selected]="!carryForwardSettings.all">
             <input type="radio" name="carryForwardRule" [value]="false" [(ngModel)]="carryForwardSettings.all" (ngModelChange)="carryForwardMessage=''">
-            <span><strong>Number</strong><small>Set the maximum days to carry forward.</small></span>
+            <span><strong>{{ 'ADMIN.SETTINGS.CARRY.NUMBER' | translate }}</strong><small>{{ 'ADMIN.SETTINGS.CARRY.NUMBER_HINT' | translate }}</small></span>
           </label>
         </div>
         <div class="policy-group" *ngIf="!carryForwardSettings.all">
-          <label for="carryForwardMaximum">Maximum carryforward days</label>
-          <input id="carryForwardMaximum" type="number" inputmode="numeric" min="0" max="65535" step="1" required [(ngModel)]="carryForwardSettings.maximum" (ngModelChange)="carryForwardMessage=''" aria-describedby="carryForwardHelp">
-          <span id="carryForwardHelp">Enter a whole number. Use 0 to carry forward no leave.</span>
+          <label for="carryForwardMaximum">{{ 'ADMIN.SETTINGS.CARRY.MAXIMUM' | translate }}</label>
+          <input id="carryForwardMaximum" type="number" dir="ltr" inputmode="numeric" min="0" max="65535" step="1" required [(ngModel)]="carryForwardSettings.maximum" (ngModelChange)="carryForwardMessage=''" aria-describedby="carryForwardHelp">
+          <span id="carryForwardHelp">{{ 'ADMIN.SETTINGS.CARRY.MAXIMUM_HINT' | translate }}</span>
         </div>
       </fieldset>
       <div class="settings-feedback success" *ngIf="carryForwardMessage" role="status"><mat-icon>check_circle</mat-icon>{{ carryForwardMessage }}</div>
@@ -879,9 +924,9 @@
       <div class="settings-actions">
         <button class="btn-primary" (click)="saveCarryForwardSettings()" [disabled]="carryForwardLoading || carryForwardSaving || !carryForwardTypeId">
           <mat-icon>{{ carryForwardSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
-          {{ carryForwardSaving ? 'Saving...' : 'Save Carryforward Rule' }}
+          {{ (carryForwardSaving ? 'COMMON.SAVING' : 'ADMIN.SETTINGS.CARRY.SAVE') | translate }}
         </button>
-        <button class="btn-outline" *ngIf="carryForwardError && !carryForwardTypeId" (click)="loadCarryForwardSettings()" [disabled]="carryForwardLoading">Retry</button>
+        <button class="btn-outline" *ngIf="carryForwardError && !carryForwardTypeId" (click)="loadCarryForwardSettings()" [disabled]="carryForwardLoading">{{ 'ADMIN.SETTINGS.CARRY.RETRY' | translate }}</button>
       </div>
     </div>
   </ng-container>
@@ -897,48 +942,48 @@
         <div class="emp-avatar lg" [style.background]="avatarColor(selectedUser.name)">{{ (selectedUser.name||'?')[0] }}</div>
         <div>
           <div class="drawer-name">{{ selectedUser.name }}</div>
-          <div class="drawer-sub">{{ selectedUser.email }}</div>
+          <div class="drawer-sub ltr">{{ selectedUser.email }}</div>
         </div>
       </div>
-      <button class="row-btn" (click)="showUserDetail=false"><mat-icon>close</mat-icon></button>
+      <button class="row-btn" (click)="showUserDetail=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
     </div>
     <div class="drawer-body">
       <!-- Role -->
       <div class="detail-section">
-        <div class="ds-title">Current Role</div>
+        <div class="ds-title">{{ 'ADMIN.DRAWER.CURRENT_ROLE' | translate }}</div>
         <div *ngFor="let r of selectedUser.roles" class="role-badge-lg" [style.background]="roleData(roleName(r)).color+'18'" [style.color]="roleData(roleName(r)).color">
           <mat-icon>{{ roleData(roleName(r)).icon }}</mat-icon>
-          {{ roleData(roleName(r)).label }}
+          {{ roleLabel(roleName(r)) }}
         </div>
-        <div *ngIf="!selectedUser.roles?.length" style="font-size:13px;color:var(--text3)">No role assigned</div>
+        <div *ngIf="!selectedUser.roles?.length" style="font-size:13px;color:var(--text3)">{{ 'ADMIN.DRAWER.NO_ROLE' | translate }}</div>
       </div>
 
       <!-- Linked employee -->
       <div class="detail-section" *ngIf="selectedUser.employee">
-        <div class="ds-title">Linked Employee</div>
+        <div class="ds-title">{{ 'ADMIN.DRAWER.LINKED_EMPLOYEE' | translate }}</div>
         <div class="emp-cell">
           <div class="emp-avatar" [style.background]="avatarColor(selectedUser.employee?.first_name)">
             {{ (selectedUser.employee?.first_name||'?')[0] }}
           </div>
           <div>
             <div class="name-main">{{ selectedUser.employee?.first_name }} {{ selectedUser.employee?.last_name }}</div>
-            <div class="name-sub">{{ selectedUser.employee?.department?.name }}</div>
+            <div class="name-sub">{{ selectedUser.employee?.department | locName }}</div>
           </div>
         </div>
       </div>
 
       <!-- All permissions -->
       <div class="detail-section">
-        <div class="ds-title">Effective Permissions ({{ selectedUser.permissions?.length || 0 }})</div>
-        <div class="perm-tags">
+        <div class="ds-title">{{ 'ADMIN.DRAWER.EFFECTIVE_PERMISSIONS' | translate:{ count: selectedUser.permissions?.length || 0 } }}</div>
+        <div class="perm-tags" dir="ltr">
           <span *ngFor="let p of selectedUser.permissions" class="perm-tag">{{ p }}</span>
         </div>
       </div>
     </div>
     <div class="drawer-footer">
-      <button class="btn-outline" (click)="showUserDetail=false">Close</button>
+      <button class="btn-outline" (click)="showUserDetail=false">{{ 'COMMON.CLOSE' | translate }}</button>
       <button class="btn-primary" (click)="openUserForm(selectedUser); showUserDetail=false">
-        <mat-icon>edit</mat-icon> Edit
+        <mat-icon>edit</mat-icon> {{ 'COMMON.EDIT' | translate }}
       </button>
     </div>
   </ng-container>
@@ -948,50 +993,50 @@
 <div class="modal-backdrop" *ngIf="showUserForm" (click)="showUserForm=false"></div>
 <div class="modal-panel" *ngIf="showUserForm">
   <div class="modal-hdr">
-    <h3><mat-icon>{{ userEditId ? 'edit' : 'person_add' }}</mat-icon> {{ userEditId ? 'Edit User' : 'Create User' }}</h3>
-    <button class="row-btn" (click)="showUserForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>{{ userEditId ? 'edit' : 'person_add' }}</mat-icon> {{ (userEditId ? 'ADMIN.USER_FORM.EDIT_TITLE' : 'ADMIN.USER_FORM.CREATE_TITLE') | translate }}</h3>
+    <button class="row-btn" (click)="showUserForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Full Name <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="userForm.name" placeholder="e.g. Ahmed Al-Sayed">
+        <label class="field-label">{{ 'ADMIN.USER_FORM.FULL_NAME' | translate }} <span class="req">*</span></label>
+        <input class="field-input" [(ngModel)]="userForm.name" [placeholder]="'ADMIN.USER_FORM.PH_NAME' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Email <span class="req">*</span></label>
-        <input class="field-input" type="email" [(ngModel)]="userForm.email" placeholder="user@company.com">
+        <label class="field-label">{{ 'COMMON.EMAIL' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="email" dir="ltr" [(ngModel)]="userForm.email" placeholder="user@company.com">
       </div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">{{ userEditId ? 'New Password (leave blank to keep)' : 'Password *' }}</label>
-        <input class="field-input" type="password" [(ngModel)]="userForm.password" placeholder="Min 8 characters">
+        <label class="field-label">{{ (userEditId ? 'ADMIN.USER_FORM.NEW_PASSWORD' : 'ADMIN.USER_FORM.PASSWORD') | translate }}</label>
+        <input class="field-input" type="password" dir="ltr" [(ngModel)]="userForm.password" [placeholder]="'ADMIN.USER_FORM.PH_PASSWORD' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Role <span class="req">*</span></label>
+        <label class="field-label">{{ 'ADMIN.USER_FORM.ROLE' | translate }} <span class="req">*</span></label>
         <select class="field-select-full" [(ngModel)]="userForm.role">
-          <option *ngFor="let r of roles" [value]="r.name">{{ roleData(r.name).label }}</option>
+          <option *ngFor="let r of roles" [value]="r.name">{{ roleLabel(r.name) }}</option>
         </select>
       </div>
     </div>
     <div class="field-group">
-      <label class="field-label">Link to Employee (optional)</label>
+      <label class="field-label">{{ 'ADMIN.USER_FORM.LINK_EMPLOYEE' | translate }}</label>
       <select class="field-select-full" [(ngModel)]="userForm.employee_id">
-        <option value="">— No link —</option>
+        <option value="">{{ 'ADMIN.USER_FORM.NO_LINK' | translate }}</option>
         <option *ngFor="let e of employees" [value]="e.id">{{ e.first_name }} {{ e.last_name }} ({{ e.employee_code }})</option>
       </select>
-      <div class="field-hint">Linking an employee enables payslip, leave balance, and other self-service data.</div>
+      <div class="field-hint">{{ 'ADMIN.USER_FORM.LINK_HINT' | translate }}</div>
     </div>
     <label class="otp-form-option">
       <input type="checkbox" [(ngModel)]="userForm.otp_exempt" [disabled]="userForm.role==='super_admin'">
       <span>
-        <strong>Exclude from OTP login</strong>
-        <small>Super Admin users are always excluded automatically.</small>
+        <strong>{{ 'ADMIN.USER_FORM.OTP_EXEMPT' | translate }}</strong>
+        <small>{{ 'ADMIN.USER_FORM.OTP_EXEMPT_HINT' | translate }}</small>
       </span>
     </label>
     <!-- Role permissions preview -->
     <div class="role-preview" *ngIf="userForm.role">
-      <div class="rp-label">Role Access Preview</div>
+      <div class="rp-label">{{ 'ADMIN.USER_FORM.ROLE_PREVIEW' | translate }}</div>
       <div class="rp-modules">
         <ng-container *ngFor="let role of roles">
           <ng-container *ngIf="role.name===userForm.role">
@@ -999,7 +1044,7 @@
               [class.active]="roleHasModule(role, m.key)"
               [style.color]="moduleColor(role, m.key)"
               [style.borderColor]="moduleBorder(role, m.key, '50')">
-              <mat-icon>{{ m.icon }}</mat-icon>{{ m.label }}
+              <mat-icon>{{ m.icon }}</mat-icon>{{ m.label | translate }}
             </span>
           </ng-container>
         </ng-container>
@@ -1008,10 +1053,10 @@
     <div class="form-err" *ngIf="formError"><mat-icon>error_outline</mat-icon> {{ formError }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showUserForm=false">Cancel</button>
+    <button class="btn-outline" (click)="showUserForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="saveUser()" [disabled]="submitting">
       <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ submitting ? 'Saving…' : (userEditId ? 'Update User' : 'Create User') }}
+      {{ (submitting ? 'COMMON.SAVING' : (userEditId ? 'ADMIN.USER_FORM.UPDATE' : 'ADMIN.USER_FORM.CREATE')) | translate }}
     </button>
   </div>
 </div>
@@ -1022,15 +1067,15 @@
   <div class="modal-hdr">
     <h3>
       <mat-icon [style.color]="roleData(selectedRole.name).color">{{ roleData(selectedRole.name).icon }}</mat-icon>
-      Edit Permissions — {{ roleData(selectedRole.name).label }}
+      {{ 'ADMIN.ROLE_EDITOR.TITLE' | translate:{ role: roleLabel(selectedRole.name) } }}
     </h3>
-    <button class="row-btn" (click)="showRoleEditor=false"><mat-icon>close</mat-icon></button>
+    <button class="row-btn" (click)="showRoleEditor=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="perm-editor" *ngFor="let m of permModules">
       <ng-container *ngIf="modulePerms(m.key).length">
         <div class="pe-module-hdr">
-          <mat-icon>{{ m.icon }}</mat-icon>{{ m.label }}
+          <mat-icon>{{ m.icon }}</mat-icon>{{ m.label | translate }}
         </div>
         <div class="pe-perms">
           <label *ngFor="let perm of modulePerms(m.key)" class="perm-checkbox"
@@ -1038,15 +1083,15 @@
             <input type="checkbox" [checked]="hasPerm(perm)" (change)="togglePerm(perm)">
             <mat-icon *ngIf="hasPerm(perm)" style="color:var(--success)">check_box</mat-icon>
             <mat-icon *ngIf="!hasPerm(perm)" style="color:var(--text3)">check_box_outline_blank</mat-icon>
-            <span>{{ permLabel(perm) }}</span>
+            <span dir="ltr">{{ permLabel(perm) }}</span>
           </label>
         </div>
       </ng-container>
     </div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showRoleEditor=false">Cancel</button>
-    <button class="btn-primary" (click)="saveRolePermissions()"><mat-icon>save</mat-icon> Save Permissions</button>
+    <button class="btn-outline" (click)="showRoleEditor=false">{{ 'COMMON.CANCEL' | translate }}</button>
+    <button class="btn-primary" (click)="saveRolePermissions()"><mat-icon>save</mat-icon> {{ 'ADMIN.ROLE_EDITOR.SAVE' | translate }}</button>
   </div>
 </div>
 
@@ -1054,44 +1099,50 @@
 <div class="modal-backdrop" *ngIf="showUnitForm" (click)="showUnitForm=false"></div>
 <div class="modal-panel" *ngIf="showUnitForm">
   <div class="modal-hdr">
-    <h3><mat-icon>{{ unitEditId ? 'edit' : 'business' }}</mat-icon> {{ unitEditId ? 'Edit Unit' : 'Add Unit' }}</h3>
-    <button class="row-btn" (click)="showUnitForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>{{ unitEditId ? 'edit' : 'business' }}</mat-icon> {{ (unitEditId ? 'ADMIN.UNITS.EDIT_TITLE' : 'ADMIN.UNITS.ADD') | translate }}</h3>
+    <button class="row-btn" (click)="showUnitForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Name <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="unitForm.name" placeholder="e.g. Riyadh Branch">
+        <label class="field-label">{{ 'COMMON.NAME' | translate }} <span class="req">*</span></label>
+        <input class="field-input" dir="ltr" [(ngModel)]="unitForm.name" [placeholder]="'ADMIN.UNITS.PH_NAME' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Code <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="unitForm.code" placeholder="e.g. RUH">
+        <label class="field-label">{{ 'ADMIN.MASTER.NAME_AR' | translate }}</label>
+        <input class="field-input" dir="rtl" lang="ar" [(ngModel)]="unitForm.name_ar" [placeholder]="'ADMIN.UNITS.PH_NAME_AR' | translate">
       </div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Legacy Unit ID</label>
-        <input class="field-input" [(ngModel)]="unitForm.legacy_unitid" placeholder="Old unitid">
+        <label class="field-label">{{ 'COMMON.CODE' | translate }} <span class="req">*</span></label>
+        <input class="field-input" dir="ltr" [(ngModel)]="unitForm.code" [placeholder]="'ADMIN.UNITS.PH_CODE' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Status</label>
-        <select class="field-select-full" [(ngModel)]="unitForm.is_active">
-          <option [ngValue]="true">Active</option>
-          <option [ngValue]="false">Inactive</option>
-        </select>
+        <label class="field-label">{{ 'ADMIN.UNITS.COL_LEGACY' | translate }}</label>
+        <input class="field-input" dir="ltr" [(ngModel)]="unitForm.legacy_unitid" [placeholder]="'ADMIN.UNITS.PH_LEGACY' | translate">
       </div>
     </div>
-    <div class="field-group">
-      <label class="field-label">Description</label>
-      <input class="field-input" [(ngModel)]="unitForm.description" placeholder="Short description">
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">{{ 'COMMON.STATUS' | translate }}</label>
+        <select class="field-select-full" [(ngModel)]="unitForm.is_active">
+          <option [ngValue]="true">{{ 'active' | statusLabel }}</option>
+          <option [ngValue]="false">{{ 'inactive' | statusLabel }}</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">{{ 'COMMON.DESCRIPTION' | translate }}</label>
+        <input class="field-input" [(ngModel)]="unitForm.description" [placeholder]="'ADMIN.UNITS.PH_DESCRIPTION' | translate">
+      </div>
     </div>
     <div class="form-err" *ngIf="unitError"><mat-icon>error_outline</mat-icon> {{ unitError }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showUnitForm=false">Cancel</button>
+    <button class="btn-outline" (click)="showUnitForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="saveUnit()" [disabled]="submitting">
       <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ submitting ? 'Saving...' : (unitEditId ? 'Update Unit' : 'Create Unit') }}
+      {{ (submitting ? 'COMMON.SAVING' : (unitEditId ? 'ADMIN.UNITS.UPDATE' : 'ADMIN.UNITS.CREATE')) | translate }}
     </button>
   </div>
 </div>
@@ -1100,60 +1151,64 @@
 <div class="modal-backdrop" *ngIf="showDeptForm" (click)="showDeptForm=false"></div>
 <div class="modal-panel" *ngIf="showDeptForm">
   <div class="modal-hdr">
-    <h3><mat-icon>{{ deptEditId ? 'edit' : 'corporate_fare' }}</mat-icon> {{ deptEditId ? 'Edit Department' : 'Add Department' }}</h3>
-    <button class="row-btn" (click)="showDeptForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>{{ deptEditId ? 'edit' : 'corporate_fare' }}</mat-icon> {{ (deptEditId ? 'ADMIN.DEPTS.EDIT_TITLE' : 'ADMIN.DEPTS.ADD') | translate }}</h3>
+    <button class="row-btn" (click)="showDeptForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Name <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="deptForm.name" placeholder="e.g. Human Resources">
+        <label class="field-label">{{ 'COMMON.NAME' | translate }} <span class="req">*</span></label>
+        <input class="field-input" dir="ltr" [(ngModel)]="deptForm.name" [placeholder]="'ADMIN.DEPTS.PH_NAME' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Code <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="deptForm.code" placeholder="e.g. HR">
+        <label class="field-label">{{ 'ADMIN.MASTER.NAME_AR' | translate }}</label>
+        <input class="field-input" dir="rtl" lang="ar" [(ngModel)]="deptForm.name_ar" [placeholder]="'ADMIN.DEPTS.PH_NAME_AR' | translate">
       </div>
-    </div>
-    <div class="field-group">
-      <label class="field-label">Description</label>
-      <input class="field-input" [(ngModel)]="deptForm.description" placeholder="Short description (optional)">
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Parent Department</label>
+        <label class="field-label">{{ 'COMMON.CODE' | translate }} <span class="req">*</span></label>
+        <input class="field-input" dir="ltr" [(ngModel)]="deptForm.code" [placeholder]="'ADMIN.DEPTS.PH_CODE' | translate">
+      </div>
+      <div class="field-group">
+        <label class="field-label">{{ 'ADMIN.DEPTS.HEADCOUNT_BUDGET' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" min="0" [(ngModel)]="deptForm.headcount_budget" [placeholder]="'ADMIN.DEPTS.PH_BUDGET' | translate">
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">{{ 'COMMON.DESCRIPTION' | translate }}</label>
+      <input class="field-input" [(ngModel)]="deptForm.description" [placeholder]="'ADMIN.DEPTS.PH_DESCRIPTION' | translate">
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">{{ 'ADMIN.DEPTS.PARENT' | translate }}</label>
         <select class="field-select-full" [(ngModel)]="deptForm.parent_id">
-          <option value="">— None —</option>
-          <option *ngFor="let d of departments" [value]="d.id" [disabled]="d.id===deptEditId">{{ d.name }}</option>
+          <option value="">{{ 'ADMIN.NONE_OPTION' | translate }}</option>
+          <option *ngFor="let d of departments" [value]="d.id" [disabled]="d.id===deptEditId">{{ d | locName }}</option>
         </select>
       </div>
       <div class="field-group">
-        <label class="field-label">Manager</label>
+        <label class="field-label">{{ 'ADMIN.DEPTS.COL_MANAGER' | translate }}</label>
         <select class="field-select-full" [(ngModel)]="deptForm.manager_id">
-          <option value="">— None —</option>
+          <option value="">{{ 'ADMIN.NONE_OPTION' | translate }}</option>
           <option *ngFor="let e of employees" [value]="e.id">{{ e.first_name }} {{ e.last_name }} ({{ e.employee_code }})</option>
         </select>
       </div>
     </div>
-    <div class="two-col">
-      <div class="field-group">
-        <label class="field-label">Headcount Budget</label>
-        <input class="field-input" type="number" min="0" [(ngModel)]="deptForm.headcount_budget" placeholder="e.g. 25">
-      </div>
-      <div class="field-group">
-        <label class="field-label">Status</label>
-        <select class="field-select-full" [(ngModel)]="deptForm.is_active">
-          <option [ngValue]="true">Active</option>
-          <option [ngValue]="false">Inactive</option>
-        </select>
-      </div>
+    <div class="field-group">
+      <label class="field-label">{{ 'COMMON.STATUS' | translate }}</label>
+      <select class="field-select-full" [(ngModel)]="deptForm.is_active">
+        <option [ngValue]="true">{{ 'active' | statusLabel }}</option>
+        <option [ngValue]="false">{{ 'inactive' | statusLabel }}</option>
+      </select>
     </div>
     <div class="form-err" *ngIf="deptError"><mat-icon>error_outline</mat-icon> {{ deptError }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showDeptForm=false">Cancel</button>
+    <button class="btn-outline" (click)="showDeptForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="saveDept()" [disabled]="submitting">
       <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ submitting ? 'Saving…' : (deptEditId ? 'Update Department' : 'Create Department') }}
+      {{ (submitting ? 'COMMON.SAVING' : (deptEditId ? 'ADMIN.DEPTS.UPDATE' : 'ADMIN.DEPTS.CREATE')) | translate }}
     </button>
   </div>
 </div>
@@ -1162,54 +1217,60 @@
 <div class="modal-backdrop" *ngIf="showDesigForm" (click)="showDesigForm=false"></div>
 <div class="modal-panel" *ngIf="showDesigForm">
   <div class="modal-hdr">
-    <h3><mat-icon>{{ desigEditId ? 'edit' : 'badge' }}</mat-icon> {{ desigEditId ? 'Edit Job Position' : 'Add Job Position' }}</h3>
-    <button class="row-btn" (click)="showDesigForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>{{ desigEditId ? 'edit' : 'badge' }}</mat-icon> {{ (desigEditId ? 'ADMIN.DESIG.EDIT_TITLE' : 'ADMIN.DESIG.ADD') | translate }}</h3>
+    <button class="row-btn" (click)="showDesigForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Job Position <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="desigForm.title" placeholder="e.g. IT Developer">
+        <label class="field-label">{{ 'ADMIN.DESIG.JOB_POSITION' | translate }} <span class="req">*</span></label>
+        <input class="field-input" dir="ltr" [(ngModel)]="desigForm.title" [placeholder]="'ADMIN.DESIG.PH_TITLE' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Level</label>
-        <select class="field-select-full" [(ngModel)]="desigForm.level">
-          <option value="">— None —</option>
-          <option *ngFor="let l of desigLevels" [value]="l">{{ l | titlecase }}</option>
-        </select>
+        <label class="field-label">{{ 'ADMIN.DESIG.JOB_POSITION_AR' | translate }}</label>
+        <input class="field-input" dir="rtl" lang="ar" [(ngModel)]="desigForm.title_ar" [placeholder]="'ADMIN.DESIG.PH_TITLE_AR' | translate">
       </div>
-    </div>
-    <div class="field-group">
-      <label class="field-label">Department</label>
-      <select class="field-select-full" [(ngModel)]="desigForm.department_id">
-        <option value="">— None —</option>
-        <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
-      </select>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Min Salary</label>
-        <input class="field-input" type="number" min="0" [(ngModel)]="desigForm.min_salary" placeholder="e.g. 8000">
+        <label class="field-label">{{ 'ADMIN.DESIG.COL_LEVEL' | translate }}</label>
+        <select class="field-select-full" [(ngModel)]="desigForm.level">
+          <option value="">{{ 'ADMIN.NONE_OPTION' | translate }}</option>
+          <option *ngFor="let l of desigLevels" [value]="l">{{ levelLabel(l) }}</option>
+        </select>
       </div>
       <div class="field-group">
-        <label class="field-label">Max Salary</label>
-        <input class="field-input" type="number" min="0" [(ngModel)]="desigForm.max_salary" placeholder="e.g. 14000">
+        <label class="field-label">{{ 'COMMON.DEPARTMENT' | translate }}</label>
+        <select class="field-select-full" [(ngModel)]="desigForm.department_id">
+          <option value="">{{ 'ADMIN.NONE_OPTION' | translate }}</option>
+          <option *ngFor="let d of departments" [value]="d.id">{{ d | locName }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">{{ 'ADMIN.DESIG.MIN_SALARY' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" min="0" [(ngModel)]="desigForm.min_salary" [placeholder]="'ADMIN.DESIG.PH_MIN' | translate">
+      </div>
+      <div class="field-group">
+        <label class="field-label">{{ 'ADMIN.DESIG.MAX_SALARY' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" min="0" [(ngModel)]="desigForm.max_salary" [placeholder]="'ADMIN.DESIG.PH_MAX' | translate">
       </div>
     </div>
     <div class="field-group">
-      <label class="field-label">Status</label>
+      <label class="field-label">{{ 'COMMON.STATUS' | translate }}</label>
       <select class="field-select-full" [(ngModel)]="desigForm.is_active">
-        <option [ngValue]="true">Active</option>
-        <option [ngValue]="false">Inactive</option>
+        <option [ngValue]="true">{{ 'active' | statusLabel }}</option>
+        <option [ngValue]="false">{{ 'inactive' | statusLabel }}</option>
       </select>
     </div>
     <div class="form-err" *ngIf="desigError"><mat-icon>error_outline</mat-icon> {{ desigError }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showDesigForm=false">Cancel</button>
+    <button class="btn-outline" (click)="showDesigForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="saveDesig()" [disabled]="submitting">
       <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ submitting ? 'Saving...' : (desigEditId ? 'Update Job Position' : 'Create Job Position') }}
+      {{ (submitting ? 'COMMON.SAVING' : (desigEditId ? 'ADMIN.DESIG.UPDATE' : 'ADMIN.DESIG.CREATE')) | translate }}
     </button>
   </div>
 </div>

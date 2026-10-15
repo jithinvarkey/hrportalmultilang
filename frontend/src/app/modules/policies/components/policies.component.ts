@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 
 interface Policy {
   id: number;
@@ -87,6 +88,7 @@ export class PoliciesComponent implements OnInit {
     private readonly http: HttpClient,
     private readonly auth: AuthService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly lang: LanguageService,
   ) {}
 
   ngOnInit(): void {
@@ -134,12 +136,12 @@ export class PoliciesComponent implements OnInit {
 
   onFilterChange(): void { this.load(); }
 
-  /** Policies grouped by category name for the accordion view. */
-  get grouped(): { name: string; icon?: string; items: Policy[] }[] {
-    const map = new Map<string, { name: string; icon?: string; items: Policy[] }>();
+  /** Policies grouped by category name for the accordion view (category null = uncategorized; label translated in the template). */
+  get grouped(): { name: string; category: Policy['category']; icon?: string; items: Policy[] }[] {
+    const map = new Map<string, { name: string; category: Policy['category']; icon?: string; items: Policy[] }>();
     for (const p of this.policies) {
-      const key = p.category?.name || 'Uncategorized';
-      if (!map.has(key)) map.set(key, { name: key, icon: p.category?.icon, items: [] });
+      const key = p.category?.name || '';
+      if (!map.has(key)) map.set(key, { name: key, category: p.category?.name ? p.category : null, icon: p.category?.icon, items: [] });
       map.get(key)!.items.push(p);
     }
     return Array.from(map.values());
@@ -194,7 +196,7 @@ export class PoliciesComponent implements OnInit {
       error: err => {
         this.pdfLoading = false;
         const status = err?.status ? ` (HTTP ${err.status})` : '';
-        this.pdfError = `Secure policy preview request failed${status}.`;
+        this.pdfError = this.lang.t('POLICIES.MSG.PREVIEW_FAILED', { status });
         this.cdr.markForCheck();
       },
     });
@@ -234,7 +236,7 @@ export class PoliciesComponent implements OnInit {
         canvas.style.margin = '0 auto 20px';
         canvas.style.background = '#fff';
         canvas.style.boxShadow = '0 2px 12px rgba(0,0,0,.22)';
-        canvas.setAttribute('aria-label', `Policy page ${pageNumber} of ${pdfDocument.numPages}`);
+        canvas.setAttribute('aria-label', this.lang.t('POLICIES.READER.PAGE_LABEL', { page: pageNumber, total: pdfDocument.numPages }));
         container.appendChild(canvas);
 
         await page.render({
@@ -251,7 +253,7 @@ export class PoliciesComponent implements OnInit {
       const detail = error instanceof Error && error.message
         ? ` ${error.message}`
         : '';
-      this.pdfError = `The PDF could not be rendered.${detail}`;
+      this.pdfError = this.lang.t('POLICIES.MSG.RENDER_FAILED', { detail });
       this.cdr.markForCheck();
     }
   }
@@ -289,9 +291,9 @@ export class PoliciesComponent implements OnInit {
         // reflect in the list
         const inList = this.policies.find(p => p.id === this.selected?.id);
         if (inList) inList.acknowledged = true;
-        this.toast('Policy acknowledged.');
+        this.toast(this.lang.t('POLICIES.MSG.ACKNOWLEDGED'));
       },
-      error: err => { this.acknowledging = false; this.toast(this.firstError(err) || 'Failed.'); },
+      error: err => { this.acknowledging = false; this.toast(this.firstError(err) || this.lang.t('POLICIES.MSG.FAILED')); },
     });
   }
 
@@ -323,7 +325,7 @@ export class PoliciesComponent implements OnInit {
       },
       error: () => {
         previewWindow?.close();
-        this.toast('Attachment preview is unavailable.');
+        this.toast(this.lang.t('POLICIES.MSG.PREVIEW_UNAVAILABLE'));
       },
     });
   }
@@ -393,7 +395,7 @@ export class PoliciesComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
     if (file && file.size > 10 * 1024 * 1024) {
-      this.formError = 'File must be 10 MB or smaller.';
+      this.formError = this.lang.t('POLICIES.MSG.FILE_TOO_LARGE');
       input.value = ''; this.cdr.markForCheck(); return;
     }
     this.selectedFile = file;
@@ -419,9 +421,9 @@ export class PoliciesComponent implements OnInit {
   }
 
   savePolicy(): void {
-    if (!this.form.title?.trim()) { this.formError = 'Title is required.'; this.cdr.markForCheck(); return; }
+    if (!this.form.title?.trim()) { this.formError = this.lang.t('POLICIES.MSG.TITLE_REQUIRED'); this.cdr.markForCheck(); return; }
     if (this.form.audience_type === 'departments' && !(this.form.target_department_ids || []).length) {
-      this.formError = 'Select at least one department, or choose All departments.';
+      this.formError = this.lang.t('POLICIES.MSG.SELECT_DEPARTMENT');
       this.cdr.markForCheck();
       return;
     }
@@ -452,29 +454,29 @@ export class PoliciesComponent implements OnInit {
       next: () => {
         this.submitting = false;
         this.showForm = false;
-        this.toast(this.editId ? 'Policy updated.' : 'Policy created.');
+        this.toast(this.lang.t(this.editId ? 'POLICIES.MSG.UPDATED' : 'POLICIES.MSG.CREATED'));
         this.load();
       },
       error: err => {
         this.submitting = false;
-        this.formError = this.firstError(err) || 'Save failed.';
+        this.formError = this.firstError(err) || this.lang.t('MESSAGES.SAVE_FAILED');
         this.cdr.markForCheck();
       },
     });
   }
 
   deletePolicy(p: Policy): void {
-    if (!confirm(`Delete policy "${p.title}"?`)) return;
+    if (!confirm(this.lang.t('POLICIES.MSG.CONFIRM_DELETE', { title: p.title }))) return;
     this.http.delete(`${this.api}/${p.id}`).subscribe({
-      next: () => { this.toast('Policy deleted.'); this.load(); },
-      error: err => this.toast(this.firstError(err) || 'Delete failed.'),
+      next: () => { this.toast(this.lang.t('POLICIES.MSG.DELETED')); this.load(); },
+      error: err => this.toast(this.firstError(err) || this.lang.t('MESSAGES.DELETE_FAILED')),
     });
   }
 
   togglePublish(p: Policy): void {
     const nextPublished = !p.is_published;
-    const label = nextPublished ? 'publish' : 'move to draft';
-    if (!confirm(`Do you want to ${label} "${p.title}"?`)) return;
+    const confirmKey = nextPublished ? 'POLICIES.MSG.CONFIRM_PUBLISH' : 'POLICIES.MSG.CONFIRM_DRAFT';
+    if (!confirm(this.lang.t(confirmKey, { title: p.title }))) return;
 
     const payload = {
       audience_type: p.audience_type || 'all',
@@ -485,10 +487,10 @@ export class PoliciesComponent implements OnInit {
     this.http.put<any>(`${this.api}/${p.id}`, payload).subscribe({
       next: () => {
         p.is_published = nextPublished;
-        this.toast(nextPublished ? 'Policy published.' : 'Policy moved to draft.');
+        this.toast(this.lang.t(nextPublished ? 'POLICIES.MSG.PUBLISHED' : 'POLICIES.MSG.MOVED_TO_DRAFT'));
         this.load();
       },
-      error: err => this.toast(this.firstError(err) || 'Publish update failed.'),
+      error: err => this.toast(this.firstError(err) || this.lang.t('POLICIES.MSG.PUBLISH_FAILED')),
     });
   }
 
@@ -525,12 +527,12 @@ export class PoliciesComponent implements OnInit {
 
   saveCategory(): void {
     if (!this.catForm.name?.trim()) {
-      this.catError = 'Category name is required.';
+      this.catError = this.lang.t('POLICIES.MSG.CATEGORY_NAME_REQUIRED');
       this.cdr.markForCheck();
       return;
     }
     if (this.catForm.audience_type === 'departments' && !(this.catForm.target_department_ids || []).length) {
-      this.catError = 'Select at least one department, or choose All departments.';
+      this.catError = this.lang.t('POLICIES.MSG.SELECT_DEPARTMENT');
       this.cdr.markForCheck();
       return;
     }
@@ -541,16 +543,16 @@ export class PoliciesComponent implements OnInit {
       : this.http.post<any>(`${this.api}/categories`, this.catForm);
 
     req.subscribe({
-      next: () => { this.resetCatForm(); this.loadCategories(); this.toast('Category saved.'); },
-      error: err => { this.catError = this.firstError(err) || 'Save failed.'; this.cdr.markForCheck(); },
+      next: () => { this.resetCatForm(); this.loadCategories(); this.toast(this.lang.t('POLICIES.MSG.CATEGORY_SAVED')); },
+      error: err => { this.catError = this.firstError(err) || this.lang.t('MESSAGES.SAVE_FAILED'); this.cdr.markForCheck(); },
     });
   }
 
   deleteCategory(c: any): void {
-    if (!confirm(`Delete category "${c.name}"? Policies keep their content but lose this category.`)) return;
+    if (!confirm(this.lang.t('POLICIES.MSG.CONFIRM_DELETE_CATEGORY', { name: c.name }))) return;
     this.http.delete(`${this.api}/categories/${c.id}`).subscribe({
-      next: () => { this.loadCategories(); this.load(); this.toast('Category deleted.'); },
-      error: err => this.toast(this.firstError(err) || 'Delete failed.'),
+      next: () => { this.loadCategories(); this.load(); this.toast(this.lang.t('POLICIES.MSG.CATEGORY_DELETED')); },
+      error: err => this.toast(this.firstError(err) || this.lang.t('MESSAGES.DELETE_FAILED')),
     });
   }
 
@@ -576,7 +578,7 @@ export class PoliciesComponent implements OnInit {
       responseType: 'blob',
     }).subscribe({
       next: blob => this.saveBlob(blob, filename),
-      error: err => this.toast(this.firstError(err) || 'CSV download failed.'),
+      error: err => this.toast(this.firstError(err) || this.lang.t('POLICIES.MSG.CSV_FAILED')),
     });
   }
 
@@ -585,12 +587,22 @@ export class PoliciesComponent implements OnInit {
     if (!this.reportPolicyId) return;
     this.reminding = true;
     this.http.post<any>(`${this.api}/${this.reportPolicyId}/remind`, {}).subscribe({
-      next: r => { this.reminding = false; this.toast(r?.message || 'Reminders sent.'); this.cdr.markForCheck(); },
-      error: err => { this.reminding = false; this.toast(this.firstError(err) || 'Failed.'); this.cdr.markForCheck(); },
+      next: r => { this.reminding = false; this.toast(r?.message || this.lang.t('POLICIES.MSG.REMINDERS_SENT')); this.cdr.markForCheck(); },
+      error: err => { this.reminding = false; this.toast(this.firstError(err) || this.lang.t('POLICIES.MSG.FAILED')); this.cdr.markForCheck(); },
     });
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
+
+  /** Legacy document types are free text; known ones are translated, anything else is shown as stored. */
+  documentTypeLabel(type: string | null | undefined): string {
+    const raw = (type || '').trim();
+    if (!raw) return '';
+    const key = `POLICIES.DOCUMENT_TYPE.${raw.toLowerCase()}`;
+    const label = this.lang.t(key);
+    return label !== key ? label : raw;
+  }
+
 
   private toast(msg: string): void {
     this.successMsg = msg; this.cdr.markForCheck();

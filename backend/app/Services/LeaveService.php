@@ -141,16 +141,16 @@ class LeaveService {
     ): ?string {
         $dow = Carbon::parse($date)->dayOfWeek;
         if (!in_array($dow, self::WORKING_DAYS)) {
-            return "{$leaveType->name} can only be submitted for working days (Sun-Thu).";
+            return __(':type can only be submitted for working days (Sun-Thu).', ['type' => $leaveType->name]);
         }
         if ($startTime < self::WORK_START || $endTime > self::WORK_END) {
-            return 'Times must be within working hours (08:00 - 16:00).';
+            return __('Times must be within working hours (08:00 - 16:00).');
         }
         if ($startTime >= $endTime) {
-            return 'End time must be after start time.';
+            return __('End time must be after start time.');
         }
         if ($hours <= 0) {
-            return 'Calculated hours must be greater than zero.';
+            return __('Calculated hours must be greater than zero.');
         }
 
         // Overlap check
@@ -162,7 +162,7 @@ class LeaveService {
                 ->exists();
 
         if ($overlap) {
-            return "You already have a {$leaveType->name} request on this date.";
+            return __('You already have a :type request on this date.', ['type' => $leaveType->name]);
         }
 
         // Resolve department limit from DB
@@ -192,7 +192,7 @@ class LeaveService {
             $usedFmt = number_format($usedThisMonth, 1);
             $capFmt = number_format($capHours, 1);
             $remainingFmt = number_format(max(0, $remaining), 1);
-            return "Monthly limit exceeded. Used: {$usedFmt}h / {$capFmt}h. Remaining: {$remainingFmt}h.";
+            return __('Monthly limit exceeded. Used: :usedh / :caph. Remaining: :remainingh.', ['used' => $usedFmt, 'cap' => $capFmt, 'remaining' => $remainingFmt]);
         }
 
         return null;
@@ -426,7 +426,7 @@ class LeaveService {
 
             foreach ($recipients->unique('id') as $user) {
                 if ($user->email) {
-                    Mail::to($user->email)->queue(new LeaveStatusMail($leave, $status, $user->name, $remarks, $conflicts));
+                    Mail::to($user->email)->queue(new LeaveStatusMail($leave, $status, $user->name, $remarks, $conflicts, $user->employee?->arabic_name));
                 }
             }
         } catch (\Throwable $e) {
@@ -439,7 +439,7 @@ class LeaveService {
             $email = $leave->employee?->email;
             $name = $leave->employee?->first_name;
             if ($email) {
-                Mail::to($email)->queue(new LeaveStatusMail($leave, $status, $name, $remarks));
+                Mail::to($email)->queue(new LeaveStatusMail($leave, $status, $name, $remarks, null, $leave->employee?->arabic_name));
             }
         } catch (\Throwable $e) {
             Log::warning('LeaveService::notifyEmployee failed: ' . $e->getMessage());

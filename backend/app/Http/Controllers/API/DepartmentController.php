@@ -39,6 +39,7 @@ class DepartmentController extends Controller
     {
         $validated = $request->validate([
             'name'             => 'required|string|max:100',
+            'name_ar'          => 'nullable|string|max:150',
             'code'             => 'required|string|max:20|unique:departments',
             'description'      => 'nullable|string|max:500',
             'parent_id'        => 'nullable|exists:departments,id',
@@ -81,6 +82,7 @@ class DepartmentController extends Controller
 
         $validated = $request->validate([
             'name'             => 'sometimes|required|string|max:100',
+            'name_ar'          => 'nullable|string|max:150',
             'code'             => "sometimes|required|string|max:20|unique:departments,code,{$id}",
             'description'      => 'nullable|string|max:500',
             'parent_id'        => 'nullable|exists:departments,id',
@@ -104,7 +106,7 @@ class DepartmentController extends Controller
     {
         Department::findOrFail($id)->delete();
 
-        return response()->json(['message' => 'Department deleted']);
+        return response()->json(['message' => __('Department deleted')]);
     }
 
     /**

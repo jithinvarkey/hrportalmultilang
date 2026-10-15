@@ -19,7 +19,7 @@ class LegacyMigrationController extends Controller
         $this->allowLongRunningImport();
 
         if (!$this->canMigrate()) {
-            return response()->json(['message' => 'Only Super Admin or HR Manager can run legacy data migration.'], 403);
+            return response()->json(['message' => __('Only Super Admin or HR Manager can run legacy data migration.')], 403);
         }
 
         $data = $request->validate([
@@ -46,10 +46,10 @@ class LegacyMigrationController extends Controller
         $failed = (int) ($totals['failed'] ?? 0);
         $success = (int) ($totals['success'] ?? 0);
         $message = $request->boolean('dry_run')
-            ? ($failed > 0 ? 'Validation completed with errors.' : 'Migration file validated.')
+            ? ($failed > 0 ? __('Validation completed with errors.') : __('Migration file validated.'))
             : ($failed > 0
-                ? ($success > 0 ? 'Migration completed with some failed rows.' : 'Migration failed. No rows were imported.')
-                : 'Migration completed.');
+                ? ($success > 0 ? __('Migration completed with some failed rows.') : __('Migration failed. No rows were imported.'))
+                : __('Migration completed.'));
 
         return response()->json([
             'message' => $message,

@@ -48,6 +48,7 @@ class ContractResource extends JsonResource
             'department'    => $this->whenLoaded('department', fn () => [
                 'id'   => $this->department?->id,
                 'name' => $this->department?->name,
+                'name_ar' => $this->department?->name_ar,
             ]),
             'created_by'    => $this->whenLoaded('createdBy', fn () => [
                 'id'   => $this->createdBy?->id,

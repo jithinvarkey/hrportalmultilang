@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Mail\EmployeeDocumentUploadedMail;
+use App\Support\Locale\LocalizedMail;
 use App\Models\EmployeeDocument;
 use App\Models\EmployeeOnboardingLink;
 use App\Models\User;
@@ -38,10 +39,10 @@ class PublicOnboardingController extends Controller
     {
         $link = $this->findValidLink($token);
         if (!$link) {
-            return response()->json(['message' => 'This onboarding link is invalid or expired.'], 404);
+            return response()->json(['message' => __('This onboarding link is invalid or expired.')], 404);
         }
 
-        $employee = $link->employee()->with(['department:id,name', 'designation:id,title'])->firstOrFail();
+        $employee = $link->employee()->with(['department:id,name,name_ar', 'designation:id,title,title_ar'])->firstOrFail();
 
         return response()->json([
             'employee' => [
@@ -63,7 +64,9 @@ class PublicOnboardingController extends Controller
                 'emergency_contact_name' => $employee->emergency_contact_name,
                 'emergency_contact_phone' => $employee->emergency_contact_phone,
                 'department' => $employee->department?->name,
+                'department_ar' => $employee->department?->name_ar,
                 'designation' => $employee->designation?->title,
+                'designation_ar' => $employee->designation?->title_ar,
             ],
             'documents' => array_map(fn ($item, $field) => ['field' => $field] + $item, $this->documentFields(), array_keys($this->documentFields())),
             'expires_at' => optional($link->expires_at)->toIso8601String(),
@@ -74,7 +77,7 @@ class PublicOnboardingController extends Controller
     {
         $link = $this->findValidLink($token);
         if (!$link) {
-            return response()->json(['message' => 'This onboarding link is invalid or expired.'], 404);
+            return response()->json(['message' => __('This onboarding link is invalid or expired.')], 404);
         }
 
         $rules = [
@@ -168,7 +171,7 @@ class PublicOnboardingController extends Controller
             }
 
             return response()->json([
-                'message' => 'Onboarding details submitted successfully.',
+                'message' => __('Onboarding details submitted successfully.'),
                 'uploaded_documents' => count($uploaded),
             ]);
         });
@@ -221,10 +224,8 @@ class PublicOnboardingController extends Controller
                 return;
             }
 
-            $primaryEmail = $hrEmails->shift();
-            Mail::to($primaryEmail)
-                ->cc($hrEmails->all())
-                ->send(new EmployeeDocumentUploadedMail($employee, $document));
+            // One message per language group: the first HR address of each group in To, the others in CC.
+            LocalizedMail::send([], $hrEmails->all(), fn () => new EmployeeDocumentUploadedMail($employee, $document));
         } catch (\Throwable $e) {
             Log::warning('Public onboarding document verification email failed.', [
                 'employee_id' => $employee->id,

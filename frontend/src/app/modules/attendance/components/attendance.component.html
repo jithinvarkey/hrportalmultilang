@@ -3,10 +3,10 @@
   <!-- ── Header ─────────────────────────────────────────────────────── -->
   <div class="page-hdr">
     <div>
-      <h1 class="page-title">Attendance</h1>
-      <p class="page-sub">Check-in · Manual entries · Records management</p>
+      <h1 class="page-title">{{ 'ATTENDANCE.TITLE' | translate }}</h1>
+      <p class="page-sub">{{ 'ATTENDANCE.SUBTITLE' | translate }}</p>
     </div>
-    <div class="live-clock">{{ clock }}</div>
+    <div class="live-clock" dir="ltr" [attr.aria-label]="'ATTENDANCE.LIVE_CLOCK' | translate">{{ clock }}</div>
   </div>
 
   <!-- ── Messages ────────────────────────────────────────────────────── -->
@@ -17,8 +17,8 @@
   <div class="today-card">
     <div class="today-left">
       <div class="today-meta">
-        <span class="today-lbl">Today</span>
-        <span class="today-date">{{ todayLog?.date ? displayDate(todayLog.date) : todayStr() }}</span>
+        <span class="today-lbl">{{ 'ATTENDANCE.TODAY' | translate }}</span>
+        <span class="today-date">{{ (todayLog?.date ? displayDate(todayLog.date) : todayStr()) | locDate:'EEEE, d MMMM y' }}</span>
       </div>
 
       <div class="time-row" *ngIf="!loading">
@@ -26,21 +26,21 @@
              [class.late]="isLate(todayLog?.check_in ?? null)">
           <mat-icon>login</mat-icon>
           <div>
-            <div class="time-val">{{ todayLog?.check_in || '—' }}</div>
+            <div class="time-val" dir="ltr">{{ todayLog?.check_in || '—' }}</div>
             <div class="time-lbl">
-              Check-in
-              <span class="late-tag" *ngIf="isLate(todayLog?.check_in ?? null)">LATE</span>
+              {{ 'ATTENDANCE.CHECK_IN' | translate }}
+              <span class="late-tag" *ngIf="isLate(todayLog?.check_in ?? null)">{{ 'ATTENDANCE.LATE' | translate }}</span>
             </div>
           </div>
         </div>
 
-        <mat-icon class="arrow-ico">arrow_right_alt</mat-icon>
+        <mat-icon class="arrow-ico flip-rtl">arrow_right_alt</mat-icon>
 
         <div class="time-block" [class.active]="todayLog?.check_out">
           <mat-icon>logout</mat-icon>
           <div>
-            <div class="time-val">{{ todayLog?.check_out || '—' }}</div>
-            <div class="time-lbl">Check-out</div>
+            <div class="time-val" dir="ltr">{{ todayLog?.check_out || '—' }}</div>
+            <div class="time-lbl">{{ 'ATTENDANCE.CHECK_OUT' | translate }}</div>
           </div>
         </div>
 
@@ -48,33 +48,33 @@
           <mat-icon>schedule</mat-icon>
           <div>
             <div class="time-val">{{ fmt(todayLog?.total_minutes) }}</div>
-            <div class="time-lbl">Hours</div>
+            <div class="time-lbl">{{ 'COMMON.HOURS' | translate }}</div>
           </div>
         </div>
 
         <div class="time-block ref-block">
           <mat-icon>access_time</mat-icon>
           <div>
-            <div class="time-val">{{ settings.work_start }}</div>
-            <div class="time-lbl">Start · +{{ settings.late_after_minutes }}m late</div>
+            <div class="time-val" dir="ltr">{{ settings.work_start }}</div>
+            <div class="time-lbl">{{ 'ATTENDANCE.START_LATE_AFTER' | translate:{min: settings.late_after_minutes} }}</div>
           </div>
         </div>
       </div>
 
       <div class="sk-row" *ngIf="loading">
-        <div class="sk" style="width:320px;height:52px;border-radius:10px"></div>
+        <div class="sk" style="width:320px;max-width:100%;height:52px;border-radius:10px"></div>
       </div>
     </div>
 
     <div class="today-right" *ngIf="isAdmin || isHR">
       <span class="status-badge" [class]="statusClass(todayLog?.status || '')">
-        {{ todayLog?.status || 'Not recorded' }}
+        {{ todayLog?.status ? (todayLog?.status | statusLabel) : ('ATTENDANCE.NOT_RECORDED' | translate) }}
       </span>
       <button class="btn-checkin" [disabled]="!canCheckIn || checkingIn" (click)="checkIn()">
-        <mat-icon>login</mat-icon> {{ checkingIn ? 'Recording…' : 'Check In' }}
+        <mat-icon>login</mat-icon> {{ (checkingIn ? 'ATTENDANCE.RECORDING' : 'ATTENDANCE.CHECK_IN_BTN') | translate }}
       </button>
       <button class="btn-checkout" [disabled]="!canCheckOut || checkingOut" (click)="checkOut()">
-        <mat-icon>logout</mat-icon> {{ checkingOut ? 'Recording…' : 'Check Out' }}
+        <mat-icon>logout</mat-icon> {{ (checkingOut ? 'ATTENDANCE.RECORDING' : 'ATTENDANCE.CHECK_OUT_BTN') | translate }}
       </button>
     </div>
   </div>
@@ -82,16 +82,16 @@
   <!-- ── Tab navigation ──────────────────────────────────────────────── -->
   <div class="tab-bar">
     <button class="tab" [class.active]="activeTab==='log'" (click)="switchTab('log')">
-      <mat-icon>list_alt</mat-icon> {{ isMgr && !isHR ? 'Department Attendance' : 'Attendance Log' }}
+      <mat-icon>list_alt</mat-icon> {{ (isMgr && !isHR ? 'ATTENDANCE.TABS.DEPARTMENT' : 'ATTENDANCE.TABS.LOG') | translate }}
     </button>
     <button class="tab" [class.active]="activeTab==='mine'" *ngIf="isMgr && !isHR" (click)="switchTab('mine')">
-      <mat-icon>person_pin</mat-icon> My Attendance
+      <mat-icon>person_pin</mat-icon> {{ 'ATTENDANCE.TABS.MINE' | translate }}
     </button>
     <button class="tab" [class.active]="activeTab==='manual'" *ngIf="isHR" (click)="switchTab('manual')">
-      <mat-icon>edit_calendar</mat-icon> Manual Entry
+      <mat-icon>edit_calendar</mat-icon> {{ 'ATTENDANCE.TABS.MANUAL' | translate }}
     </button>
     <button class="tab" [class.active]="activeTab==='settings'" *ngIf="isHR" (click)="switchTab('settings')">
-      <mat-icon>tune</mat-icon> Settings
+      <mat-icon>tune</mat-icon> {{ 'ATTENDANCE.TABS.SETTINGS' | translate }}
     </button>
   </div>
 
@@ -104,32 +104,32 @@
     <div class="filter-card" [formGroup]="filterForm">
       <div class="filter-row">
         <div class="filter-group">
-          <label class="filter-lbl">From</label>
-          <input class="filter-input" type="date" formControlName="date_from">
+          <label class="filter-lbl">{{ 'COMMON.FROM' | translate }}</label>
+          <input class="filter-input" type="date" dir="ltr" formControlName="date_from">
         </div>
         <div class="filter-group">
-          <label class="filter-lbl">To</label>
-          <input class="filter-input" type="date" formControlName="date_to">
+          <label class="filter-lbl">{{ 'COMMON.TO' | translate }}</label>
+          <input class="filter-input" type="date" dir="ltr" formControlName="date_to">
         </div>
         <div class="filter-group">
-          <label class="filter-lbl">Status</label>
+          <label class="filter-lbl">{{ 'COMMON.STATUS' | translate }}</label>
           <select class="filter-select" formControlName="status">
-            <option value="">All Status</option>
-            <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+            <option value="">{{ 'ATTENDANCE.FILTER.ALL_STATUS' | translate }}</option>
+            <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.value | statusLabel }}</option>
           </select>
         </div>
         <div class="filter-group" *ngIf="isHR">
-          <label class="filter-lbl">Department</label>
+          <label class="filter-lbl">{{ 'COMMON.DEPARTMENT' | translate }}</label>
           <select class="filter-select" formControlName="department_id">
-            <option value="">All Departments</option>
-            <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+            <option value="">{{ 'ATTENDANCE.FILTER.ALL_DEPARTMENTS' | translate }}</option>
+            <option *ngFor="let d of departments" [value]="d.id">{{ d | locName }}</option>
           </select>
         </div>
         <div class="filter-group" *ngIf="isHR || (isMgr && activeTab === 'log')">
-          <label class="filter-lbl">Employee</label>
+          <label class="filter-lbl">{{ 'COMMON.EMPLOYEE' | translate }}</label>
           <div class="emp-combo">
             <input class="filter-input emp-combo-input" type="text"
-                   placeholder="Search employee…" autocomplete="off"
+                   [placeholder]="'ATTENDANCE.FILTER.SEARCH_EMPLOYEE' | translate" autocomplete="off"
                    [value]="empSearchOpen ? empSearch : selectedEmployeeLabel"
                    (focus)="openEmpSearch()"
                    (input)="onEmpSearch($any($event.target).value)"
@@ -139,20 +139,20 @@
             <div class="emp-combo-list" *ngIf="empSearchOpen">
               <div class="emp-combo-opt" [class.active]="!filterForm.value.employee_id"
                    (mousedown)="$event.preventDefault(); selectFilterEmployee(null)">
-                All Employees
+                {{ 'ATTENDANCE.FILTER.ALL_EMPLOYEES' | translate }}
               </div>
               <div class="emp-combo-opt" *ngFor="let e of filterEmployeeOptions"
                    [class.active]="'' + filterForm.value.employee_id === '' + e.id"
                    (mousedown)="$event.preventDefault(); selectFilterEmployee(e)">
                 {{ e.first_name }} {{ e.last_name }}
-                <span class="emp-combo-code" *ngIf="e.employee_code">{{ e.employee_code }}</span>
+                <span class="emp-combo-code" dir="ltr" *ngIf="e.employee_code">{{ e.employee_code }}</span>
               </div>
-              <div class="emp-combo-empty" *ngIf="!filterEmployeeOptions.length">No employees found</div>
+              <div class="emp-combo-empty" *ngIf="!filterEmployeeOptions.length">{{ 'ATTENDANCE.FILTER.NO_EMPLOYEES' | translate }}</div>
             </div>
           </div>
         </div>
-        <button class="btn-primary" (click)="applyFilters()" style="align-self:flex-end">
-          <mat-icon>search</mat-icon> Apply
+        <button class="btn-primary apply-btn" (click)="applyFilters()">
+          <mat-icon>search</mat-icon> {{ 'COMMON.APPLY' | translate }}
         </button>
       </div>
     </div>
@@ -161,23 +161,23 @@
     <div class="data-card">
       <div class="card-hdr">
         <span class="card-title">
-          <mat-icon>table_chart</mat-icon> Records
+          <mat-icon>table_chart</mat-icon> {{ 'ATTENDANCE.TABLE.RECORDS' | translate }}
           <span class="record-ct" *ngIf="!reportLoading">{{ reportPagination?.total || 0 }}</span>
-          <span class="record-scope" *ngIf="isMgr && !isHR">{{ activeTab === 'mine' ? 'My records' : 'Department employees' }}</span>
+          <span class="record-scope" *ngIf="isMgr && !isHR">{{ (activeTab === 'mine' ? 'ATTENDANCE.TABLE.MY_RECORDS' : 'ATTENDANCE.TABLE.DEPT_EMPLOYEES') | translate }}</span>
         </span>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap table-scroll">
         <table class="att-table">
           <thead>
             <tr>
-              <th>Employee</th>
-              <th>Date</th>
-              <th>Check-in</th>
-              <th>Check-out</th>
-              <th>Duration</th>
-              <th>Status</th>
-              <th>Source</th>
-              <th>Actions</th>
+              <th>{{ 'COMMON.EMPLOYEE' | translate }}</th>
+              <th>{{ 'COMMON.DATE' | translate }}</th>
+              <th>{{ 'ATTENDANCE.CHECK_IN' | translate }}</th>
+              <th>{{ 'ATTENDANCE.CHECK_OUT' | translate }}</th>
+              <th>{{ 'ATTENDANCE.DURATION' | translate }}</th>
+              <th>{{ 'COMMON.STATUS' | translate }}</th>
+              <th>{{ 'ATTENDANCE.SOURCE' | translate }}</th>
+              <th>{{ 'COMMON.ACTIONS' | translate }}</th>
             </tr>
           </thead>
           <tbody>
@@ -197,35 +197,35 @@
                   </div>
                   <div>
                     <div class="emp-name">{{ r.employee?.first_name }} {{ r.employee?.last_name }}</div>
-                    <div class="emp-dept">{{ r.employee?.department?.name || '—' }}</div>
+                    <div class="emp-dept">{{ r.employee?.department ? (r.employee.department | locName) : '—' }}</div>
                   </div>
                 </div>
               </td>
-              <td class="mono-cell">{{ displayDate(r.date) }}</td>
+              <td class="mono-cell">{{ displayDate(r.date) | locDate:'EEE d MMM y' }}</td>
               <td class="mono-cell" [class.late-cell]="isLate(r.check_in)">
-                {{ r.check_in || '—' }}
-                <span class="late-tag" *ngIf="isLate(r.check_in)">late</span>
+                <span dir="ltr">{{ r.check_in || '—' }}</span>
+                <span class="late-tag" *ngIf="isLate(r.check_in)">{{ 'ATTENDANCE.LATE' | translate }}</span>
               </td>
-              <td class="mono-cell">{{ r.check_out || '—' }}</td>
+              <td class="mono-cell"><span dir="ltr">{{ r.check_out || '—' }}</span></td>
               <td>
                 <span [class.short-hours]="r.total_minutes && r.total_minutes < settings.full_day_hours * 60 * 0.5">
                   {{ fmt(r.total_minutes) }}
                 </span>
               </td>
               <td>
-                <span class="status-badge" [class]="statusClass(r.status)">{{ r.status }}</span>
+                <span class="status-badge" [class]="statusClass(r.status)">{{ r.status | statusLabel }}</span>
               </td>
               <td>
-                <span class="source-badge" [class]="'src-' + r.source">{{ r.source }}</span>
+                <span class="source-badge" [class]="'src-' + r.source">{{ sourceLabel(r.source) }}</span>
               </td>
               <td>
                 <button class="apply-leave-btn" *ngIf="canApplyForLeave(r)"
-                        matTooltip="Apply for leave for this attendance exception"
+                        [matTooltip]="'ATTENDANCE.TABLE.APPLY_LEAVE_TIP' | translate"
                         (click)="applyForLeave(r)">
                   <mat-icon>event_available</mat-icon>
-                  Apply leave
+                  {{ 'ATTENDANCE.TABLE.APPLY_LEAVE' | translate }}
                 </button>
-                <button class="icon-btn" *ngIf="isHR" matTooltip="Edit record" (click)="openEdit(r)">
+                <button class="icon-btn" *ngIf="isHR" [matTooltip]="'ATTENDANCE.TABLE.EDIT_RECORD' | translate" [attr.aria-label]="'ATTENDANCE.TABLE.EDIT_RECORD' | translate" (click)="openEdit(r)">
                   <mat-icon>edit</mat-icon>
                 </button>
               </td>
@@ -234,7 +234,7 @@
             <tr *ngIf="!reportLoading && !reportRows.length">
               <td colspan="8" class="empty-row">
                 <mat-icon>event_busy</mat-icon>
-                <span>No attendance records found for selected filters</span>
+                <span>{{ 'ATTENDANCE.TABLE.EMPTY' | translate }}</span>
               </td>
             </tr>
           </tbody>
@@ -242,11 +242,11 @@
       </div>
       <div class="pagination-bar" *ngIf="!reportLoading && reportPagination?.total">
         <div class="pagination-summary">
-          Showing {{ reportPagination.from }}–{{ reportPagination.to }} of {{ reportPagination.total }}
+          {{ 'COMMON.SHOWING' | translate:{from: reportPagination.from, to: reportPagination.to, total: reportPagination.total} }}
         </div>
         <div class="pagination-controls">
           <label class="page-size-label">
-            Rows
+            {{ 'ATTENDANCE.TABLE.ROWS' | translate }}
             <select class="page-size-select" [(ngModel)]="reportPerPage" (change)="changeReportPageSize()">
               <option [ngValue]="10">10</option>
               <option [ngValue]="25">25</option>
@@ -254,17 +254,17 @@
               <option [ngValue]="100">100</option>
             </select>
           </label>
-          <button class="page-nav" matTooltip="Previous page"
+          <button class="page-nav" [matTooltip]="'ATTENDANCE.TABLE.PREV_PAGE' | translate" [attr.aria-label]="'ATTENDANCE.TABLE.PREV_PAGE' | translate"
             [disabled]="reportPage<=1" (click)="changeReportPage(reportPage-1)">
-            <mat-icon>chevron_left</mat-icon>
+            <mat-icon class="flip-rtl">chevron_left</mat-icon>
           </button>
           <button class="page-number" *ngFor="let page of reportPages"
             [class.active]="page===reportPage" (click)="changeReportPage(page)">
             {{ page }}
           </button>
-          <button class="page-nav" matTooltip="Next page"
+          <button class="page-nav" [matTooltip]="'ATTENDANCE.TABLE.NEXT_PAGE' | translate" [attr.aria-label]="'ATTENDANCE.TABLE.NEXT_PAGE' | translate"
             [disabled]="reportPage>=reportPagination.last_page" (click)="changeReportPage(reportPage+1)">
-            <mat-icon>chevron_right</mat-icon>
+            <mat-icon class="flip-rtl">chevron_right</mat-icon>
           </button>
         </div>
       </div>
@@ -281,16 +281,16 @@
       <div class="form-card-header">
         <mat-icon>edit_calendar</mat-icon>
         <div>
-          <div class="form-card-title">Add Manual Attendance Entry</div>
-          <div class="form-card-sub">Record attendance for an employee that wasn't captured automatically</div>
+          <div class="form-card-title">{{ 'ATTENDANCE.MANUAL.TITLE' | translate }}</div>
+          <div class="form-card-sub">{{ 'ATTENDANCE.MANUAL.SUB' | translate }}</div>
         </div>
       </div>
 
       <div class="form-grid">
         <div class="field-group full-width">
-          <label class="field-label">Employee <span class="req">*</span></label>
+          <label class="field-label">{{ 'COMMON.EMPLOYEE' | translate }} <span class="req">*</span></label>
           <select class="field-select-full" formControlName="employee_id">
-            <option value="">— Select employee —</option>
+            <option value="">{{ 'ATTENDANCE.MANUAL.SELECT_EMPLOYEE' | translate }}</option>
             <option *ngFor="let e of allEmployees" [value]="e.id">
               {{ e.first_name }} {{ e.last_name }} ({{ e.employee_code }})
             </option>
@@ -298,44 +298,44 @@
         </div>
 
         <div class="field-group">
-          <label class="field-label">Date <span class="req">*</span></label>
-          <input class="field-input" type="date" formControlName="date">
+          <label class="field-label">{{ 'COMMON.DATE' | translate }} <span class="req">*</span></label>
+          <input class="field-input" type="date" dir="ltr" formControlName="date">
         </div>
 
         <div class="field-group">
-          <label class="field-label">Status <span class="req">*</span></label>
+          <label class="field-label">{{ 'COMMON.STATUS' | translate }} <span class="req">*</span></label>
           <select class="field-select-full" formControlName="status">
-            <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+            <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.value | statusLabel }}</option>
           </select>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Check-in Time</label>
-          <input class="field-input" type="time" formControlName="check_in">
-          <div class="field-hint">Leave blank if absent or on leave</div>
+          <label class="field-label">{{ 'ATTENDANCE.CHECK_IN_TIME' | translate }}</label>
+          <input class="field-input" type="time" dir="ltr" formControlName="check_in">
+          <div class="field-hint">{{ 'ATTENDANCE.MANUAL.BLANK_HINT' | translate }}</div>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Check-out Time</label>
-          <input class="field-input" type="time" formControlName="check_out">
+          <label class="field-label">{{ 'ATTENDANCE.CHECK_OUT_TIME' | translate }}</label>
+          <input class="field-input" type="time" dir="ltr" formControlName="check_out">
         </div>
 
         <div class="field-group full-width">
-          <label class="field-label">Notes / Reason</label>
+          <label class="field-label">{{ 'ATTENDANCE.MANUAL.NOTES_REASON' | translate }}</label>
           <input class="field-input" type="text" formControlName="notes"
-                 placeholder="e.g. Working from home, system downtime, retroactive correction…">
+                 [placeholder]="'ATTENDANCE.MANUAL.NOTES_PH' | translate">
         </div>
       </div>
 
       <div class="form-footer">
         <div class="form-note">
           <mat-icon>info_outline</mat-icon>
-          Manual entries are flagged as <strong>manual</strong> source in the attendance log.
+          <span [innerHTML]="'ATTENDANCE.MANUAL.NOTE' | translate"></span>
         </div>
         <button class="btn-primary" (click)="submitManual()"
                 [disabled]="savingManual || manualForm.invalid">
           <mat-icon>{{ savingManual ? 'hourglass_empty' : 'save' }}</mat-icon>
-          {{ savingManual ? 'Saving…' : 'Save Entry' }}
+          {{ (savingManual ? 'COMMON.SAVING' : 'ATTENDANCE.MANUAL.SAVE') | translate }}
         </button>
       </div>
     </div>
@@ -351,52 +351,52 @@
       <div class="form-card-header">
         <mat-icon>tune</mat-icon>
         <div>
-          <div class="form-card-title">Attendance Policy Settings</div>
-          <div class="form-card-sub">Configure working hours, late thresholds and weekend days</div>
+          <div class="form-card-title">{{ 'ATTENDANCE.SETTINGS.TITLE' | translate }}</div>
+          <div class="form-card-sub">{{ 'ATTENDANCE.SETTINGS.SUB' | translate }}</div>
         </div>
       </div>
 
       <div class="settings-grid">
 
         <div class="setting-block">
-          <label class="field-label">Work Start Time</label>
-          <div class="field-hint">Expected daily check-in time</div>
-          <input class="field-input" type="time" formControlName="work_start">
+          <label class="field-label">{{ 'ATTENDANCE.SETTINGS.WORK_START' | translate }}</label>
+          <div class="field-hint">{{ 'ATTENDANCE.SETTINGS.WORK_START_HINT' | translate }}</div>
+          <input class="field-input" type="time" dir="ltr" formControlName="work_start">
         </div>
 
         <div class="setting-block">
-          <label class="field-label">Grace Period (minutes)</label>
-          <div class="field-hint">Forgiven before late rule kicks in</div>
-          <input class="field-input" type="number" min="0" max="60" formControlName="grace_minutes">
+          <label class="field-label">{{ 'ATTENDANCE.SETTINGS.GRACE' | translate }}</label>
+          <div class="field-hint">{{ 'ATTENDANCE.SETTINGS.GRACE_HINT' | translate }}</div>
+          <input class="field-input" type="number" dir="ltr" min="0" max="60" formControlName="grace_minutes">
         </div>
 
         <div class="setting-block">
-          <label class="field-label">Late After (minutes)</label>
-          <div class="field-hint">Minutes past work start before marking Late</div>
-          <input class="field-input" type="number" min="0" max="120" formControlName="late_after_minutes">
+          <label class="field-label">{{ 'ATTENDANCE.SETTINGS.LATE_AFTER' | translate }}</label>
+          <div class="field-hint">{{ 'ATTENDANCE.SETTINGS.LATE_AFTER_HINT' | translate }}</div>
+          <input class="field-input" type="number" dir="ltr" min="0" max="120" formControlName="late_after_minutes">
         </div>
 
         <div class="setting-block">
-          <label class="field-label">Half-Day Threshold (hours)</label>
-          <div class="field-hint">Minimum hours worked for half-day</div>
-          <input class="field-input" type="number" min="1" max="12" step="0.5" formControlName="half_day_hours">
+          <label class="field-label">{{ 'ATTENDANCE.SETTINGS.HALF_DAY' | translate }}</label>
+          <div class="field-hint">{{ 'ATTENDANCE.SETTINGS.HALF_DAY_HINT' | translate }}</div>
+          <input class="field-input" type="number" dir="ltr" min="1" max="12" step="0.5" formControlName="half_day_hours">
         </div>
 
         <div class="setting-block">
-          <label class="field-label">Full Day Hours</label>
-          <div class="field-hint">Expected hours for a full working day</div>
-          <input class="field-input" type="number" min="4" max="24" step="0.5" formControlName="full_day_hours">
+          <label class="field-label">{{ 'ATTENDANCE.SETTINGS.FULL_DAY' | translate }}</label>
+          <div class="field-hint">{{ 'ATTENDANCE.SETTINGS.FULL_DAY_HINT' | translate }}</div>
+          <input class="field-input" type="number" dir="ltr" min="4" max="24" step="0.5" formControlName="full_day_hours">
         </div>
 
         <div class="setting-block full-width">
-          <label class="field-label">Weekend Days</label>
-          <div class="field-hint">Days excluded from attendance tracking</div>
+          <label class="field-label">{{ 'ATTENDANCE.SETTINGS.WEEKEND' | translate }}</label>
+          <div class="field-hint">{{ 'ATTENDANCE.SETTINGS.WEEKEND_HINT' | translate }}</div>
           <div class="day-pills">
             <label class="day-pill" *ngFor="let d of weekDays">
               <input type="checkbox"
                      [checked]="settingsForm.get('weekend_days')?.value?.includes(d.value)"
                      (change)="toggleWeekend(d.value)">
-              <span>{{ d.label }}</span>
+              <span>{{ weekdayDate(d.value) | locDate:'EEEE' }}</span>
             </label>
           </div>
         </div>
@@ -404,11 +404,11 @@
 
       <div class="form-footer">
         <span class="save-ok" *ngIf="settingsSaved">
-          <mat-icon>check_circle</mat-icon> Settings saved
+          <mat-icon>check_circle</mat-icon> {{ 'ATTENDANCE.SETTINGS.SAVED' | translate }}
         </span>
         <button class="btn-primary" (click)="saveSettings()" [disabled]="settingsSaving">
           <mat-icon>{{ settingsSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
-          {{ settingsSaving ? 'Saving…' : 'Save Settings' }}
+          {{ (settingsSaving ? 'COMMON.SAVING' : 'ATTENDANCE.SETTINGS.SAVE') | translate }}
         </button>
       </div>
     </div>
@@ -423,44 +423,44 @@
   <div class="modal-hdr">
     <h3>
       <mat-icon>edit_calendar</mat-icon>
-      Edit — {{ editingRow.employee?.first_name }} {{ editingRow.employee?.last_name }}
+      {{ 'ATTENDANCE.EDIT.TITLE' | translate:{name: (editingRow.employee?.first_name || '') + ' ' + (editingRow.employee?.last_name || '')} }}
     </h3>
-    <button class="icon-btn" [disabled]="savingEdit" (click)="cancelEdit()"><mat-icon>close</mat-icon></button>
+    <button class="icon-btn" [disabled]="savingEdit" (click)="cancelEdit()" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="edit-date-banner">
       <mat-icon>calendar_today</mat-icon>
-      {{ displayDate(editingRow.date) }}
-      <span class="source-badge src-{{ editingRow.source }}">{{ editingRow.source }}</span>
+      {{ displayDate(editingRow.date) | locDate:'EEEE, d MMMM y' }}
+      <span class="source-badge src-{{ editingRow.source }}">{{ sourceLabel(editingRow.source) }}</span>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Check-in Time</label>
-        <input class="field-input" type="time" step="1" formControlName="check_in">
+        <label class="field-label">{{ 'ATTENDANCE.CHECK_IN_TIME' | translate }}</label>
+        <input class="field-input" type="time" dir="ltr" step="1" formControlName="check_in">
       </div>
       <div class="field-group">
-        <label class="field-label">Check-out Time</label>
-        <input class="field-input" type="time" step="1" formControlName="check_out">
+        <label class="field-label">{{ 'ATTENDANCE.CHECK_OUT_TIME' | translate }}</label>
+        <input class="field-input" type="time" dir="ltr" step="1" formControlName="check_out">
       </div>
     </div>
     <div class="field-group">
-      <label class="field-label">Status <span class="req">*</span></label>
+      <label class="field-label">{{ 'COMMON.STATUS' | translate }} <span class="req">*</span></label>
       <select class="field-select-full" formControlName="status">
-        <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+        <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.value | statusLabel }}</option>
       </select>
     </div>
     <div class="field-group">
-      <label class="field-label">Notes / Reason</label>
+      <label class="field-label">{{ 'ATTENDANCE.MANUAL.NOTES_REASON' | translate }}</label>
       <input class="field-input" type="text" formControlName="notes"
-             placeholder="e.g. System downtime, retroactive correction…">
+             [placeholder]="'ATTENDANCE.EDIT.NOTES_PH' | translate">
     </div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" [disabled]="savingEdit" (click)="cancelEdit()">Cancel</button>
+    <button class="btn-outline" [disabled]="savingEdit" (click)="cancelEdit()">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="saveEdit()" [disabled]="savingEdit || editForm.invalid">
       <span class="btn-spinner" *ngIf="savingEdit"></span>
       <mat-icon *ngIf="!savingEdit">save</mat-icon>
-      {{ savingEdit ? 'Saving…' : 'Save Changes' }}
+      {{ (savingEdit ? 'COMMON.SAVING' : 'COMMON.SAVE_CHANGES') | translate }}
     </button>
   </div>
 </div>

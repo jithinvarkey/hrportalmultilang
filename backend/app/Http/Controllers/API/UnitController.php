@@ -18,6 +18,7 @@ class UnitController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:120',
+            'name_ar' => 'nullable|string|max:150',
             'code' => 'required|string|max:50|unique:units,code',
             'legacy_unitid' => 'nullable|string|max:50',
             'description' => 'nullable|string|max:1000',
@@ -37,6 +38,7 @@ class UnitController extends Controller
         $unit = Unit::findOrFail($id);
         $data = $request->validate([
             'name' => 'sometimes|required|string|max:120',
+            'name_ar' => 'nullable|string|max:150',
             'code' => "sometimes|required|string|max:50|unique:units,code,{$id}",
             'legacy_unitid' => 'nullable|string|max:50',
             'description' => 'nullable|string|max:1000',
@@ -50,6 +52,6 @@ class UnitController extends Controller
     public function destroy(int $id): JsonResponse
     {
         Unit::findOrFail($id)->delete();
-        return response()->json(['message' => 'Unit deleted.']);
+        return response()->json(['message' => __('Unit deleted.')]);
     }
 }

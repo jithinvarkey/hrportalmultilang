@@ -59,7 +59,7 @@
   &:disabled { opacity:.4; cursor:default; }
   mat-icon { font-size: 16px !important; width: 16px !important; height: 16px !important; }
 }
-.page-info { font-size: 11px; color: var(--text3); margin-left: 8px; }
+.page-info { font-size: 11px; color: var(--text3); margin-inline-start: 8px; }
 
 /* ── Modals ────────────────────────────────────────────────────────────── */
 .modal-backdrop {
@@ -141,30 +141,30 @@
   align-items: center;
 
   > mat-icon {
-    position: absolute; left: 10px; z-index: 1; pointer-events: none;
+    position: absolute; inset-inline-start: 10px; z-index: 1; pointer-events: none;
     color: var(--text3); font-size: 17px !important; width: 17px !important; height: 17px !important;
   }
 
-  .employee-search { padding-left: 34px; padding-right: 58px; }
+  .employee-search { padding-inline-start: 34px; padding-inline-end: 58px; }
 }
 .search-clear {
-  position: absolute; right: 29px; padding: 3px; border: 0; background: transparent;
+  position: absolute; inset-inline-end: 29px; padding: 3px; border: 0; background: transparent;
   color: var(--text3); cursor: pointer; display: flex; align-items: center;
   mat-icon { font-size: 16px !important; width: 16px !important; height: 16px !important; }
 }
 .combo-arrow {
-  position: absolute !important; right: 7px !important; left: auto !important;
+  position: absolute !important; inset-inline-end: 7px !important; inset-inline-start: auto !important;
   color: var(--text3) !important; font-size: 20px !important; width: 20px !important; height: 20px !important;
 }
 .employee-options {
-  position: absolute; z-index: 10; top: calc(100% + 4px); left: 0; right: 0;
+  position: absolute; z-index: 10; top: calc(100% + 4px); inset-inline: 0;
   max-height: 210px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border2);
   border-radius: 9px; box-shadow: 0 12px 30px rgba(0,0,0,.18); padding: 4px;
 }
 .employee-option {
   width: 100%; border: 0; background: transparent; color: var(--text); cursor: pointer;
   padding: 9px 10px; border-radius: 7px; display: flex; align-items: center;
-  justify-content: space-between; gap: 12px; text-align: left;
+  justify-content: space-between; gap: 12px; text-align: start;
   &:hover { background: var(--surface2); }
 }
 .employee-option-name { font-size: 13px; font-weight: 600; }
@@ -236,7 +236,7 @@
   display: flex; justify-content: space-between; align-items: center;
   padding: 8px 14px; font-size: 13px; color: var(--text2);
   border-top: 1px solid var(--border);
-  small { font-size: 11px; color: var(--text3); margin-left: 4px; }
+  small { font-size: 11px; color: var(--text3); margin-inline-start: 4px; }
 }
 .info-row { opacity: .65; font-style: italic; }
 .bs-total {
@@ -289,10 +289,10 @@
 }
 
 .slip-drawer {
-  position: fixed; top: 0; right: 0; bottom: 0;
+  position: fixed; top: 0; inset-inline-end: 0; bottom: 0;
   width: min(480px, 100vw);
   background: var(--surface);
-  border-left: 1px solid var(--border2);
+  border-inline-start: 1px solid var(--border2);
   z-index: 201;
   display: flex; flex-direction: column;
   transform: translateX(100%);
@@ -396,7 +396,7 @@
 
 /* ── Stats strip ──────────────────────────────────────────────────── */
 .stat-strip{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
-.stat-tile{display:flex;align-items:center;gap:12px;flex:1;min-width:130px;padding:14px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--tile-color,var(--accent));}
+.stat-tile{display:flex;align-items:center;gap:12px;flex:1;min-width:130px;padding:14px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);border-inline-start:3px solid var(--tile-color,var(--accent));}
 .tile-icon-wrap{width:38px;height:38px;border-radius:10px;background:color-mix(in srgb,var(--tile-color,var(--accent)) 15%,transparent);display:grid;place-items:center;flex-shrink:0;mat-icon{color:var(--tile-color,var(--accent));font-size:20px!important;width:20px!important;height:20px!important;}}
 .tile-val{font-family:'IBM Plex Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1;}
 .tile-lbl{font-size:11px;color:var(--text3);margin-top:3px;white-space:nowrap;}
@@ -409,3 +409,99 @@
 .slip-search-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);}
 .search-input-sm{flex:1;max-width:280px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:12px;padding:6px 10px;outline:none;&:focus{border-color:var(--accent);}&::placeholder{color:var(--text3);}}
 .slip-count{font-size:11px;color:var(--text3);}
+
+/* ── Numeric columns & sticky first column ───────────────────────── */
+.num { text-align: end !important; }
+td.mat-mdc-table-sticky, th.mat-mdc-table-sticky { background: var(--surface); }
+.data-row:hover td.mat-mdc-table-sticky { background: var(--surface2); }
+
+/* ── RTL: payslip drawer slides in from the inline-end (left) edge ── */
+:host-context([dir=rtl]) .slip-drawer {
+  transform: translateX(-100%);
+  box-shadow: 8px 0 40px rgba(0,0,0,.4);
+  &.open { transform: translateX(0); }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .modal-panel.modal-xl { width: 98vw; }
+}
+
+@media (max-width: 768px) {
+  .page-title { font-size: 19px; }
+  .hdr-actions { flex-wrap: wrap; gap: 8px; > * { flex: 1 1 auto; justify-content: center; } }
+  .btn-primary, .btn-outline, .btn-danger { min-height: 38px; }
+
+  .stat-grid { gap: 10px; }
+  .stat-card { padding: 12px; gap: 10px; min-width: 0; }
+  .stat-icon { width: 36px; height: 36px; }
+  .stat-val { font-size: 17px; word-break: break-word; }
+
+  .data-card { overflow: visible; }
+  .table-scroll > table { min-width: 720px; }
+
+  .row-btn { min-width: 36px; min-height: 36px; }
+  .page-btn { width: 36px; height: 36px; }
+  .pagination { justify-content: center; }
+  .page-info { margin-inline-start: 0; width: 100%; text-align: center; }
+
+  .two-col { grid-template-columns: 1fr; }
+  .modal-hdr { padding: 14px 14px 12px; gap: 10px; h3 { font-size: 14px; flex-wrap: wrap; } }
+  .modal-body { padding: 14px; }
+  .modal-footer { padding: 12px 14px; > * { flex: 1 1 auto; justify-content: center; } }
+  .modal-panel.modal-xl { max-height: calc(100dvh - 16px); }
+  .modal-xl table { min-width: 1100px; }
+
+  /* Payslip drawer: full width, readable on a phone */
+  .slip-drawer { width: 100vw; }
+  .drawer-hdr { flex-wrap: wrap; padding: 12px 14px; }
+  .drawer-hdr-left { flex: 1 1 100%; }
+  .drawer-hdr-right { flex: 1 1 100%; justify-content: flex-end; }
+  .drawer-name { white-space: normal; }
+  .period-band { padding: 8px 14px; }
+  .drawer-body { padding: 14px; }
+  .net-hero { padding: 14px; }
+  .net-hero-val { font-size: 26px; word-break: break-word; }
+  .net-hero-sub { display: flex; flex-direction: column; gap: 2px; }
+  .bs-row, .bs-total { gap: 10px; }
+  .drawer-footer { flex-wrap: wrap; > * { flex: 1 1 auto; justify-content: center; } }
+
+  .search-input-sm { max-width: none; }
+}
+
+@media (max-width: 480px) {
+  .stat-val { font-size: 16px; }
+  .net-hero-val { font-size: 22px; }
+  .bs-row { font-size: 12px; }
+  .earn-amt, .deduct-amt { font-size: 12px; }
+}
+
+/* ── Phone app look: payroll runs and payslips as cards ───────────── */
+@media (max-width: 768px) {
+  .hdr-actions { width: 100%; display: flex; gap: 8px; }
+  .hdr-actions > button { flex: 1 1 0; justify-content: center; min-height: 46px; border-radius: 14px; }
+
+  .data-card:has(.runs-table) > .card-hdr { padding-inline: 2px; background: transparent; border: none; }
+
+  .runs-table.m-cards, .slips-table.m-cards {
+    td.mat-mdc-cell.num {
+      flex: 1 1 calc(50% - 10px); min-width: 0; text-align: start !important; white-space: nowrap;
+      padding: 8px 10px !important; border-radius: 12px; background: var(--surface2) !important;
+    }
+    td.mat-column-status { order: 1; }
+    td.mat-column-actions { order: 2; }
+  }
+  .runs-table td.mat-column-period { order: -1; }
+  .runs-table td.mat-column-period .name-main { font-size: 15px; font-weight: 700; }
+
+  /* Payslip cards: name, gross, net, days — the full breakdown opens from the card */
+  .slips-table {
+    td.mat-column-basic, td.mat-column-housing, td.mat-column-transport, td.mat-column-other_earn,
+    td.mat-column-gosi, td.mat-column-unpaid_leave, td.mat-column-loan, td.mat-column-other_ded { display: none !important; }
+    tbody { padding: 12px; }
+    td.mat-column-days { flex: 1 1 100%; order: 1; }
+  }
+
+  .net-hero { border-radius: 18px; }
+}
+

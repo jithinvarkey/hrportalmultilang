@@ -515,3 +515,204 @@ body {
     gap: 10px;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   MULTI-LANGUAGE (EN / AR) — fonts and right-to-left support
+   LanguageService sets <html lang="ar" dir="rtl" class="lang-ar">.
+════════════════════════════════════════════════════════════════════ */
+:root { --font-ar: 'IBM Plex Sans Arabic', 'Tajawal', 'Segoe UI', Tahoma, sans-serif; }
+
+/* Component styles hard-code Latin fonts, so the Arabic stack must win everywhere
+   except icon ligatures and monospace references. */
+html[lang="ar"] body,
+html[lang="ar"] body *:not(mat-icon):not(.mat-icon):not(.material-icons):not(.material-symbols-outlined):not(code):not(pre):not(.ref):not(.mono) {
+  font-family: var(--font-ar) !important;
+}
+/* Letter-spacing breaks the joining of Arabic letters; uppercase has no meaning in Arabic. */
+html[lang="ar"] body * { letter-spacing: 0 !important; }
+html[lang="ar"] body { line-height: 1.6; }
+
+/* Logical defaults for shared table styles */
+html[dir="rtl"] .table th,
+html[dir="rtl"] th { text-align: right; }
+
+/* Mirror direction-bearing icons (arrows, chevrons) in RTL: add class="flip-rtl". */
+html[dir="rtl"] .flip-rtl { transform: scaleX(-1); }
+
+/* Keep LTR content (emails, phones, IBANs, codes) readable inside Arabic pages: add class="ltr" or dir="ltr". */
+.ltr { direction: ltr; unicode-bidi: isolate; }
+html[dir="rtl"] input.ltr, html[dir="rtl"] .ltr input { text-align: right; }
+
+/* Toasts appear on the leading edge in RTL */
+html[dir="rtl"] .toast-top-right { right: auto; left: 12px; }
+html[dir="rtl"] #toast-container > div { direction: rtl; background-position: right 15px center; padding: 15px 50px 15px 15px; }
+
+html[dir="rtl"] .login-card .forgot-link { text-align: left; }
+
+/* ════════════════════════════════════════════════════════════════════
+   RESPONSIVE BASE — tablet ≤1024px, mobile ≤768px, small ≤480px
+   Safety net for patterns shared by every module; modules refine locally.
+════════════════════════════════════════════════════════════════════ */
+img, video, canvas, svg { max-width: 100%; }
+
+/* Scroll wide tables horizontally instead of breaking the page */
+.table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 1024px) {
+  .module-page { padding: 20px; }
+}
+
+@media (max-width: 768px) {
+  body { font-size: 14px; }
+  .module-page { padding: 16px 12px 32px; }
+
+  .page-hdr, .page-header { flex-direction: column; align-items: stretch; gap: 12px; }
+  .page-hdr .page-title, .page-header h1 { font-size: 19px; }
+  .page-hdr > div:last-child, .page-header > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .filter-row { flex-direction: column; align-items: stretch; }
+  .search-field { min-width: 0; width: 100%; }
+
+  /* Tables: scroll sideways inside their card */
+  .data-card, .table-card, .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .data-card > table, .table-card > table, .card > table, .table-scroll > table { min-width: 640px; }
+  .table th, .table td { padding: 8px 10px; }
+
+  /* Grids collapse */
+  .form-grid, .detail-grid, .info-grid, .upload-grid, .settings-grid, .overview-grid, .panel-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  /* Grid/flex children must be allowed to shrink below their content so inner scrollers work */
+  .form-grid > *, .detail-grid > *, .info-grid > *, .settings-grid > *, .overview-grid > *, .panel-grid > * { min-width: 0; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+
+  /* Modals become near full-screen sheets; drawers take the full width */
+  .modal-backdrop { padding: 8px !important; align-items: flex-end !important; }
+  .modal-panel, .wide-modal {
+    width: 100% !important; max-width: 100% !important;
+    max-height: calc(100dvh - 16px) !important; overflow-y: auto !important;
+    border-radius: 16px 16px 12px 12px !important;
+  }
+  .detail-drawer, .stats-drawer, .slip-drawer, .reader-drawer {
+    width: 100vw !important; max-width: 100vw !important;
+  }
+  .cdk-overlay-pane.mat-mdc-dialog-panel { max-width: calc(100vw - 16px) !important; }
+
+  /* Comfortable touch targets */
+  .btn, .btn-primary, .btn-outline { min-height: 38px; }
+
+  .login-wrapper { padding: 16px; align-items: flex-start; padding-top: 8vh; }
+  .login-card { width: 100% !important; max-width: 420px; padding: 28px 20px !important; }
+}
+
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: 1fr !important; }
+  .page-hdr > div:last-child > *, .page-header > div:last-child > * { flex: 1 1 auto; justify-content: center; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PHONE APP LOOK (≤768px) — shared by module pages
+   Scoped to the layout's .is-mobile shell so it outranks component styles.
+   - The top bar shows the page name, so page headers keep only their action.
+   - Tab bars become a segmented control; cards get rounder corners.
+   - Tables with class="m-cards" are shown as a list of cards (one per row).
+════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .app-shell.is-mobile {
+    --m-radius: 16px;
+    --m-shadow: 0 4px 18px rgba(0, 0, 0, .06);
+
+    /* Module modals and drawers use low z-indexes; hide the app bars while one is open so it is fully visible */
+    &:has(.modal-backdrop, .drawer-backdrop, .detail-drawer.open, .slip-drawer.open, .stats-drawer.open, .reader-drawer.open) {
+      .mobile-topbar, .bottom-nav { display: none; }
+      .main-content { padding-top: 12px; padding-bottom: 12px; }
+    }
+
+    /* Page header: the top bar already shows the title */
+    .page-hdr .page-title, .page-hdr .page-sub { display: none; }
+    .page-hdr { margin-bottom: 14px; gap: 10px; }
+    .page-hdr:not(:has(.btn-primary, .btn-outline, button)) { display: none; }
+    .page-hdr .btn-primary {
+      width: 100%; min-height: 48px; justify-content: center; border-radius: 14px;
+      font-size: 15px; box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+
+    /* Segmented tabs */
+    .main-tabs, .mod-tabs, .tab-bar {
+      display: flex; flex-wrap: nowrap; gap: 4px; padding: 4px; margin-bottom: 14px;
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 14px;
+      overflow-x: auto; scrollbar-width: none;
+      &::-webkit-scrollbar { display: none; }
+    }
+    .main-tab, .mod-tab, .tab-btn {
+      flex: 1 0 auto; justify-content: center; white-space: nowrap;
+      min-height: 40px; padding: 8px 12px; margin: 0;
+      border: none; border-radius: 11px; background: transparent;
+      color: var(--text3); font-size: 13px; font-weight: 600;
+      mat-icon, .material-icons { display: none; }
+      &.active {
+        background: var(--surface); color: var(--accent);
+        border: none; box-shadow: 0 2px 8px rgba(0, 0, 0, .10);
+      }
+    }
+
+    /* Status filter chips scroll sideways */
+    .status-tabs { border-radius: 12px; }
+
+    /* Rounder cards */
+    .data-card, .stat-card, .dash-card, .bal-card, .akpi-card, .card, .app-card, .cv-card, .identity-card {
+      border-radius: var(--m-radius); box-shadow: var(--m-shadow);
+    }
+
+    /* Simple stat tiles (icon + number + label): icon on top — 3 per row (2 when there are 2 or 4).
+       Richer cards such as the dashboard overview keep their own layout. */
+    .stat-grid:has(> .stat-card > .stat-icon) {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 10px !important;
+      &:has(> :nth-child(4):last-child), &:has(> :nth-child(2):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    }
+    .stat-grid > .stat-card:has(> .stat-icon) {
+      flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 14px 8px 12px;
+      .stat-val { font-size: 22px; line-height: 1.1; }
+      .stat-lbl { font-size: 11px; line-height: 1.25; }
+    }
+
+    /* Tables shown as cards */
+    .data-card:has(> table.m-cards), .data-card:has(> .table-scroll > table.m-cards) {
+      background: transparent; border: none; box-shadow: none; overflow: visible;
+    }
+    .table-scroll:has(> table.m-cards) { overflow: visible; }
+    table.m-cards {
+      display: block; min-width: 0 !important; width: 100%; background: transparent !important;
+      thead, tr.mat-mdc-header-row { display: none; }
+      tbody { display: flex; flex-direction: column; gap: 10px; }
+      tr.mat-mdc-row {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; height: auto;
+        padding: 14px; background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--m-radius); box-shadow: var(--m-shadow);
+      }
+      td.mat-mdc-cell {
+        display: block; border: none !important; padding: 0 !important; min-height: 0;
+        background: transparent !important; white-space: normal;
+        position: static !important; inset: auto !important;
+      }
+      tr.mat-mdc-row > td:first-child { flex: 1 1 100%; }
+      /* Cells that lost their column header show it as a small caption */
+      td[data-label]::before {
+        content: attr(data-label); display: block; margin-bottom: 2px;
+        font-size: 11px; font-weight: 500; color: var(--text3);
+      }
+      /* Row action buttons sit at the end of the card */
+      td.mat-column-actions { margin-inline-start: auto; }
+      /* "No data" row */
+      tr:not(.mat-mdc-row):not(.mat-mdc-header-row) {
+        display: block; background: var(--surface); border: 1px solid var(--border); border-radius: var(--m-radius);
+        td { display: block; border: none !important; }
+      }
+    }
+  }
+}
+
+/* "Arabic Name" column in settings lists (leave types, loan types, …) */
+.ar-name { font-family: var(--font-ar); font-weight: 600; color: var(--text); unicode-bidi: isolate; }
+.ar-missing { font-size: 11px; color: var(--text3); font-style: italic; }
+

@@ -72,7 +72,7 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.loading = false;
         if (err?.status === 422) {
-          this.errorMsg = err?.error?.message ?? 'Please enter a valid email address.';
+          this.errorMsg = err?.error?.message ?? 'AUTH.FORGOT.INVALID_EMAIL';
         } else {
           this.sent = true;
         }
@@ -112,7 +112,7 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
         this.errorMsg = err?.error?.message
           ?? err?.error?.errors?.otp?.[0]
           ?? err?.error?.errors?.password?.[0]
-          ?? 'Could not reset password.';
+          ?? 'AUTH.FORGOT.RESET_FAILED';
       },
     });
   }
@@ -134,7 +134,7 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
         this.resendCoolingDown = false;
         this.errorMsg = err?.error?.message
           ?? err?.error?.errors?.otp?.[0]
-          ?? 'Could not resend OTP';
+          ?? 'AUTH.OTP.RESEND_FAILED';
       },
     });
   }

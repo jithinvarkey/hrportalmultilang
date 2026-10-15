@@ -40,6 +40,7 @@ class RequestManagementController extends Controller {
     public function storeType(Request $request) {
         $request->validate([
             'name' => 'required|string|max:120',
+            'name_ar' => 'nullable|string|max:150',
             'code' => 'required|string|max:30|unique:request_types',
             'handling_department_id' => 'required|exists:departments,id',
         ]);
@@ -49,6 +50,7 @@ class RequestManagementController extends Controller {
     public function updateType(Request $request, $id) {
         $request->validate([
             'name' => 'required|string|max:120',
+            'name_ar' => 'nullable|string|max:150',
             'handling_department_id' => 'required|exists:departments,id',
         ]);
         $type = RequestType::findOrFail($id);
@@ -300,7 +302,7 @@ class RequestManagementController extends Controller {
 
         $employee = auth()->user()->employee;
         if (!$employee) {
-            return response()->json(['message' => 'No employee record linked to your account.'], 422);
+            return response()->json(['message' => __('No employee record linked to your account.')], 422);
         }
 
         $type = RequestType::findOrFail($request->request_type_id);
@@ -308,7 +310,7 @@ class RequestManagementController extends Controller {
 
         // Enforce attachment requirement
         if ($type->requires_attachment && !$request->hasFile('attachment')) {
-            return response()->json(['message' => "A supporting document is required for this request type."], 422);
+            return response()->json(['message' => __('A supporting document is required for this request type.')], 422);
         }
 
         $attachmentPath = null;
@@ -331,7 +333,7 @@ class RequestManagementController extends Controller {
                     'handling_department_id' => $request->handling_department_id
         ]);
 
-        return response()->json(['message' => 'Request submitted successfully.', 'request' => $req->load('requestType')], 201);
+        return response()->json(['message' => __('Request submitted successfully.'), 'request' => $req->load('requestType')], 201);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -340,7 +342,7 @@ class RequestManagementController extends Controller {
     public function managerApprove(Request $request, $id) {
         $req = EmployeeRequest::findOrFail($id);
         if ($req->status !== 'pending_manager') {
-            return response()->json(['message' => 'Not awaiting manager approval.'], 422);
+            return response()->json(['message' => __('Not awaiting manager approval.')], 422);
         }
         $userRoles = rescue(fn() => DB::table('model_has_roles')
                         ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
@@ -351,7 +353,7 @@ class RequestManagementController extends Controller {
                     'super_admin', 'hr_manager', 'hr_staff', 'department_manager'
         ]);
         if (!$canApprove) {
-            return response()->json(['message' => 'Only managers can approve at this stage.'], 403);
+            return response()->json(['message' => __('Only managers can approve at this stage.')], 403);
         }
         $req->update([
             'status' => 'pending',
@@ -362,9 +364,9 @@ class RequestManagementController extends Controller {
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
             'pending',
-            'The manager approved the request and it has been forwarded for processing.'
+            null // the mail adds the standard note in the recipient's language
         );
-        return response()->json(['message' => 'Approved — forwarded to HR.', 'request' => $req->fresh()]);
+        return response()->json(['message' => __('Approved — forwarded to HR.'), 'request' => $req->fresh()]);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -379,7 +381,7 @@ class RequestManagementController extends Controller {
         $req = EmployeeRequest::findOrFail($id);
 
         if (!in_array($req->status, ['pending', 'in_progress'])) {
-            return response()->json(['message' => 'Request cannot be assigned at this stage.'], 422);
+            return response()->json(['message' => __('Request cannot be assigned at this stage.')], 422);
         }
 
         $assigneeId = $request->assigned_to ?? auth()->id();
@@ -403,10 +405,10 @@ class RequestManagementController extends Controller {
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
             'in_progress',
-            'The request has been assigned to ' . ($assignee?->name ?: 'the handling team') . '.'
+            null // the mail adds "assigned to <name>" in the recipient's language
         );
 
-        return response()->json(['message' => 'Request assigned.', 'request' => $req->fresh(['assignedTo'])]);
+        return response()->json(['message' => __('Request assigned.'), 'request' => $req->fresh(['assignedTo'])]);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -424,7 +426,7 @@ class RequestManagementController extends Controller {
         $isAssignee = (int) $req->assigned_to === (int) auth()->id();
 
         if (!$isHRAdmin && !$isAssignee) {
-            return response()->json(['message' => 'Only the assigned person or HR can complete this request.'], 403);
+            return response()->json(['message' => __('Only the assigned person or HR can complete this request.')], 403);
         }
 
         $completionFile = $req->completion_file;
@@ -460,7 +462,7 @@ class RequestManagementController extends Controller {
             $request->completion_notes
         );
 
-        return response()->json(['message' => 'Request marked as completed.']);
+        return response()->json(['message' => __('Request marked as completed.')]);
     }
 
     public function downloadCompletionFile($id): StreamedResponse|JsonResponse
@@ -468,11 +470,11 @@ class RequestManagementController extends Controller {
         $req = EmployeeRequest::with(['employee', 'requestType'])->findOrFail($id);
 
         if (!$this->canAccessRequestFile($req)) {
-            return response()->json(['message' => 'You are not allowed to download this file.'], 403);
+            return response()->json(['message' => __('You are not allowed to download this file.')], 403);
         }
 
         if (!$req->completion_file || !Storage::disk('public')->exists($req->completion_file)) {
-            return response()->json(['message' => 'Completion file not found.'], 404);
+            return response()->json(['message' => __('Completion file not found.')], 404);
         }
 
         $extension = pathinfo($req->completion_file, PATHINFO_EXTENSION);
@@ -489,7 +491,7 @@ class RequestManagementController extends Controller {
         $req = EmployeeRequest::findOrFail($id);
 
         if (in_array($req->status, ['completed', 'cancelled'])) {
-            return response()->json(['message' => 'Cannot reject at this stage.'], 422);
+            return response()->json(['message' => __('Cannot reject at this stage.')], 422);
         }
         $req->update([
             'status' => 'rejected',
@@ -502,7 +504,7 @@ class RequestManagementController extends Controller {
             'rejected',
             $request->reason
         );
-        return response()->json(['message' => 'Request rejected.']);
+        return response()->json(['message' => __('Request rejected.')]);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -511,15 +513,15 @@ class RequestManagementController extends Controller {
     public function cancel($id) {
         $req = EmployeeRequest::findOrFail($id);
         if (!in_array($req->status, ['pending', 'pending_manager'])) {
-            return response()->json(['message' => 'Request cannot be cancelled at this stage.'], 422);
+            return response()->json(['message' => __('Request cannot be cancelled at this stage.')], 422);
         }
         $req->update(['status' => 'cancelled']);
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
             'cancelled',
-            'The request was cancelled by the requester.'
+            null // the mail adds the standard note in the recipient's language
         );
-        return response()->json(['message' => 'Request cancelled.']);
+        return response()->json(['message' => __('Request cancelled.')]);
     }
 
     private function sendStatusUpdateEmails(EmployeeRequest $req, string $status, ?string $note = null): void
@@ -530,14 +532,16 @@ class RequestManagementController extends Controller {
         if ($req->employee?->email) {
             $recipients->push([
                 'email' => $req->employee->email,
-                'name' => trim($req->employee->first_name . ' ' . $req->employee->last_name) ?: 'Employee',
+                'name' => trim($req->employee->first_name . ' ' . $req->employee->last_name) ?: null,
+                'name_ar' => $req->employee->arabic_name,
             ]);
         }
 
         if ($req->assignedTo?->email) {
             $recipients->push([
                 'email' => $req->assignedTo->email,
-                'name' => $req->assignedTo->name ?: 'Team member',
+                'name' => $req->assignedTo->name ?: null,
+                'name_ar' => $req->assignedTo->employee?->arabic_name,
             ]);
         }
 
@@ -551,7 +555,7 @@ class RequestManagementController extends Controller {
                 ->get(['id', 'name', 'email'])
                 ->each(fn($user) => $recipients->push([
                     'email' => $user->email,
-                    'name' => $user->name ?: 'Team member',
+                    'name' => $user->name ?: null,
                 ]));
         }
 
@@ -565,7 +569,8 @@ class RequestManagementController extends Controller {
                         $req,
                         $status,
                         $recipient['name'],
-                        $note
+                        $note,
+                        $recipient['name_ar'] ?? null
                     ));
                 } catch (\Throwable $e) {
                     Log::warning('Request status email failed', [
@@ -638,12 +643,12 @@ class RequestManagementController extends Controller {
 
         if ($inUse) {
             return response()->json([
-                        'message' => "Cannot delete '{$type->name}' — it has active or historical requests. Deactivate it instead.",
+                        'message' => __('Cannot delete \':name\' — it has active or historical requests. Deactivate it instead.', ['name' => $type->name]),
                             ], 422);
         }
 
         $type->delete();
-        return response()->json(['message' => "Request type '{$type->name}' deleted."]);
+        return response()->json(['message' => __('Request type \':name\' deleted.', ['name' => $type->name])]);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -680,7 +685,7 @@ class RequestManagementController extends Controller {
     // ══════════════════════════════════════════════════════════════════════
     public function departments() {
         return response()->json([
-                    'departments' => \App\Models\Department::orderBy('name')->get(['id', 'name'])
+                    'departments' => \App\Models\Department::orderBy('name')->get(['id', 'name', 'name_ar'])
         ]);
     }
 
@@ -691,6 +696,6 @@ class RequestManagementController extends Controller {
         $count = EmployeeRequest::whereNotIn('status', ['completed', 'rejected', 'cancelled'])
                 ->where('due_date', '<', now()->toDateString())
                 ->update(['is_overdue' => true]);
-        return response()->json(['message' => "{$count} requests marked as overdue."]);
+        return response()->json(['message' => __(':count requests marked as overdue.', ['count' => $count])]);
     }
 }

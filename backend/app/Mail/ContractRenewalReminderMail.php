@@ -4,10 +4,9 @@ namespace App\Mail;
 
 use App\Models\ContractRenewalRequest;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class ContractRenewalReminderMail extends Mailable
+class ContractRenewalReminderMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
@@ -18,7 +17,7 @@ class ContractRenewalReminderMail extends Mailable
 
     public function build(): self
     {
-        return $this->subject("Contract renewal request auto-created - {$this->renewal->reference}")
+        return $this->subject(__('mail_contract.subject', ['reference' => $this->renewal->reference]))
             ->view('emails.contract-renewal-reminder');
     }
 }

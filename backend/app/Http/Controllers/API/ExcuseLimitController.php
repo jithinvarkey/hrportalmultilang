@@ -20,7 +20,7 @@ class ExcuseLimitController extends Controller
 
         $departments = Department::where('is_active', true)
             ->orderBy('name')
-            ->get(['id','name','code']);
+            ->get(['id','name','name_ar','code']);
 
         // Load existing limits for this leave type
         $limits = DepartmentExcuseLimit::where('leave_type_id', $leaveTypeId)
@@ -51,7 +51,7 @@ class ExcuseLimitController extends Controller
     public function bulkUpsert(Request $request)
     {
         if (!$this->canManageExcuseLimits()) {
-            return response()->json(['message' => 'You do not have permission to manage leave limits.'], 403);
+            return response()->json(['message' => __('You do not have permission to manage leave limits.')], 403);
         }
 
         $request->validate([
@@ -77,7 +77,7 @@ class ExcuseLimitController extends Controller
             );
         }
 
-        return response()->json(['message' => 'Department limits saved successfully.']);
+        return response()->json(['message' => __('Department limits saved successfully.')]);
     }
 
     /**
@@ -87,7 +87,7 @@ class ExcuseLimitController extends Controller
     public function update(Request $request, $id)
     {
         if (!$this->canManageExcuseLimits()) {
-            return response()->json(['message' => 'You do not have permission to manage leave limits.'], 403);
+            return response()->json(['message' => __('You do not have permission to manage leave limits.')], 403);
         }
 
         $request->validate([
@@ -101,7 +101,7 @@ class ExcuseLimitController extends Controller
             'monthly_hours_limit' => $request->is_limited ? ($request->monthly_hours_limit ?? 12.0) : null,
         ]);
 
-        return response()->json(['message' => 'Limit updated', 'limit' => $limit]);
+        return response()->json(['message' => __('Limit updated'), 'limit' => $limit]);
     }
 
     private function canManageExcuseLimits(): bool

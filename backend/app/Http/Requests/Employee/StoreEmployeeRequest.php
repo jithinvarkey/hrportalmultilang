@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Employee;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Validates incoming data for the POST /api/v1/employees endpoint.
@@ -37,6 +38,7 @@ class StoreEmployeeRequest extends FormRequest
             'first_name'          => ['required', 'string', 'max:100'],
             'last_name'           => ['required', 'string', 'max:100'],
             'arabic_name'         => ['nullable', 'string', 'max:200'],
+            'preferred_communication_language' => ['nullable', Rule::in(\App\Support\Locale\SupportedLocales::ALL)],
             'email'               => ['required', 'email:rfc,dns', 'unique:employees,email'],
             'phone'               => ['nullable', 'string', 'max:30'],
             'work_phone'          => ['nullable', 'string', 'max:30'],

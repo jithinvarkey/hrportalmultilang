@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Mail\MonthlyLeaveReminderMail;
 use App\Models\Employee;
+use App\Support\Locale\SupportedLocales;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -20,6 +21,8 @@ class MonthlyLeaveReminderService
             'monthly_leave_reminder_day',
             'monthly_leave_reminder_subject',
             'monthly_leave_reminder_body',
+            'monthly_leave_reminder_subject_ar',
+            'monthly_leave_reminder_body_ar',
             'monthly_leave_reminder_last_sent_month',
         ])->pluck('value', 'key');
 
@@ -28,6 +31,8 @@ class MonthlyLeaveReminderService
             'day' => max(1, min(31, (int) ($values['monthly_leave_reminder_day'] ?? 25))),
             'subject' => $values['monthly_leave_reminder_subject'] ?? self::DEFAULT_SUBJECT,
             'body' => $values['monthly_leave_reminder_body'] ?? self::DEFAULT_BODY,
+            'subject_ar' => $values['monthly_leave_reminder_subject_ar'] ?? $this->arabicDefault('subject'),
+            'body_ar' => $values['monthly_leave_reminder_body_ar'] ?? $this->arabicDefault('body'),
             'last_sent_month' => $values['monthly_leave_reminder_last_sent_month'] ?? null,
         ];
     }
@@ -40,6 +45,8 @@ class MonthlyLeaveReminderService
             'monthly_leave_reminder_day' => (string) max(1, min(31, (int) $settings['day'])),
             'monthly_leave_reminder_subject' => $settings['subject'] ?: self::DEFAULT_SUBJECT,
             'monthly_leave_reminder_body' => $settings['body'] ?: self::DEFAULT_BODY,
+            'monthly_leave_reminder_subject_ar' => ($settings['subject_ar'] ?? null) ?: $this->arabicDefault('subject'),
+            'monthly_leave_reminder_body_ar' => ($settings['body_ar'] ?? null) ?: $this->arabicDefault('body'),
         ] as $key => $value) {
             DB::table('system_settings')->updateOrInsert(
                 ['key' => $key],
@@ -80,9 +87,23 @@ class MonthlyLeaveReminderService
         Employee::active()->whereNotNull('email')->orderBy('id')->chunkById(100, function ($employees) use (&$result, $settings, $date) {
             foreach ($employees as $employee) {
                 try {
-                    Mail::to($employee->email)->send(new MonthlyLeaveReminderMail(
-                        $this->render($settings['subject'], $employee, $date),
-                        $this->render($settings['body'], $employee, $date)
+                    // Each employee gets the template of their communication language (English or Arabic).
+                    // Default wording → null, so the mail uses the translated default; text customised by HR
+                    // is sent as typed. Placeholders are filled by the mailable.
+                    $locale = SupportedLocales::normalize($employee->preferred_communication_language);
+                    [$subject, $body] = $locale === 'ar'
+                        ? [$this->customOrNull($settings['subject_ar'], $this->arabicDefault('subject')),
+                           $this->customOrNull($settings['body_ar'], $this->arabicDefault('body'))]
+                        : [$this->customOrNull($settings['subject'], self::DEFAULT_SUBJECT),
+                           $this->customOrNull($settings['body'], self::DEFAULT_BODY)];
+
+                    Mail::to($employee->email)->locale($locale)->send(new MonthlyLeaveReminderMail(
+                        $subject,
+                        $body,
+                        (string) $employee->first_name,
+                        (string) $employee->full_name,
+                        $date->toDateString(),
+                        $employee->arabic_name
                     ));
                     $result['sent']++;
                 } catch (\Throwable $e) {
@@ -102,14 +123,16 @@ class MonthlyLeaveReminderService
         return $result;
     }
 
-    private function render(string $template, Employee $employee, CarbonInterface $date): string
+    /** Default Arabic wording (lang/ar/mail_leave.php), used until HR saves their own Arabic text. */
+    private function arabicDefault(string $part): string
     {
-        return strtr($template, [
-            '{{employee_name}}' => $employee->full_name,
-            '{{first_name}}' => $employee->first_name,
-            '{{month_name}}' => $date->format('F'),
-            '{{year}}' => $date->format('Y'),
-            '{{company_name}}' => config('app.name', 'HRMS'),
-        ]);
+        return (string) trans("mail_leave.monthly_reminder.{$part}", [], 'ar');
+    }
+
+    private function customOrNull(?string $text, string $default): ?string
+    {
+        $normalize = fn (?string $value) => trim(str_replace("\r\n", "\n", (string) $value));
+
+        return $normalize($text) === '' || $normalize($text) === $normalize($default) ? null : $text;
     }
 }

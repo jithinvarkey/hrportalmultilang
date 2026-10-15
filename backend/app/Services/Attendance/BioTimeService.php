@@ -42,7 +42,7 @@ class BioTimeService {
         // If an api_key (JWT token) is stored and not expired, reuse it
         if ($device->api_key && $this->isTokenFresh($device)) {
             $this->token = $device->api_key;
-            return ['ok' => true, 'message' => 'Using cached token.'];
+            return ['ok' => true, 'message' => __('Using cached token.')];
         }
 
         return $this->authenticate($device);
@@ -60,13 +60,13 @@ class BioTimeService {
                 $this->token = $resp->json('token');
                 // Persist token so next sync skips re-auth
                 $device->update(['api_key' => $this->token, 'last_sync_status' => 'connected']);
-                return ['ok' => true, 'message' => 'Authenticated with BioTime successfully.'];
+                return ['ok' => true, 'message' => __('Authenticated with BioTime successfully.')];
             }
 
             $err = $resp->json('non_field_errors') ?? $resp->json('detail') ?? $resp->body();
-            return ['ok' => false, 'message' => "Auth failed ({$resp->status()}): {$err}"];
+            return ['ok' => false, 'message' => __('Auth failed (:status): :error', ['status' => $resp->status(), 'error' => is_string($err) ? $err : json_encode($err)])];
         } catch (\Throwable $e) {
-            return ['ok' => false, 'message' => 'Connection error: ' . $e->getMessage()];
+            return ['ok' => false, 'message' => __('Connection error: :error', ['error' => $e->getMessage()])];
         }
     }
 
@@ -109,7 +109,7 @@ class BioTimeService {
                 if (!$resp->successful()) {
                   
                     $err = $resp->json('detail') ?? $resp->body();
-                    return ['ok' => false, 'punches' => $all, 'message' => "API error ({$resp->status()}): {$err}"];
+                    return ['ok' => false, 'punches' => $all, 'message' => __('API error (:status): :error', ['status' => $resp->status(), 'error' => is_string($err) ? $err : json_encode($err)])];
                 }
 
                 $data = $resp->json();
@@ -125,9 +125,9 @@ class BioTimeService {
                 $page++;
             } while ($fetched < $count);
 
-            return ['ok' => true, 'punches' => array_filter($all, fn($p) => !empty($p['employee_number'])), 'message' => "Fetched " . count($all) . " transactions."];
+            return ['ok' => true, 'punches' => array_filter($all, fn($p) => !empty($p['employee_number'])), 'message' => __('Fetched :count transactions.', ['count' => count($all)])];
         } catch (\Throwable $e) {
-            return ['ok' => false, 'punches' => [], 'message' => 'Fetch error: ' . $e->getMessage()];
+            return ['ok' => false, 'punches' => [], 'message' => __('Fetch error: :error', ['error' => $e->getMessage()])];
         }
     }
 
@@ -172,7 +172,7 @@ class BioTimeService {
 
                 return [
                     'ok' => false,
-                    'message' => 'API error (' . $response->status() . ')',
+                    'message' => __('API error (:status)', ['status' => $response->status()]),
                     'response' => $response->body()
                 ];
             }
@@ -214,7 +214,7 @@ class BioTimeService {
             ]);
 
             if (!$resp->successful()) {
-                return ['ok' => false, 'employees' => [], 'message' => "API error ({$resp->status()})"];
+                return ['ok' => false, 'employees' => [], 'message' => __('API error (:status)', ['status' => $resp->status()])];
             }
 
             $data = $resp->json();
@@ -229,9 +229,9 @@ class BioTimeService {
                 'matched' => isset($hrmsMap[(string) ($e['emp_code'] ?? '')]),
                     ], $records);
 
-            return ['ok' => true, 'employees' => $employees, 'message' => count($employees) . ' employees fetched.'];
+            return ['ok' => true, 'employees' => $employees, 'message' => __(':count employees fetched.', ['count' => count($employees)])];
         } catch (\Throwable $e) {
-            return ['ok' => false, 'employees' => [], 'message' => 'Error: ' . $e->getMessage()];
+            return ['ok' => false, 'employees' => [], 'message' => __('Error: :error', ['error' => $e->getMessage()])];
         }
     }
 

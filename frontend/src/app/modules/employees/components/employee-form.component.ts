@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 
 @Component({
   standalone: false,
@@ -24,10 +25,10 @@ export class EmployeeFormComponent implements OnInit {
   errorMsg      = '';
 
   tabs = [
-    { id: 'personal',   label: 'Personal Info',  icon: 'person' },
-    { id: 'employment', label: 'Employment',      icon: 'work' },
-    { id: 'financial',  label: 'Financial',       icon: 'account_balance_wallet' },
-    { id: 'emergency',  label: 'Emergency',       icon: 'emergency' },
+    { id: 'personal',   label: 'EMPLOYEES.TABS.PERSONAL_INFO', icon: 'person' },
+    { id: 'employment', label: 'EMPLOYEES.TABS.EMPLOYMENT', icon: 'work' },
+    { id: 'financial',  label: 'EMPLOYEES.TABS.FINANCIAL', icon: 'account_balance_wallet' },
+    { id: 'emergency',  label: 'EMPLOYEES.TABS.EMERGENCY', icon: 'emergency' },
   ];
 
   constructor(
@@ -35,7 +36,8 @@ export class EmployeeFormComponent implements OnInit {
     private http: HttpClient,
     private router: Router,
     private route: ActivatedRoute,
-    private auth: AuthService
+    private auth: AuthService,
+    private lang: LanguageService
   ) {}
 
   get canManageExtension(): boolean {
@@ -61,6 +63,7 @@ export class EmployeeFormComponent implements OnInit {
             this.form.patchValue({
               prefix: e.prefix, first_name: e.first_name, last_name: e.last_name,
               arabic_name: e.arabic_name, email: e.email, phone: e.phone,
+              preferred_communication_language: e.preferred_communication_language || 'en',
               work_phone: e.work_phone, extension: e.extension,
               // Dates: backend casts to 'date' → ISO timestamps. <input type="date">
               // only accepts YYYY-MM-DD, so strip the time portion.
@@ -102,7 +105,7 @@ export class EmployeeFormComponent implements OnInit {
             applyPatch();
           }
         },
-        error: () => { this.loadingData = false; this.errorMsg = 'Failed to load employee data.'; }
+        error: () => { this.loadingData = false; this.errorMsg = this.lang.t('EMPLOYEES.FORM.LOAD_FAILED'); }
       });
     }
   }
@@ -114,6 +117,7 @@ export class EmployeeFormComponent implements OnInit {
       first_name:      ['', [Validators.required, Validators.maxLength(100)]],
       last_name:       ['', [Validators.required, Validators.maxLength(100)]],
       arabic_name:     [''],
+      preferred_communication_language: ['en'],
       email:           ['', [Validators.required, Validators.email]],
       phone:           [''],
       work_phone:      [''],
@@ -235,10 +239,10 @@ export class EmployeeFormComponent implements OnInit {
   submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.errorMsg = 'Please fill in all required fields.';
+      this.errorMsg = this.lang.t('MESSAGES.FILL_REQUIRED');
       // Switch to first tab that has an error
       const tabFields: Record<string, string[]> = {
-        personal:   ['first_name','last_name','email','phone','dob','gender','marital_status','nationality','national_id','address','city','country'],
+        personal:   ['first_name','last_name','email','phone','dob','gender','marital_status','nationality','national_id','address','city','country','preferred_communication_language'],
         employment: ['department_id','unit_id','designation_id','manager_id','employment_type','status','hire_date','confirmation_date','probation_period'],
         financial:  ['salary','bank_name','bank_account'],
         emergency:  ['emergency_contact_name','emergency_contact_phone','emergency_contact_relation'],
@@ -268,9 +272,9 @@ export class EmployeeFormComponent implements OnInit {
             const ctrl = this.form.get(field);
             if (ctrl) ctrl.setErrors({ serverError: errs[field][0] });
           });
-          this.errorMsg = 'Please correct the highlighted fields.';
+          this.errorMsg = this.lang.t('EMPLOYEES.FORM.CORRECT_HIGHLIGHTED');
         } else {
-          this.errorMsg = err?.error?.message || 'Failed to save employee.';
+          this.errorMsg = err?.error?.message || this.lang.t('EMPLOYEES.FORM.SAVE_FAILED');
         }
       }
     });
@@ -293,7 +297,7 @@ export class EmployeeFormComponent implements OnInit {
 
   tabHasError(tabId: string): boolean {
     const tabFields: Record<string, string[]> = {
-      personal:   ['first_name','last_name','email','phone','dob','gender','marital_status','nationality','national_id','address','city','country'],
+      personal:   ['first_name','last_name','email','phone','dob','gender','marital_status','nationality','national_id','address','city','country','preferred_communication_language'],
       employment: ['department_id','unit_id','designation_id','manager_id','employment_type','status','hire_date','confirmation_date','probation_period'],
       financial:  ['salary','bank_name','bank_account'],
       emergency:  ['emergency_contact_name','emergency_contact_phone','emergency_contact_relation'],

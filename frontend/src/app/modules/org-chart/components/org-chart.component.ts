@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 
 @Component({
   standalone: false,
@@ -33,7 +34,7 @@ export class OrgChartComponent implements OnInit {
   // ── Department form ───────────────────────────────────────────────────
   showDeptForm         = false;
   deptEditId: number | null = null;
-  deptForm: any        = { name:'', code:'', description:'', parent_id:'', manager_id:'', headcount_budget:0, is_active:true };
+  deptForm: any        = { name:'', name_ar:'', code:'', description:'', parent_id:'', manager_id:'', headcount_budget:0, is_active:true };
   deptFormError        = '';
   deptSaving           = false;
   allDepts:  any[]     = [];
@@ -42,7 +43,7 @@ export class OrgChartComponent implements OnInit {
   // ── Flat dept list for grid/list ──────────────────────────────────────
   flatDepts: any[] = [];
 
-  constructor(private http: HttpClient, public auth: AuthService) {}
+  constructor(private http: HttpClient, public auth: AuthService, private lang: LanguageService) {}
 
   ngOnInit() {
     this.loadChart();
@@ -128,26 +129,26 @@ export class OrgChartComponent implements OnInit {
     if (dept) {
       this.deptEditId = dept.id;
       this.deptForm = {
-        name: dept.name, code: dept.code, description: dept.description || '',
+        name: dept.name, name_ar: dept.name_ar || '', code: dept.code, description: dept.description || '',
         parent_id: dept.parent_id || '', manager_id: dept.manager_id || '',
         headcount_budget: dept.headcount_budget || 0, is_active: dept.is_active !== false
       };
     } else {
       this.deptEditId = null;
-      this.deptForm = { name:'', code:'', description:'', parent_id:'', manager_id:'', headcount_budget:0, is_active:true };
+      this.deptForm = { name:'', name_ar:'', code:'', description:'', parent_id:'', manager_id:'', headcount_budget:0, is_active:true };
     }
     this.deptFormError = ''; this.showDeptForm = true;
   }
 
   saveDept() {
-    if (!this.deptForm.name || !this.deptForm.code) { this.deptFormError = 'Name and code are required.'; return; }
+    if (!this.deptForm.name || !this.deptForm.code) { this.deptFormError = this.lang.t('ORGCHART.FORM.ERR_REQUIRED'); return; }
     this.deptSaving = true;
     const req = this.deptEditId
       ? this.http.put<any>(`/api/v1/org-chart/dept/${this.deptEditId}`, this.deptForm)
       : this.http.post<any>('/api/v1/org-chart/dept', this.deptForm);
     req.subscribe({
       next: () => { this.deptSaving = false; this.showDeptForm = false; this.loadChart(); this.loadStats(); this.loadAllDepts(); },
-      error: err => { this.deptSaving = false; this.deptFormError = err?.error?.message || 'Failed to save.'; }
+      error: err => { this.deptSaving = false; this.deptFormError = err?.error?.message || this.lang.t('MESSAGES.SAVE_FAILED'); }
     });
   }
 
@@ -210,4 +211,11 @@ export class OrgChartComponent implements OnInit {
   }
 
   get totalByDept(): any[] { return this.stats?.departments || []; }
+
+  /** Employee display name: Arabic name when Arabic is active and recorded, otherwise first + last name. */
+  personName(e: any): string {
+    if (!e) return '';
+    if (this.lang.current() === 'ar' && e.arabic_name) return e.arabic_name;
+    return [e.first_name, e.last_name].filter(Boolean).join(' ') || e.full_name || e.name || '';
+  }
 }

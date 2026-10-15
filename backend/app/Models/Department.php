@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Department extends Model {
     use HasFactory, SoftDeletes;
-    protected $fillable = ['name', 'code', 'description', 'parent_id', 'manager_id', 'headcount_budget', 'is_active'];
+    protected $fillable = ['name', 'name_ar', 'code', 'description', 'parent_id', 'manager_id', 'headcount_budget', 'is_active'];
 
     public function parent() { return $this->belongsTo(Department::class, 'parent_id'); }
     public function children() { return $this->hasMany(Department::class, 'parent_id'); }

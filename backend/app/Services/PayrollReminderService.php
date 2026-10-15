@@ -54,7 +54,8 @@ class PayrollReminderService
                 Mail::to($recipient->email)->send(new PayrollMonthEndReminderMail(
                     $recipient->name,
                     $month,
-                    $payroll?->status
+                    $payroll?->status,
+                    $recipient->employee?->arabic_name
                 ));
                 $result['sent']++;
             } catch (\Throwable $exception) {

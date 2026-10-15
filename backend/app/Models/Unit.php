@@ -9,7 +9,7 @@ class Unit extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['name', 'code', 'legacy_unitid', 'description', 'is_active'];
+    protected $fillable = ['name', 'name_ar', 'code', 'legacy_unitid', 'description', 'is_active'];
 
     protected $casts = ['is_active' => 'boolean'];
 

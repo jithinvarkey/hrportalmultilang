@@ -1,0 +1,211 @@
+{
+  "SEPARATIONS": {
+    "TITLE": "Separation & Offboarding",
+    "SUBTITLE": "Resignations · Terminations · End of Contract · Retirement",
+    "NEW_REQUEST": "New Request",
+    "STATS": {
+      "PENDING_MANAGER": "Pending Manager",
+      "PENDING_HR": "Pending HR",
+      "OFFBOARDING": "Offboarding",
+      "COMPLETED_YTD": "Completed YTD"
+    },
+    "TABS": {
+      "ALL": "All",
+      "PENDING": "Pending",
+      "OFFBOARDING": "Offboarding",
+      "COMPLETED": "Completed",
+      "TEMPLATES": "Checklist Setup"
+    },
+    "TYPES": {
+      "resignation": "Resignation",
+      "termination": "Termination",
+      "end_of_contract": "End of Contract",
+      "retirement": "Retirement",
+      "abandonment": "Abandonment",
+      "mutual_agreement": "Mutual Agreement"
+    },
+    "REASONS": {
+      "personal": "Personal Reasons",
+      "better_opportunity": "Better Opportunity",
+      "relocation": "Relocation",
+      "health": "Health Reasons",
+      "misconduct": "Misconduct",
+      "performance": "Poor Performance",
+      "restructuring": "Restructuring",
+      "contract_end": "Contract Ended",
+      "other": "Other"
+    },
+    "CATEGORIES": {
+      "it": "IT",
+      "hr": "HR",
+      "finance": "Finance",
+      "admin": "Admin",
+      "general": "General"
+    },
+    "FILTER": {
+      "SEARCH_PLACEHOLDER": "Search employee…",
+      "ALL_TYPES": "All Types"
+    },
+    "COL": {
+      "LAST_WORKING_DAY": "Last Working Day",
+      "NOTICE": "Notice"
+    },
+    "DAYS_LEFT": "{{count}} days left",
+    "DAYS_REMAINING": "{{count}} days remaining",
+    "WAIVED": "Waived",
+    "EMPTY": "No separations found",
+    "ACTION": {
+      "APPROVE": "Approve",
+      "START_OFFBOARDING": "Start Offboarding",
+      "CANCEL": "Cancel",
+      "CANCEL_SEPARATION": "Cancel separation",
+      "REJECT": "Reject",
+      "COMPLETE": "Complete",
+      "COMPLETE_SEPARATION": "Complete separation",
+      "RESOLVE_TASKS_FIRST": "Resolve every offboarding task first",
+      "PRINT_CLEARANCE": "Print Clearance"
+    },
+    "TEMPLATES": {
+      "COUNT": "{{count}} checklist items configured",
+      "ADD_ITEM": "Add Item",
+      "TASK": "Task",
+      "CATEGORY": "Category",
+      "REQUIRED": "Required"
+    },
+    "DETAIL": {
+      "TAB_OVERVIEW": "Overview",
+      "TAB_IT": "IT Assets",
+      "TAB_FINANCE": "Finance Due",
+      "TAB_TASKS": "Tasks",
+      "PENDING_TASKS_ARIA": "{{count}} pending offboarding tasks",
+      "REQUEST_DATE": "Request Date",
+      "LAST_WORKING_DAY": "Last Working Day",
+      "NOTICE_PERIOD": "Notice Period",
+      "APPROVAL_FLOW": "Approval Flow"
+    },
+    "STEPS": {
+      "REQUEST": "Request",
+      "MANAGER": "Manager",
+      "HR": "HR",
+      "OFFBOARDING": "Offboarding",
+      "COMPLETED": "Completed"
+    },
+    "CLEARANCE": {
+      "ASSETS_HEADING": "Assets assigned to this employee",
+      "RETURNED": "Returned",
+      "NOT_RETURNED": "Not Returned",
+      "SERIAL": "S/N {{sn}}",
+      "NO_ASSETS": "No IT assets are assigned to this employee.",
+      "LOANS_HEADING": "Outstanding employee loans",
+      "EMPLOYEE_LOAN": "Employee Loan",
+      "BALANCE_DUE": "Balance Due",
+      "INSTALLMENT": "Installment {{no}}",
+      "NO_LOANS": "No outstanding loan balance for this employee."
+    },
+    "SETTLEMENT": {
+      "TITLE": "Final Settlement",
+      "PAID": "Paid",
+      "GRATUITY": "Gratuity",
+      "LEAVE_ENCASHMENT": "Leave Encashment",
+      "OTHER_ADDITIONS": "Other Additions",
+      "DEDUCTIONS": "Deductions",
+      "TOTAL": "Total Settlement"
+    },
+    "EXIT": {
+      "TITLE": "Exit Interview",
+      "DONE": "Done",
+      "RECORD": "Record Exit Interview",
+      "DATE": "Interview Date",
+      "NOTES": "Notes / Summary",
+      "NOTES_PLACEHOLDER": "Record key points from the exit interview…",
+      "SAVE": "Save Exit Interview"
+    },
+    "CHECKLIST": {
+      "TITLE": "Offboarding Checklist",
+      "COMPLETED_ON": "Completed {{date}}",
+      "SKIP": "Skip",
+      "NA": "N/A",
+      "RESET": "Reset",
+      "EMPTY": "No offboarding tasks are assigned to your department."
+    },
+    "FORM": {
+      "TITLE": "New Separation Request",
+      "TYPE": "Separation Type",
+      "EMPLOYEE": "Employee",
+      "SELECT_EMPLOYEE": "Select employee…",
+      "LAST_WORKING_DAY": "Last Working Day",
+      "REASON_CATEGORY": "Reason Category",
+      "NOTICE_WAIVED": "Notice Period Waived",
+      "WAIVE_REASON": "Reason for Waiving Notice",
+      "WAIVE_PLACEHOLDER": "Explain why notice period is being waived…",
+      "REASON_DETAILS": "Reason / Details",
+      "REASON_PLACEHOLDER": "Provide a detailed reason (min 10 characters)…",
+      "HR_NOTES": "HR Notes",
+      "HR_NOTES_PLACEHOLDER": "Internal HR notes…",
+      "PREVIEW_TITLE": "Estimated Settlement Preview",
+      "YEARS_OF_SERVICE": "Years of Service",
+      "ESTIMATED_TOTAL": "Estimated Total",
+      "SUBMIT": "Submit Request"
+    },
+    "HR_APPROVAL": {
+      "TITLE": "HR Approval & Settlement",
+      "INFO": "Gratuity and leave encashment will be <strong>auto-calculated</strong> based on salary and leave balance. You can add adjustments below.",
+      "ADDITIONAL_PAYMENT": "Additional Payment (SAR)",
+      "ADDITIONAL_HINT": "Bonuses, expenses, etc.",
+      "DEDUCTIONS": "Deductions (SAR)",
+      "DEDUCTIONS_HINT": "Loan recovery, advances, etc.",
+      "SUBMIT": "Approve & Calculate Settlement"
+    },
+    "REJECT": {
+      "TITLE": "Reject Request",
+      "REASON": "Rejection Reason",
+      "PLACEHOLDER": "Provide a clear reason…"
+    },
+    "COMPLETE": {
+      "TITLE": "Complete Offboarding",
+      "INFO": "Completing offboarding will mark the employee as <strong>Terminated</strong> in the system.",
+      "SETTLEMENT_PAID": "Final settlement has been paid",
+      "NOTES": "Settlement Notes",
+      "NOTES_PLACEHOLDER": "Bank transfer reference, date, etc.",
+      "SUBMIT": "Complete & Terminate"
+    },
+    "TEMPLATE_FORM": {
+      "ADD_TITLE": "Add Checklist Item",
+      "EDIT_TITLE": "Edit Checklist Item",
+      "TASK_TITLE": "Task Title",
+      "TASK_PLACEHOLDER": "e.g. Return laptop",
+      "SORT_ORDER": "Sort Order",
+      "ACTIVE": "Active"
+    },
+    "MSG": {
+      "REQUIRED_FIELDS": "Employee, reason, and last working day are required.",
+      "SUBMIT_FAILED": "Failed to submit.",
+      "CONFIRM_CANCEL": "Cancel this separation request?",
+      "CHECKLIST_FAILED": "Unable to update this offboarding task.",
+      "COMPLETE_FAILED": "Unable to complete this separation.",
+      "CONFIRM_DELETE_TEMPLATE": "Delete this template?",
+      "ALLOW_POPUPS": "Please allow pop-ups to print the clearance report."
+    },
+    "PRINT": {
+      "WINDOW_TITLE": "Clearance - {{ref}}",
+      "TITLE": "Employee Clearance Report",
+      "SUBTITLE": "Separation & Offboarding",
+      "CATEGORY_CLEARANCE": "{{category}} Clearance",
+      "TASK": "Task",
+      "STATUS": "Status",
+      "COMPLETED_BY": "Completed By",
+      "DATE": "Date",
+      "DEPT_SIGNATURE": "Department Manager Signature",
+      "EMPLOYEE": "Employee",
+      "DEPARTMENT": "Department",
+      "DESIGNATION": "Designation",
+      "SEPARATION_TYPE": "Separation Type",
+      "LAST_WORKING_DAY": "Last Working Day",
+      "COMPLETED": "Completed",
+      "NO_TASKS": "No clearance tasks found.",
+      "HR_FINAL_APPROVAL": "HR Manager Final Approval",
+      "GENERATED_ON": "Generated from HRMS on {{date}}",
+      "PRINT": "Print"
+    }
+  }
+}

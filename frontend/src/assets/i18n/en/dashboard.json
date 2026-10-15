@@ -1,0 +1,175 @@
+{
+  "DASHBOARD": {
+    "GREETING": {
+      "MORNING": "Good morning",
+      "AFTERNOON": "Good afternoon",
+      "EVENING": "Good evening"
+    },
+    "SUBTITLE": "Human Resources Management",
+    "DEFAULT_USER": "Admin",
+    "SYSTEMS_OK": "All Systems Operational",
+    "SECTIONS": {
+      "OVERVIEW": "Overview",
+      "ANALYTICS": "Analytics",
+      "RECENT_RECORDS": "Recent Records",
+      "QUICK_ACTIONS_ACTIVITY": "Quick Actions & Activity"
+    },
+    "KPI": {
+      "TOTAL_EMPLOYEES": "Total Employees",
+      "ON_LEAVE_TODAY": "On Leave Today",
+      "PENDING_LEAVES": "Pending Leaves",
+      "PAYROLL_PROCESSED": "Payroll Processed",
+      "OPEN_POSITIONS": "Open Positions",
+      "PENDING_REVIEWS": "Pending Reviews",
+      "ATTENDANCE_RATE": "Attendance Rate",
+      "EXPIRING_CONTRACTS": "Expiring Contracts"
+    },
+    "CARDS": {
+      "WORKFORCE": {
+        "TITLE": "Workforce",
+        "MAIN": "Total Employees",
+        "ACTIVE": "Active",
+        "PROBATION": "Probation",
+        "ON_LEAVE": "On Leave",
+        "NEW_MONTH": "New/Month",
+        "ALERT": "{{count}} contracts expiring",
+        "PROGRESS": "% Active"
+      },
+      "LEAVE": {
+        "TITLE": "Leave",
+        "MAIN": "Pending Approval",
+        "APPROVED": "Approved",
+        "ACTIVE_NOW": "Active Now",
+        "REJECTED": "Rejected",
+        "THIS_MONTH": "This Month",
+        "ALERT": "{{count}} requests waiting",
+        "PROGRESS": "% Approval Rate"
+      },
+      "RECRUITMENT": {
+        "TITLE": "Recruitment",
+        "MAIN": "Open Positions",
+        "APPLICANTS": "Applicants",
+        "INTERVIEWS": "Interviews",
+        "OFFERS_SENT": "Offers Sent",
+        "HIRED_MONTH": "Hired/Month",
+        "PROGRESS": "% Offer Rate"
+      },
+      "PERFORMANCE": {
+        "TITLE": "Performance",
+        "MAIN": "Pending Reviews",
+        "IN_PROGRESS": "In Progress",
+        "COMPLETED": "Completed",
+        "OVERDUE": "Overdue",
+        "AVG_SCORE": "Avg Score",
+        "ALERT": "{{count}} overdue",
+        "PROGRESS": "% Completion"
+      },
+      "PAYROLL": {
+        "TITLE": "Payroll",
+        "MAIN": "Due This Month",
+        "PROCESSED": "Processed",
+        "PENDING": "Pending",
+        "ERRORS": "Errors",
+        "ON_HOLD": "On Hold",
+        "ALERT": "{{count}} payroll errors",
+        "PROGRESS": "% Processed"
+      },
+      "REQUESTS": {
+        "TITLE": "Requests",
+        "MAIN": "Pending Requests",
+        "IN_PROGRESS": "In Progress",
+        "COMPLETED": "Completed",
+        "OVERDUE": "Overdue",
+        "OPEN_TOTAL": "Open Total",
+        "ALERT": "{{count}} overdue",
+        "PROGRESS": "% Completion Rate"
+      },
+      "ORGANISATION": {
+        "TITLE": "Organisation",
+        "MAIN": "Departments",
+        "TEAMS": "Teams",
+        "MANAGERS": "Managers",
+        "NO_MANAGER": "No Manager",
+        "HEADCOUNT": "Headcount",
+        "PROGRESS": "% Have Manager"
+      }
+    },
+    "CHARTS": {
+      "HEADCOUNT_TREND": "Headcount Trend — Hires & Exits",
+      "LAST_6_MONTHS": "Last 6 Months",
+      "BY_DEPARTMENT": "By Department",
+      "LEAVE_BY_TYPE": "Leave by Type",
+      "PAYROLL_DISBURSEMENT": "Monthly Payroll Disbursement",
+      "PERFORMANCE_RATINGS": "Performance Ratings",
+      "NEW_HIRES": "New Hires",
+      "EXITS": "Exits",
+      "PAYROLL_AMOUNT": "Payroll (SAR)",
+      "THOUSANDS_SUFFIX": "k",
+      "SAMPLE_DEPTS": {
+        "ENGINEERING": "Engineering",
+        "HR": "HR",
+        "FINANCE": "Finance",
+        "OPERATIONS": "Operations",
+        "SALES": "Sales"
+      },
+      "SAMPLE_LEAVE": {
+        "ANNUAL": "Annual",
+        "SICK": "Sick",
+        "EMERGENCY": "Emergency",
+        "UNPAID": "Unpaid"
+      },
+      "RATINGS": {
+        "OUTSTANDING": "Outstanding",
+        "EXCELLENT": "Excellent",
+        "EXCEEDS_EXPECTATIONS": "Exceeds Expectations",
+        "VERY_GOOD": "Very Good",
+        "GOOD": "Good",
+        "MEETS_EXPECTATIONS": "Meets Expectations",
+        "AVERAGE": "Average",
+        "SATISFACTORY": "Satisfactory",
+        "NEEDS_IMPROVEMENT": "Needs Improvement",
+        "NEEDS_WORK": "Needs Work",
+        "POOR": "Poor",
+        "UNSATISFACTORY": "Unsatisfactory",
+        "UNRATED": "Unrated"
+      }
+    },
+    "TABLES": {
+      "RECENT_EMPLOYEES": "Recent Employees",
+      "LEAVE_REQUESTS": "Leave Requests",
+      "OPEN_POSITIONS": "Open Positions",
+      "PERFORMANCE_REVIEWS": "Performance Reviews",
+      "JOB_TITLE": "Title",
+      "DUE_DATE": "Due Date",
+      "NO_PENDING": "No pending",
+      "NO_OPEN_POSITIONS": "No open positions",
+      "ALL_CAUGHT_UP": "All caught up",
+      "OVERDUE": "Overdue"
+    },
+    "QUICK": {
+      "TITLE": "Quick Actions",
+      "ADD_EMPLOYEE": "Add Employee",
+      "REQUEST_LEAVE": "Request Leave",
+      "RUN_PAYROLL": "Run Payroll",
+      "POST_JOB": "Post Job",
+      "START_REVIEW": "Start Review",
+      "MY_SERVICES": "My Services",
+      "REQUEST_LOAN": "Request Loan",
+      "MY_REQUESTS": "My Requests"
+    },
+    "ACTIVITY": {
+      "TITLE": "Recent Activity",
+      "SYSTEM": "System",
+      "EMPTY": "No recent activity",
+      "ACTIONS": {
+        "created": "created",
+        "updated": "updated",
+        "deleted": "deleted",
+        "approved": "approved",
+        "rejected": "rejected",
+        "joined": "joined",
+        "resigned": "resigned"
+      }
+    }
+  }
+}

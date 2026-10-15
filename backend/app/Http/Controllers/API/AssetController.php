@@ -87,14 +87,14 @@ class AssetController extends Controller
     {
         return $this->canManageAssets()
             ? null
-            : response()->json(['message' => 'Insufficient permissions.'], 403);
+            : response()->json(['message' => __('Insufficient permissions.')], 403);
     }
 
     private function denyIfCannotViewAll(): ?JsonResponse
     {
         return $this->canViewAllAssets()
             ? null
-            : response()->json(['message' => 'Insufficient permissions.'], 403);
+            : response()->json(['message' => __('Insufficient permissions.')], 403);
     }
 
     private function currentEmployeeId(): ?int
@@ -170,7 +170,7 @@ class AssetController extends Controller
     {
         if ($deny = $this->denyIfCannotManage()) return $deny;
         AssetCategory::findOrFail($id)->delete();
-        return response()->json(['message' => 'Category deleted.']);
+        return response()->json(['message' => __('Category deleted.')]);
     }
 
     // ── Assets CRUD ───────────────────────────────────────────────────────
@@ -217,7 +217,7 @@ class AssetController extends Controller
         $asset = $this->service->create($data, $request->file('attachment'), auth()->id());
 
         return response()->json([
-            'message' => 'Asset created.',
+            'message' => __('Asset created.'),
             'asset'   => new AssetResource($asset),
         ], 201);
     }
@@ -249,7 +249,7 @@ class AssetController extends Controller
         $asset = $this->service->update($asset, $data, $request->file('attachment'));
 
         return response()->json([
-            'message' => 'Asset updated.',
+            'message' => __('Asset updated.'),
             'asset'   => new AssetResource($asset),
         ]);
     }
@@ -265,7 +265,7 @@ class AssetController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(['message' => 'Asset deleted.']);
+        return response()->json(['message' => __('Asset deleted.')]);
     }
 
     /** Download the asset's attached document. */
@@ -273,7 +273,7 @@ class AssetController extends Controller
     {
         $asset = $this->service->find($id, $this->scopedEmployeeId());
         if (!$asset->attachment_path || !\Illuminate\Support\Facades\Storage::disk('public')->exists($asset->attachment_path)) {
-            return response()->json(['message' => 'No attachment.'], 404);
+            return response()->json(['message' => __('No attachment.')], 404);
         }
         return \Illuminate\Support\Facades\Storage::disk('public')
             ->download($asset->attachment_path, $asset->attachment_name ?: 'asset');
@@ -300,7 +300,7 @@ class AssetController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(['message' => 'Asset assigned.', 'assignment' => $assignment], 201);
+        return response()->json(['message' => __('Asset assigned.'), 'assignment' => $assignment], 201);
     }
 
     /** Return an asset from an employee. */
@@ -318,17 +318,17 @@ class AssetController extends Controller
         try {
             $assignment = $this->service->return($asset, $data, auth()->id());
         } catch (\Exception $e) {
-            return response()->json(['message' => 'No active assignment found for this asset.'], 422);
+            return response()->json(['message' => __('No active assignment found for this asset.')], 422);
         }
 
-        return response()->json(['message' => 'Asset returned.', 'assignment' => $assignment]);
+        return response()->json(['message' => __('Asset returned.'), 'assignment' => $assignment]);
     }
 
     /** All assets currently assigned to a specific employee. */
     public function forEmployee(int $employeeId): JsonResponse
     {
         if (!$this->canViewAllAssets() && $employeeId !== $this->currentEmployeeId()) {
-            return response()->json(['message' => 'Insufficient permissions.'], 403);
+            return response()->json(['message' => __('Insufficient permissions.')], 403);
         }
 
         return response()->json([
@@ -356,7 +356,7 @@ class AssetController extends Controller
 
         $record = $this->service->logMaintenance($asset, $data, auth()->id());
 
-        return response()->json(['message' => 'Maintenance logged.', 'maintenance' => $record], 201);
+        return response()->json(['message' => __('Maintenance logged.'), 'maintenance' => $record], 201);
     }
 
     /** Update a maintenance record. */
@@ -377,7 +377,7 @@ class AssetController extends Controller
 
         $record = $this->service->updateMaintenance($record, $data);
 
-        return response()->json(['message' => 'Maintenance updated.', 'maintenance' => $record]);
+        return response()->json(['message' => __('Maintenance updated.'), 'maintenance' => $record]);
     }
 
     // ── Statistics ─────────────────────────────────────────────────────────

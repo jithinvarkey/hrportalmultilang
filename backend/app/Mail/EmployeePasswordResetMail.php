@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class EmployeePasswordResetMail extends Mailable
+class EmployeePasswordResetMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
@@ -27,7 +27,7 @@ class EmployeePasswordResetMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Employee Password Reset Mail',
+            subject: __('mail_auth.employee_password_reset.subject'),
         );
     }
 

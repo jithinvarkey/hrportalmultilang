@@ -1,0 +1,175 @@
+{
+  "DASHBOARD": {
+    "GREETING": {
+      "MORNING": "صباح الخير",
+      "AFTERNOON": "مساء الخير",
+      "EVENING": "مساء الخير"
+    },
+    "SUBTITLE": "إدارة الموارد البشرية",
+    "DEFAULT_USER": "المسؤول",
+    "SYSTEMS_OK": "جميع الأنظمة تعمل بشكل طبيعي",
+    "SECTIONS": {
+      "OVERVIEW": "نظرة عامة",
+      "ANALYTICS": "التحليلات",
+      "RECENT_RECORDS": "أحدث السجلات",
+      "QUICK_ACTIONS_ACTIVITY": "الإجراءات السريعة والنشاط"
+    },
+    "KPI": {
+      "TOTAL_EMPLOYEES": "إجمالي الموظفين",
+      "ON_LEAVE_TODAY": "في إجازة اليوم",
+      "PENDING_LEAVES": "إجازات قيد الانتظار",
+      "PAYROLL_PROCESSED": "رواتب تمت معالجتها",
+      "OPEN_POSITIONS": "الوظائف الشاغرة",
+      "PENDING_REVIEWS": "تقييمات قيد الانتظار",
+      "ATTENDANCE_RATE": "نسبة الحضور",
+      "EXPIRING_CONTRACTS": "عقود قاربت على الانتهاء"
+    },
+    "CARDS": {
+      "WORKFORCE": {
+        "TITLE": "القوى العاملة",
+        "MAIN": "إجمالي الموظفين",
+        "ACTIVE": "على رأس العمل",
+        "PROBATION": "فترة التجربة",
+        "ON_LEAVE": "في إجازة",
+        "NEW_MONTH": "جدد/الشهر",
+        "ALERT": "{{count}} عقود قاربت على الانتهاء",
+        "PROGRESS": "% على رأس العمل"
+      },
+      "LEAVE": {
+        "TITLE": "الإجازات",
+        "MAIN": "بانتظار الاعتماد",
+        "APPROVED": "معتمدة",
+        "ACTIVE_NOW": "سارية الآن",
+        "REJECTED": "مرفوضة",
+        "THIS_MONTH": "هذا الشهر",
+        "ALERT": "{{count}} طلبات بانتظار الإجراء",
+        "PROGRESS": "% نسبة الاعتماد"
+      },
+      "RECRUITMENT": {
+        "TITLE": "التوظيف",
+        "MAIN": "الوظائف الشاغرة",
+        "APPLICANTS": "المتقدمون",
+        "INTERVIEWS": "المقابلات",
+        "OFFERS_SENT": "العروض المرسلة",
+        "HIRED_MONTH": "التعيينات/الشهر",
+        "PROGRESS": "% نسبة العروض"
+      },
+      "PERFORMANCE": {
+        "TITLE": "تقييم الأداء",
+        "MAIN": "تقييمات قيد الانتظار",
+        "IN_PROGRESS": "قيد التنفيذ",
+        "COMPLETED": "مكتملة",
+        "OVERDUE": "متأخرة",
+        "AVG_SCORE": "متوسط الدرجة",
+        "ALERT": "{{count}} متأخرة",
+        "PROGRESS": "% نسبة الإنجاز"
+      },
+      "PAYROLL": {
+        "TITLE": "مسير الرواتب",
+        "MAIN": "مستحقة هذا الشهر",
+        "PROCESSED": "تمت معالجتها",
+        "PENDING": "قيد الانتظار",
+        "ERRORS": "أخطاء",
+        "ON_HOLD": "معلّقة",
+        "ALERT": "{{count}} أخطاء في مسير الرواتب",
+        "PROGRESS": "% تمت معالجتها"
+      },
+      "REQUESTS": {
+        "TITLE": "الطلبات",
+        "MAIN": "طلبات قيد الانتظار",
+        "IN_PROGRESS": "قيد التنفيذ",
+        "COMPLETED": "مكتملة",
+        "OVERDUE": "متأخرة",
+        "OPEN_TOTAL": "إجمالي المفتوحة",
+        "ALERT": "{{count}} متأخرة",
+        "PROGRESS": "% نسبة الإنجاز"
+      },
+      "ORGANISATION": {
+        "TITLE": "الهيكل التنظيمي",
+        "MAIN": "الإدارات",
+        "TEAMS": "الفرق",
+        "MANAGERS": "المدراء",
+        "NO_MANAGER": "بدون مدير",
+        "HEADCOUNT": "عدد الموظفين",
+        "PROGRESS": "% لديها مدير"
+      }
+    },
+    "CHARTS": {
+      "HEADCOUNT_TREND": "اتجاه عدد الموظفين — التعيينات والمغادرات",
+      "LAST_6_MONTHS": "آخر 6 أشهر",
+      "BY_DEPARTMENT": "حسب الإدارة",
+      "LEAVE_BY_TYPE": "الإجازات حسب النوع",
+      "PAYROLL_DISBURSEMENT": "صرف الرواتب الشهري",
+      "PERFORMANCE_RATINGS": "تقديرات الأداء",
+      "NEW_HIRES": "التعيينات الجديدة",
+      "EXITS": "المغادرات",
+      "PAYROLL_AMOUNT": "الرواتب (ر.س)",
+      "THOUSANDS_SUFFIX": " ألف",
+      "SAMPLE_DEPTS": {
+        "ENGINEERING": "الهندسة",
+        "HR": "الموارد البشرية",
+        "FINANCE": "المالية",
+        "OPERATIONS": "العمليات",
+        "SALES": "المبيعات"
+      },
+      "SAMPLE_LEAVE": {
+        "ANNUAL": "سنوية",
+        "SICK": "مرضية",
+        "EMERGENCY": "اضطرارية",
+        "UNPAID": "بدون راتب"
+      },
+      "RATINGS": {
+        "OUTSTANDING": "متميز",
+        "EXCELLENT": "ممتاز",
+        "EXCEEDS_EXPECTATIONS": "يفوق التوقعات",
+        "VERY_GOOD": "جيد جدًا",
+        "GOOD": "جيد",
+        "MEETS_EXPECTATIONS": "يلبي التوقعات",
+        "AVERAGE": "متوسط",
+        "SATISFACTORY": "مرضٍ",
+        "NEEDS_IMPROVEMENT": "يحتاج إلى تحسين",
+        "NEEDS_WORK": "يحتاج إلى تطوير",
+        "POOR": "ضعيف",
+        "UNSATISFACTORY": "غير مرضٍ",
+        "UNRATED": "غير مقيّم"
+      }
+    },
+    "TABLES": {
+      "RECENT_EMPLOYEES": "أحدث الموظفين",
+      "LEAVE_REQUESTS": "طلبات الإجازة",
+      "OPEN_POSITIONS": "الوظائف الشاغرة",
+      "PERFORMANCE_REVIEWS": "تقييمات الأداء",
+      "JOB_TITLE": "المسمى الوظيفي",
+      "DUE_DATE": "تاريخ الاستحقاق",
+      "NO_PENDING": "لا توجد طلبات معلّقة",
+      "NO_OPEN_POSITIONS": "لا توجد وظائف شاغرة",
+      "ALL_CAUGHT_UP": "لا توجد مهام متبقية",
+      "OVERDUE": "متأخر"
+    },
+    "QUICK": {
+      "TITLE": "الإجراءات السريعة",
+      "ADD_EMPLOYEE": "إضافة موظف",
+      "REQUEST_LEAVE": "طلب إجازة",
+      "RUN_PAYROLL": "تشغيل مسير الرواتب",
+      "POST_JOB": "نشر وظيفة",
+      "START_REVIEW": "بدء تقييم",
+      "MY_SERVICES": "خدماتي",
+      "REQUEST_LOAN": "طلب قرض",
+      "MY_REQUESTS": "طلباتي"
+    },
+    "ACTIVITY": {
+      "TITLE": "آخر النشاطات",
+      "SYSTEM": "النظام",
+      "EMPTY": "لا توجد نشاطات حديثة",
+      "ACTIONS": {
+        "created": "أنشأ",
+        "updated": "حدّث",
+        "deleted": "حذف",
+        "approved": "اعتمد",
+        "rejected": "رفض",
+        "joined": "انضم إلى",
+        "resigned": "استقال من"
+      }
+    }
+  }
+}

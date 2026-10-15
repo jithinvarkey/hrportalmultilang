@@ -4,10 +4,9 @@ namespace App\Mail;
 
 use App\Models\JobApplication;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class ApplicantRejectedMail extends Mailable
+class ApplicantRejectedMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
@@ -17,9 +16,12 @@ class ApplicantRejectedMail extends Mailable
 
     public function build(): self
     {
-        $position = $this->application->jobPosting?->title ?? 'your application';
+        $position = $this->application->jobPosting?->title ?? __('mail_recruitment.rejected.subject_position');
 
-        return $this->subject('Application Update — ' . ($this->application->applicant_name ?: 'Candidate') . ' — ' . $position)
+        return $this->subject(__('mail_recruitment.rejected.subject', [
+                'name'     => $this->application->applicant_name ?: __('mail_recruitment.candidate'),
+                'position' => $position,
+            ]))
             ->view('emails.applicant-rejected');
     }
 }

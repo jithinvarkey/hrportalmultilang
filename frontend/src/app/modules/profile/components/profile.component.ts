@@ -1,6 +1,9 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
+import { AppLang } from '../../../core/i18n/i18n.config';
 
 @Component({
   standalone: false,
@@ -36,6 +39,10 @@ export class ProfileComponent implements OnInit {
   avatarUploading    = false;
   avatarError        = '';
 
+  // ── Communication (email) language — stored on the employee record ──────
+  commLang: AppLang  = 'en';
+  commSaving         = false;
+
   dependents: any[] = [];
   dependentsLoading = false;
   dependentSaving = false;
@@ -54,12 +61,14 @@ export class ProfileComponent implements OnInit {
   documentFile: File | null = null;
   documentForm: any = this.blankDocument();
 
+  /** Labels are translation keys, translated in the template. */
   readonly tabs = [
-    { id: 'info',     label: 'My Info',        icon: 'person'   },
-    { id: 'dependents', label: 'Dependents',   icon: 'family_restroom' },
-    { id: 'documents', label: 'Documents',     icon: 'folder' },
-    { id: 'edit',     label: 'Edit Profile',   icon: 'edit'     },
-    { id: 'password', label: 'Change Password', icon: 'lock'    },
+    { id: 'info',     label: 'PROFILE.TABS.INFO',        icon: 'person'   },
+    { id: 'dependents', label: 'PROFILE.TABS.DEPENDENTS', icon: 'family_restroom' },
+    { id: 'documents', label: 'PROFILE.TABS.DOCUMENTS',  icon: 'folder' },
+    { id: 'edit',     label: 'PROFILE.TABS.EDIT',        icon: 'edit'     },
+    { id: 'password', label: 'PROFILE.TABS.PASSWORD',    icon: 'lock'    },
+    { id: 'language', label: 'PROFILE.TABS.LANGUAGE',    icon: 'translate' },
   ];
 
   readonly documentTypes = [
@@ -78,6 +87,8 @@ export class ProfileComponent implements OnInit {
     private http: HttpClient,
     private auth: AuthService,
     private cdr: ChangeDetectorRef,
+    private lang: LanguageService,
+    private toastr: ToastrService,
   ) {}
 
   ngOnInit(): void {
@@ -89,6 +100,7 @@ export class ProfileComponent implements OnInit {
       next: r => {
         this.user     = r.user     || this.user;
         this.employee = r.employee || null;
+        this.commLang = this.employee?.preferred_communication_language === 'ar' ? 'ar' : 'en';
         this.loading  = false;
         this.initEditForm();
         if (this.employee?.id) this.loadDependents();
@@ -110,16 +122,16 @@ export class ProfileComponent implements OnInit {
   }
 
   roleBadge(role: string): string {
-    const labels: Record<string, string> = {
-      super_admin:        'Super Admin',
-      ceo:                'CEO',
-      hr_manager:         'HR Manager',
-      hr_staff:           'HR Staff',
-      finance_manager:    'Finance Manager',
-      department_manager: 'Department Manager',
-      employee:           'Employee',
-    };
-    return labels[role] || role;
+    if (!role) return '';
+    const key = `ROLES.${role}`;
+    const label = this.lang.t(key);
+    return label !== key ? label : role;
+  }
+
+  /** Translate a key, falling back to the raw value when no translation exists. */
+  private label(key: string, fallback: string): string {
+    const text = this.lang.t(key);
+    return text !== key ? text : fallback;
   }
 
   avatarUrl(): string | null {
@@ -163,7 +175,7 @@ export class ProfileComponent implements OnInit {
     this.http.put<any>('/api/v1/profile', this.editForm).subscribe({
       next: r => {
         this.editSaving  = false;
-        this.editSuccess = 'Profile updated successfully.';
+        this.editSuccess = this.lang.t('PROFILE.MSG.PROFILE_UPDATED');
         this.user        = { ...this.user, name: this.editForm.name };
         // Refresh stored user
         if (r.user) sessionStorage.setItem('hrms_user', JSON.stringify({ ...this.auth.getUser(), name: r.user.name }));
@@ -171,7 +183,7 @@ export class ProfileComponent implements OnInit {
       },
       error: e => {
         this.editSaving = false;
-        this.editError  = e?.error?.message || 'Failed to update profile.';
+        this.editError  = e?.error?.message || this.lang.t('PROFILE.MSG.PROFILE_UPDATE_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -184,12 +196,12 @@ export class ProfileComponent implements OnInit {
     this.pwError   = '';
 
     if (this.pwForm.password !== this.pwForm.password_confirmation) {
-      this.pwError = 'New password and confirmation do not match.';
+      this.pwError = this.lang.t('PROFILE.MSG.PASSWORD_MISMATCH');
       this.cdr.markForCheck();
       return;
     }
     if (this.pwForm.password.length < 8) {
-      this.pwError = 'Password must be at least 8 characters.';
+      this.pwError = this.lang.t('PROFILE.MSG.PASSWORD_TOO_SHORT');
       this.cdr.markForCheck();
       return;
     }
@@ -199,7 +211,7 @@ export class ProfileComponent implements OnInit {
     this.http.put<any>('/api/v1/profile/password', this.pwForm).subscribe({
       next: () => {
         this.pwSaving  = false;
-        this.pwSuccess = 'Password changed successfully.';
+        this.pwSuccess = this.lang.t('PROFILE.MSG.PASSWORD_CHANGED');
         this.pwForm    = { current_password: '', password: '', password_confirmation: '' };
         this.cdr.markForCheck();
       },
@@ -208,7 +220,7 @@ export class ProfileComponent implements OnInit {
         const errs    = e?.error?.errors;
         this.pwError  = errs
           ? Object.values(errs).flat().join(' ')
-          : (e?.error?.message || 'Failed to change password.');
+          : (e?.error?.message || this.lang.t('PROFILE.MSG.PASSWORD_CHANGE_FAILED'));
         this.cdr.markForCheck();
       },
     });
@@ -222,12 +234,12 @@ export class ProfileComponent implements OnInit {
 
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowed.includes(file.type)) {
-      this.avatarError = 'Only JPG, PNG, GIF or WEBP images are allowed.';
+      this.avatarError = this.lang.t('PROFILE.MSG.AVATAR_TYPE');
       this.cdr.markForCheck();
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      this.avatarError = 'Image must be smaller than 2 MB.';
+      this.avatarError = this.lang.t('PROFILE.MSG.AVATAR_SIZE');
       this.cdr.markForCheck();
       return;
     }
@@ -246,7 +258,32 @@ export class ProfileComponent implements OnInit {
       },
       error: e => {
         this.avatarUploading = false;
-        this.avatarError     = e?.error?.message || 'Failed to upload avatar.';
+        this.avatarError     = e?.error?.message || this.lang.t('PROFILE.MSG.AVATAR_FAILED');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  // ── Communication language ──────────────────────────────────────────────
+
+  /** Saves the email language on the employee record (independent of the screen language). */
+  setCommunicationLanguage(language: AppLang): void {
+    if (!this.employee?.id || this.commSaving || language === this.commLang) return;
+    const previous = this.commLang;
+    this.commLang = language;
+    this.commSaving = true;
+    this.http.put<any>('/api/v1/profile/communication-language', { language }).subscribe({
+      next: r => {
+        this.commSaving = false;
+        this.commLang = r?.preferred_communication_language === 'ar' ? 'ar' : (r?.preferred_communication_language === 'en' ? 'en' : language);
+        if (this.employee) this.employee = { ...this.employee, preferred_communication_language: this.commLang };
+        this.toastr.success(this.lang.t('PROFILE.LANGUAGE.COMM_SAVED'));
+        this.cdr.markForCheck();
+      },
+      error: e => {
+        this.commSaving = false;
+        this.commLang = previous;
+        this.toastr.error(e?.error?.message || this.lang.t('PROFILE.LANGUAGE.COMM_SAVE_FAILED'));
         this.cdr.markForCheck();
       },
     });
@@ -286,7 +323,7 @@ export class ProfileComponent implements OnInit {
       },
       error: e => {
         this.dependentsLoading = false;
-        this.dependentError = e?.error?.message || 'Could not load dependents.';
+        this.dependentError = e?.error?.message || this.lang.t('PROFILE.MSG.DEPENDENTS_LOAD_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -326,11 +363,11 @@ export class ProfileComponent implements OnInit {
 
     const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
     if (!allowed.includes(file.type)) {
-      this.dependentError = 'Dependent documents must be PDF, JPG, or PNG.';
+      this.dependentError = this.lang.t('PROFILE.MSG.DEPENDENT_FILE_TYPE');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      this.dependentError = 'Dependent documents must be 5 MB or smaller.';
+      this.dependentError = this.lang.t('PROFILE.MSG.DEPENDENT_FILE_SIZE');
       return;
     }
 
@@ -341,15 +378,15 @@ export class ProfileComponent implements OnInit {
 
   saveDependent(): void {
     if (!this.employee?.id) {
-      this.dependentError = 'No employee record linked to this profile.';
+      this.dependentError = this.lang.t('PROFILE.MSG.NO_EMPLOYEE');
       return;
     }
     if (!this.dependentForm.full_name?.trim()) {
-      this.dependentError = 'Dependent full name is required.';
+      this.dependentError = this.lang.t('PROFILE.MSG.DEPENDENT_NAME_REQUIRED');
       return;
     }
     if (!this.dependentForm.id_number?.trim()) {
-      this.dependentError = 'Iqama / ID number is required.';
+      this.dependentError = this.lang.t('PROFILE.MSG.DEPENDENT_ID_REQUIRED');
       return;
     }
 
@@ -381,18 +418,18 @@ export class ProfileComponent implements OnInit {
         const errors = e?.error?.errors;
         this.dependentError = errors
           ? String(Object.values(errors).flat().join(' '))
-          : (e?.error?.message || 'Could not save dependent.');
+          : (e?.error?.message || this.lang.t('PROFILE.MSG.DEPENDENT_SAVE_FAILED'));
         this.cdr.markForCheck();
       },
     });
   }
 
   deleteDependent(dependent: any): void {
-    if (!this.employee?.id || !confirm(`Delete ${dependent.full_name}?`)) return;
+    if (!this.employee?.id || !confirm(this.lang.t('PROFILE.MSG.CONFIRM_DELETE', { name: dependent.full_name }))) return;
     this.http.delete(`/api/v1/employees/${this.employee.id}/dependents/${dependent.id}`).subscribe({
       next: () => this.loadDependents(),
       error: e => {
-        this.dependentError = e?.error?.message || 'Could not delete dependent.';
+        this.dependentError = e?.error?.message || this.lang.t('PROFILE.MSG.DEPENDENT_DELETE_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -415,7 +452,7 @@ export class ProfileComponent implements OnInit {
         URL.revokeObjectURL(url);
       },
       error: e => {
-        this.dependentError = e?.error?.message || 'Could not download the document.';
+        this.dependentError = e?.error?.message || this.lang.t('PROFILE.MSG.DOWNLOAD_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -441,7 +478,7 @@ export class ProfileComponent implements OnInit {
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      this.documentError = 'Document must be 10 MB or smaller.';
+      this.documentError = this.lang.t('PROFILE.MSG.DOCUMENT_TOO_LARGE');
       this.documentFile = null;
       return;
     }
@@ -460,7 +497,7 @@ export class ProfileComponent implements OnInit {
       },
       error: e => {
         this.documentsLoading = false;
-        this.documentError = e?.error?.message || 'Could not load documents.';
+        this.documentError = e?.error?.message || this.lang.t('PROFILE.MSG.DOCUMENTS_LOAD_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -468,15 +505,15 @@ export class ProfileComponent implements OnInit {
 
   uploadDocument(): void {
     if (!this.employee?.id) {
-      this.documentError = 'No employee record linked to this profile.';
+      this.documentError = this.lang.t('PROFILE.MSG.NO_EMPLOYEE');
       return;
     }
     if (!this.documentForm.title?.trim()) {
-      this.documentError = 'Document title is required.';
+      this.documentError = this.lang.t('PROFILE.MSG.DOCUMENT_TITLE_REQUIRED');
       return;
     }
     if (!this.documentFile) {
-      this.documentError = 'Please select a document file.';
+      this.documentError = this.lang.t('PROFILE.MSG.DOCUMENT_FILE_REQUIRED');
       return;
     }
 
@@ -494,7 +531,7 @@ export class ProfileComponent implements OnInit {
     this.http.post<any>(`/api/v1/employees/${this.employee.id}/documents`, fd).subscribe({
       next: () => {
         this.documentUploading = false;
-        this.documentSuccess = 'Document uploaded successfully.';
+        this.documentSuccess = this.lang.t('PROFILE.MSG.DOCUMENT_UPLOADED');
         this.documentForm = this.blankDocument();
         this.documentFile = null;
         this.loadDocuments();
@@ -505,7 +542,7 @@ export class ProfileComponent implements OnInit {
         const errors = e?.error?.errors;
         this.documentError = errors
           ? String(Object.values(errors).flat().join(' '))
-          : (e?.error?.message || 'Could not upload document.');
+          : (e?.error?.message || this.lang.t('PROFILE.MSG.DOCUMENT_UPLOAD_FAILED'));
         this.cdr.markForCheck();
       },
     });
@@ -526,34 +563,34 @@ export class ProfileComponent implements OnInit {
         URL.revokeObjectURL(url);
       },
       error: e => {
-        this.documentError = e?.error?.message || 'Could not download document.';
+        this.documentError = e?.error?.message || this.lang.t('PROFILE.MSG.DOWNLOAD_FAILED');
         this.cdr.markForCheck();
       },
     });
   }
 
   deleteDocument(doc: any): void {
-    if (!this.employee?.id || !confirm(`Delete ${doc.title}?`)) return;
+    if (!this.employee?.id || !confirm(this.lang.t('PROFILE.MSG.CONFIRM_DELETE', { name: doc.title }))) return;
     this.http.delete(`/api/v1/employees/${this.employee.id}/documents/${doc.id}`).subscribe({
       next: () => this.loadDocuments(),
       error: e => {
-        this.documentError = e?.error?.message || 'Could not delete document.';
+        this.documentError = e?.error?.message || this.lang.t('PROFILE.MSG.DOCUMENT_DELETE_FAILED');
         this.cdr.markForCheck();
       },
     });
   }
 
   documentTypeLabel(type: string): string {
-    const labels: any = {
-      id: 'ID / Iqama',
-      passport: 'Passport',
-      medical: 'Medical / HDF',
-      contract: 'Contract / Offer Letter',
-      certificate: 'Certificate',
-      visa: 'Visa',
-      other: 'Other',
-    };
-    return labels[type] || type;
+    return type ? this.label(`PROFILE.DOCUMENTS.CATEGORIES.${type}`, type) : '';
+  }
+
+  /** Upload-form option label (the stored title stays the English default title). */
+  documentOptionLabel(option: { key: string; label: string }): string {
+    return this.label(`PROFILE.DOCUMENTS.TYPES.${option.key}`, option.label);
+  }
+
+  relationshipLabel(relationship: string): string {
+    return relationship ? this.label(`PROFILE.DEPENDENTS.RELATIONSHIPS.${relationship}`, relationship) : '';
   }
 
   formatFileSize(bytes: number | null): string {
@@ -564,14 +601,6 @@ export class ProfileComponent implements OnInit {
   }
 
   formatEmploymentType(type: string): string {
-
-  const map: any = {
-    full_time: 'Full Time',
-    part_time: 'Part Time',
-    contract: 'Contract',
-    intern: 'Intern'
-  };
-
-  return map[type] || type;
-}
+    return type ? this.label(`PROFILE.EMPLOYMENT_TYPE.${type}`, type) : type;
+  }
 }

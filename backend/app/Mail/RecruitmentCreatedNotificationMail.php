@@ -6,12 +6,11 @@ use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class RecruitmentCreatedNotificationMail extends Mailable
+class RecruitmentCreatedNotificationMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
@@ -24,11 +23,12 @@ class RecruitmentCreatedNotificationMail extends Mailable
     public function envelope(): Envelope
     {
         $subject = $this->type === 'job'
-            ? 'New job posting: ' . $this->record->title
-            : 'New Applicant — '
-                . ($this->record->applicant_name ?: 'Candidate')
-                . ' — '
-                . ($this->record->jobPosting?->title ?? 'Position at Diamond Insurance Broker');
+            ? __('mail_recruitment.created.subject_job', ['title' => $this->record->title])
+            : __('mail_recruitment.created.subject_application', [
+                'name'     => $this->record->applicant_name ?: __('mail_recruitment.candidate'),
+                'position' => $this->record->jobPosting?->title
+                    ?? __('mail_recruitment.position_fallback', ['company' => __('mail.company')]),
+            ]);
 
         return new Envelope(subject: $subject);
     }

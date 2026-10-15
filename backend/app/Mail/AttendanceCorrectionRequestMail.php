@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class AttendanceCorrectionRequestMail extends Mailable
+class AttendanceCorrectionRequestMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
@@ -27,7 +27,7 @@ class AttendanceCorrectionRequestMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Attendance Correction Request Mail',
+            subject: __('mail_attendance.correction_request.subject'),
         );
     }
 

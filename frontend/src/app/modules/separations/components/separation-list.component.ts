@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { ActivatedRoute } from '@angular/router';
+import { formatDate as ngFormatDate } from '@angular/common';
+import { LanguageService } from '../../../core/services/language.service';
 
 @Component({
   standalone: false,
@@ -80,50 +82,45 @@ export class SeparationListComponent implements OnInit {
   templateColumns  = ['title','category','required','actions'];
 
   allTabs = [
-    { id:'all',       label:'All',          icon:'list_alt'     },
-    { id:'pending',   label:'Pending',      icon:'hourglass_empty' },
-    { id:'offboarding',label:'Offboarding', icon:'checklist'    },
-    { id:'completed', label:'Completed',    icon:'task_alt'     },
-    { id:'templates', label:'Checklist Setup', icon:'tune'      },
+    { id:'all',        labelKey:'SEPARATIONS.TABS.ALL',         icon:'list_alt'        },
+    { id:'pending',    labelKey:'SEPARATIONS.TABS.PENDING',     icon:'hourglass_empty' },
+    { id:'offboarding',labelKey:'SEPARATIONS.TABS.OFFBOARDING', icon:'checklist'       },
+    { id:'completed',  labelKey:'SEPARATIONS.TABS.COMPLETED',   icon:'task_alt'        },
+    { id:'templates',  labelKey:'SEPARATIONS.TABS.TEMPLATES',   icon:'tune'            },
   ];
   tabs = [...this.allTabs];
 
+  /** Status filter codes; '' = all. Labels come from STATUS.* via the statusLabel pipe. */
   statusTabs = [
-    { id:'',               label:'All'              },
-    { id:'pending_manager',label:'Pending Manager'  },
-    { id:'pending_hr',     label:'Pending HR'       },
-    { id:'approved',       label:'Approved'         },
-    { id:'offboarding',    label:'Offboarding'      },
-    { id:'completed',      label:'Completed'        },
-    { id:'rejected',       label:'Rejected'         },
-    { id:'cancelled',      label:'Cancelled'        },
+    { id:'' }, { id:'pending_manager' }, { id:'pending_hr' }, { id:'approved' },
+    { id:'offboarding' }, { id:'completed' }, { id:'rejected' }, { id:'cancelled' },
   ];
 
   allSeparationTypes = [
-    { id:'resignation',      label:'Resignation',       icon:'exit_to_app',     color:'#f59e0b' },
-    { id:'termination',      label:'Termination',       icon:'block',           color:'#ef4444' },
-    { id:'end_of_contract',  label:'End of Contract',   icon:'event_busy',      color:'#6366f1' },
-    { id:'retirement',       label:'Retirement',        icon:'elderly',         color:'#10b981' },
-    { id:'abandonment',      label:'Abandonment',       icon:'person_off',      color:'#8b5cf6' },
-    { id:'mutual_agreement', label:'Mutual Agreement',  icon:'handshake',       color:'#0ea5e9' },
+    { id:'resignation',      labelKey:'SEPARATIONS.TYPES.resignation',      icon:'exit_to_app', color:'#f59e0b' },
+    { id:'termination',      labelKey:'SEPARATIONS.TYPES.termination',      icon:'block',       color:'#ef4444' },
+    { id:'end_of_contract',  labelKey:'SEPARATIONS.TYPES.end_of_contract',  icon:'event_busy',  color:'#6366f1' },
+    { id:'retirement',       labelKey:'SEPARATIONS.TYPES.retirement',       icon:'elderly',     color:'#10b981' },
+    { id:'abandonment',      labelKey:'SEPARATIONS.TYPES.abandonment',      icon:'person_off',  color:'#8b5cf6' },
+    { id:'mutual_agreement', labelKey:'SEPARATIONS.TYPES.mutual_agreement', icon:'handshake',   color:'#0ea5e9' },
   ];
   separationTypes = [...this.allSeparationTypes];
 
   reasonCategories = [
-    { id:'personal',          label:'Personal Reasons'     },
-    { id:'better_opportunity',label:'Better Opportunity'   },
-    { id:'relocation',        label:'Relocation'           },
-    { id:'health',            label:'Health Reasons'       },
-    { id:'misconduct',        label:'Misconduct'           },
-    { id:'performance',       label:'Poor Performance'     },
-    { id:'restructuring',     label:'Restructuring'        },
-    { id:'contract_end',      label:'Contract Ended'       },
-    { id:'other',             label:'Other'                },
+    { id:'personal',          labelKey:'SEPARATIONS.REASONS.personal'           },
+    { id:'better_opportunity',labelKey:'SEPARATIONS.REASONS.better_opportunity' },
+    { id:'relocation',        labelKey:'SEPARATIONS.REASONS.relocation'         },
+    { id:'health',            labelKey:'SEPARATIONS.REASONS.health'             },
+    { id:'misconduct',        labelKey:'SEPARATIONS.REASONS.misconduct'         },
+    { id:'performance',       labelKey:'SEPARATIONS.REASONS.performance'        },
+    { id:'restructuring',     labelKey:'SEPARATIONS.REASONS.restructuring'      },
+    { id:'contract_end',      labelKey:'SEPARATIONS.REASONS.contract_end'       },
+    { id:'other',             labelKey:'SEPARATIONS.REASONS.other'              },
   ];
 
   checklistCategories = ['it','hr','finance','admin','general'];
 
-  constructor(private http: HttpClient, private auth: AuthService, private route: ActivatedRoute) {}
+  constructor(private http: HttpClient, private auth: AuthService, private route: ActivatedRoute, private lang: LanguageService) {}
 
   ngOnInit() {
     const user = this.auth.getUser();
@@ -154,10 +151,10 @@ export class SeparationListComponent implements OnInit {
     this.http.get<any>('/api/v1/separations/stats').subscribe({ next: r => {
       this.stats = r;
       this.statItems = [
-        { label:'Pending Manager', value: r.pending_manager,  icon:'manage_accounts', color:'#f59e0b' },
-        { label:'Pending HR',      value: r.pending_hr,       icon:'badge',           color:'#6366f1' },
-        { label:'Offboarding',     value: r.offboarding,      icon:'checklist',       color:'#3b82f6' },
-        { label:'Completed YTD',   value: r.completed_ytd,    icon:'task_alt',        color:'#10b981' },
+        { labelKey:'SEPARATIONS.STATS.PENDING_MANAGER', value: r.pending_manager, icon:'manage_accounts', color:'#f59e0b' },
+        { labelKey:'SEPARATIONS.STATS.PENDING_HR',      value: r.pending_hr,      icon:'badge',           color:'#6366f1' },
+        { labelKey:'SEPARATIONS.STATS.OFFBOARDING',     value: r.offboarding,     icon:'checklist',       color:'#3b82f6' },
+        { labelKey:'SEPARATIONS.STATS.COMPLETED_YTD',   value: r.completed_ytd,   icon:'task_alt',        color:'#10b981' },
       ];
     }});
   }
@@ -258,7 +255,7 @@ export class SeparationListComponent implements OnInit {
       this.form.hr_notes = '';
     }
     if (!this.form.employee_id || !this.form.reason || !this.form.last_working_day) {
-      this.formError = 'Employee, reason, and last working day are required.'; return;
+      this.formError = this.lang.t('SEPARATIONS.MSG.REQUIRED_FIELDS'); return;
     }
     this.submitting = true; this.formError = '';
     this.http.post<any>('/api/v1/separations', this.form).subscribe({
@@ -266,7 +263,7 @@ export class SeparationListComponent implements OnInit {
         this.submitting = false; this.showNewForm = false;
         this.load(); this.loadStats();
       },
-      error: err => { this.submitting = false; this.formError = err?.error?.message || 'Failed to submit.'; }
+      error: err => { this.submitting = false; this.formError = err?.error?.message || this.lang.t('SEPARATIONS.MSG.SUBMIT_FAILED'); }
     });
   }
 
@@ -309,7 +306,7 @@ export class SeparationListComponent implements OnInit {
   }
 
   cancel(sep: any) {
-    if (!confirm('Cancel this separation request?')) return;
+    if (!confirm(this.lang.t('SEPARATIONS.MSG.CONFIRM_CANCEL'))) return;
     this.http.post(`/api/v1/separations/${sep.id}/cancel`, {}).subscribe({
       next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.showDetail = false; }
     });
@@ -330,7 +327,7 @@ export class SeparationListComponent implements OnInit {
       error: err => {
         Object.assign(item, previousItem);
         this.checklistUpdatingIds.delete(item.id);
-        this.checklistError = err?.error?.message || 'Unable to update this offboarding task.';
+        this.checklistError = err?.error?.message || this.lang.t('SEPARATIONS.MSG.CHECKLIST_FAILED');
       }
     });
   }
@@ -382,7 +379,7 @@ export class SeparationListComponent implements OnInit {
   submitComplete() {
     this.http.post(`/api/v1/separations/${this.selectedSep.id}/complete`, this.completeForm).subscribe({
       next: () => { this.showComplete = false; this.load(this.currentPage); this.loadStats(); this.showDetail = false; },
-      error: err => { this.completeError = err?.error?.message || 'Unable to complete this separation.'; }
+      error: err => { this.completeError = err?.error?.message || this.lang.t('SEPARATIONS.MSG.COMPLETE_FAILED'); }
     });
   }
 
@@ -402,7 +399,7 @@ export class SeparationListComponent implements OnInit {
   }
 
   deleteTemplate(id: number) {
-    if (!confirm('Delete this template?')) return;
+    if (!confirm(this.lang.t('SEPARATIONS.MSG.CONFIRM_DELETE_TEMPLATE'))) return;
     this.http.delete(`/api/v1/separations/templates/${id}`).subscribe({ next: () => this.loadTemplates() });
   }
 
@@ -413,15 +410,29 @@ export class SeparationListComponent implements OnInit {
   }
 
   typeInfo(type: string): any {
-    return this.separationTypes.find(t => t.id === type) || { label: type, icon: 'help', color: '#8b949e' };
+    return this.separationTypes.find(t => t.id === type) || { labelKey: '', icon: 'help', color: '#8b949e' };
   }
 
-  statusLabel(s: string): string {
-    const map: any = {
-      draft:'Draft', submitted:'Submitted', pending_manager:'Pending Manager', pending_hr:'Pending HR',
-      approved:'Approved', offboarding:'Offboarding', completed:'Completed', cancelled:'Cancelled', rejected:'Rejected'
-    };
-    return map[s] || s;
+  /** Translated separation type label (falls back to the raw code). */
+  typeLabel(type: string): string {
+    return this.translateOr(`SEPARATIONS.TYPES.${type}`, type);
+  }
+
+  /** Translated reason category label (falls back to the raw code). */
+  reasonLabel(code: string): string {
+    return this.translateOr(`SEPARATIONS.REASONS.${code}`, code);
+  }
+
+  /** Employee display name: Arabic name when Arabic is active and available. */
+  empName(e: any): string {
+    if (!e) return '';
+    if (this.lang.current() === 'ar' && e.arabic_name) return e.arabic_name;
+    return `${e.first_name || ''} ${e.last_name || ''}`.trim();
+  }
+
+  private translateOr(key: string, fallback: string): string {
+    const label = this.lang.t(key);
+    return label !== key ? label : fallback;
   }
 
   statusCls(s: string): string {
@@ -504,10 +515,12 @@ export class SeparationListComponent implements OnInit {
     if (!this.canPrintClearance(sep)) return;
     const printWindow = window.open('', '_blank', 'width=1000,height=800');
     if (!printWindow) {
-      this.checklistError = 'Please allow pop-ups to print the clearance report.';
+      this.checklistError = this.lang.t('SEPARATIONS.MSG.ALLOW_POPUPS');
       return;
     }
 
+    const t = (key: string, params?: Record<string, any>) => this.escapeHtml(this.lang.t(`SEPARATIONS.${key}`, params));
+    const isRtl = this.lang.isRtl();
     const groups = this.checklistByCategory(sep.checklist_items || []);
     const departmentSections = groups.map((group: any) => {
       const rows = group.items.map((item: any) => {
@@ -522,56 +535,63 @@ export class SeparationListComponent implements OnInit {
         </tr>`;
       }).join('');
       return `<section>
-        <h2>${this.escapeHtml(this.categoryLabel(group.category))} Clearance</h2>
-        <table><thead><tr><th>Task</th><th>Status</th><th>Completed By</th><th>Date</th></tr></thead>
+        <h2>${t('PRINT.CATEGORY_CLEARANCE', { category: this.categoryLabel(group.category) })}</h2>
+        <table><thead><tr><th>${t('PRINT.TASK')}</th><th>${t('PRINT.STATUS')}</th><th>${t('PRINT.COMPLETED_BY')}</th><th>${t('PRINT.DATE')}</th></tr></thead>
         <tbody>${rows}</tbody></table>
-        <div class="signoff"><span>Department Manager Signature</span><span>Date</span></div>
+        <div class="signoff"><span>${t('PRINT.DEPT_SIGNATURE')}</span><span>${t('PRINT.DATE')}</span></div>
       </section>`;
     }).join('');
 
-    const employeeName = `${sep.employee?.first_name || ''} ${sep.employee?.last_name || ''}`.trim();
-    printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8">
-      <title>Clearance - ${this.escapeHtml(sep.reference)}</title>
+    const employeeName = this.empName(sep.employee);
+    printWindow.document.write(`<!doctype html><html lang="${this.lang.current()}" dir="${isRtl ? 'rtl' : 'ltr'}"><head><meta charset="utf-8">
+      <title>${t('PRINT.WINDOW_TITLE', { ref: sep.reference })}</title>
       <style>
-        @page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#172033;margin:0;font-size:12px}
+        @page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:${isRtl ? "'IBM Plex Sans Arabic',Tahoma,Arial" : 'Arial'},sans-serif;color:#172033;margin:0;font-size:12px}
         .header{border-bottom:3px solid #1e3a5f;padding-bottom:12px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end}
         h1{font-size:21px;color:#1e3a5f;margin:0 0 4px}.sub{color:#64748b}.ref{font-weight:700;color:#1e3a5f}
         .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}.meta div{border:1px solid #d9e2ec;border-radius:6px;padding:9px}
         .label{display:block;font-size:9px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:3px}
-        section{margin:0 0 20px;break-inside:avoid}h2{font-size:14px;color:#1e3a5f;margin:0;padding:8px 10px;background:#edf3f8;border-left:4px solid #2563eb}
-        table{width:100%;border-collapse:collapse}th,td{border:1px solid #d9e2ec;padding:7px;text-align:left}th{background:#f8fafc;font-size:10px;text-transform:uppercase;color:#475569}.status{font-weight:700}
+        section{margin:0 0 20px;break-inside:avoid}h2{font-size:14px;color:#1e3a5f;margin:0;padding:8px 10px;background:#edf3f8;border-inline-start:4px solid #2563eb}
+        table{width:100%;border-collapse:collapse}th,td{border:1px solid #d9e2ec;padding:7px;text-align:start}th{background:#f8fafc;font-size:10px;text-transform:uppercase;color:#475569}.status{font-weight:700}
         .signoff{display:grid;grid-template-columns:2fr 1fr;gap:30px;margin-top:22px}.signoff span{border-top:1px solid #64748b;padding-top:5px;color:#64748b;font-size:10px}
         .footer{margin-top:25px;padding-top:10px;border-top:1px solid #d9e2ec;color:#64748b;font-size:10px;text-align:center}
-        .actions{position:fixed;right:16px;top:16px}@media print{.actions{display:none}}
+        .actions{position:fixed;inset-inline-end:16px;top:16px}@media print{.actions{display:none}}
       </style></head><body>
-      <button class="actions" onclick="window.print()">Print</button>
-      <div class="header"><div><h1>Employee Clearance Report</h1><div class="sub">Separation &amp; Offboarding</div></div><div class="ref">${this.escapeHtml(sep.reference)}</div></div>
+      <button class="actions" onclick="window.print()">${t('PRINT.PRINT')}</button>
+      <div class="header"><div><h1>${t('PRINT.TITLE')}</h1><div class="sub">${t('PRINT.SUBTITLE')}</div></div><div class="ref" dir="ltr">${this.escapeHtml(sep.reference)}</div></div>
       <div class="meta">
-        <div><span class="label">Employee</span>${this.escapeHtml(employeeName)}</div>
-        <div><span class="label">Department</span>${this.escapeHtml(sep.employee?.department?.name || '—')}</div>
-        <div><span class="label">Designation</span>${this.escapeHtml(sep.employee?.designation?.title || '—')}</div>
-        <div><span class="label">Separation Type</span>${this.escapeHtml(this.typeInfo(sep.type).label)}</div>
-        <div><span class="label">Last Working Day</span>${this.escapeHtml(this.printDate(sep.last_working_day))}</div>
-        <div><span class="label">Completed</span>${this.escapeHtml(this.printDate(sep.updated_at))}</div>
+        <div><span class="label">${t('PRINT.EMPLOYEE')}</span>${this.escapeHtml(employeeName)}</div>
+        <div><span class="label">${t('PRINT.DEPARTMENT')}</span>${this.escapeHtml(this.locField(sep.employee?.department, 'name') || '—')}</div>
+        <div><span class="label">${t('PRINT.DESIGNATION')}</span>${this.escapeHtml(this.locField(sep.employee?.designation, 'title') || '—')}</div>
+        <div><span class="label">${t('PRINT.SEPARATION_TYPE')}</span>${this.escapeHtml(this.typeLabel(sep.type))}</div>
+        <div><span class="label">${t('PRINT.LAST_WORKING_DAY')}</span>${this.escapeHtml(this.printDate(sep.last_working_day))}</div>
+        <div><span class="label">${t('PRINT.COMPLETED')}</span>${this.escapeHtml(this.printDate(sep.updated_at))}</div>
       </div>
-      ${departmentSections || '<p>No clearance tasks found.</p>'}
-      <div class="signoff"><span>HR Manager Final Approval</span><span>Date</span></div>
-      <div class="footer">Generated from HRMS on ${this.escapeHtml(this.printDate(new Date().toISOString()))}</div>
+      ${departmentSections || `<p>${t('PRINT.NO_TASKS')}</p>`}
+      <div class="signoff"><span>${t('PRINT.HR_FINAL_APPROVAL')}</span><span>${t('PRINT.DATE')}</span></div>
+      <div class="footer">${t('PRINT.GENERATED_ON', { date: this.printDate(new Date().toISOString()) })}</div>
       </body></html>`);
     printWindow.document.close();
     printWindow.focus();
   }
 
   private taskStatusLabel(status: string): string {
-    return ({ completed: 'Completed', skipped: 'Skipped', na: 'N/A', pending: 'Pending' } as any)[status] || status;
+    return this.translateOr(`STATUS.${status}`, status);
+  }
+
+  /** Bilingual master-data field (name / name_ar, title / title_ar) for plain-text output. */
+  private locField(record: any, field: string): string {
+    if (!record) return '';
+    const ar = record[`${field}_ar`];
+    if (this.lang.current() === 'ar' && ar) return ar;
+    return record[field] || '';
   }
 
   private printDate(value: string | null | undefined): string {
     if (!value) return '—';
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('en-GB', {
-      day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Riyadh'
-    });
+    if (Number.isNaN(date.getTime())) return String(value);
+    try { return ngFormatDate(date, 'dd MMM yyyy', this.lang.locale(), '+0300'); } catch { return String(value); }
   }
 
   private escapeHtml(value: any): string {
@@ -600,7 +620,7 @@ export class SeparationListComponent implements OnInit {
   }
 
   categoryLabel(c: string): string {
-    return ({ it:'IT', hr:'HR', finance:'Finance', admin:'Admin', general:'General' } as any)[c] || c;
+    return this.translateOr(`SEPARATIONS.CATEGORIES.${c}`, c);
   }
 
   categoryColor(c: string): string {
@@ -616,26 +636,26 @@ export class SeparationListComponent implements OnInit {
     const hrFirst = sep.type === 'resignation'
       && (sep.hr_approved_at || (sep.status === 'pending_hr' && !sep.manager_approved_at));
     const steps = [
-      { label:'Request', done: true, active: false, by: sep.initiated_by?.name, date: sep.created_at },
+      { labelKey:'SEPARATIONS.STEPS.REQUEST', done: true, active: false, by: sep.initiated_by?.name, date: sep.created_at },
     ];
     if (hrFirst) {
       steps.push(
-        { label:'HR', done: !!sep.hr_approved_at, active: sep.status === 'pending_hr', by: sep.hr_approver?.name, date: sep.hr_approved_at },
-        { label:'Manager', done: !!sep.manager_approved_at, active: sep.status === 'pending_manager', by: sep.manager_approver?.name, date: sep.manager_approved_at }
+        { labelKey:'SEPARATIONS.STEPS.HR', done: !!sep.hr_approved_at, active: sep.status === 'pending_hr', by: sep.hr_approver?.name, date: sep.hr_approved_at },
+        { labelKey:'SEPARATIONS.STEPS.MANAGER', done: !!sep.manager_approved_at, active: sep.status === 'pending_manager', by: sep.manager_approver?.name, date: sep.manager_approved_at }
       );
     }
     if (!isTermination && !hrFirst) {
       steps.push({
-        label:'Manager', done: !!sep.manager_approved_at, active: sep.status === 'pending_manager',
+        labelKey:'SEPARATIONS.STEPS.MANAGER', done: !!sep.manager_approved_at, active: sep.status === 'pending_manager',
         by: sep.manager_approver?.name, date: sep.manager_approved_at
       });
     }
     if (!hrFirst) {
-      steps.push({ label:'HR', done: !!sep.hr_approved_at, active: sep.status === 'pending_hr', by: sep.hr_approver?.name, date: sep.hr_approved_at });
+      steps.push({ labelKey:'SEPARATIONS.STEPS.HR', done: !!sep.hr_approved_at, active: sep.status === 'pending_hr', by: sep.hr_approver?.name, date: sep.hr_approved_at });
     }
     steps.push(
-      { label:'Offboarding', done: sep.status === 'offboarding' || sep.status === 'completed', active: sep.status === 'approved', by: '', date: null },
-      { label:'Completed', done: sep.status === 'completed', active: false, by: '', date: null }
+      { labelKey:'SEPARATIONS.STEPS.OFFBOARDING', done: sep.status === 'offboarding' || sep.status === 'completed', active: sep.status === 'approved', by: '', date: null },
+      { labelKey:'SEPARATIONS.STEPS.COMPLETED', done: sep.status === 'completed', active: false, by: '', date: null }
     );
     return steps;
   }

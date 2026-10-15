@@ -1,4 +1,7 @@
-<div class="app-shell" [class.sidebar-collapsed]="!sidebarOpen">
+<div class="app-shell"
+     [class.sidebar-collapsed]="!expanded"
+     [class.is-mobile]="isMobile"
+     [class.mobile-nav-open]="mobileNavOpen">
 
   <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
     <defs>
@@ -20,10 +23,45 @@
     </defs>
   </svg>
 
-  <aside class="sidebar">
+  <!-- ── Mobile top bar: menu + greeting avatar on Home, back + page title elsewhere ── -->
+  <header class="mobile-topbar" *ngIf="isMobile" [class.mt-home]="isHome">
+    <button class="mt-btn" *ngIf="isHome" (click)="toggleSidebar()" [attr.aria-label]="'LAYOUT.OPEN_MENU' | translate"
+            [attr.aria-expanded]="mobileNavOpen">
+      <mat-icon>menu</mat-icon>
+    </button>
+    <button class="mt-btn" *ngIf="!isHome" (click)="goBack()" [attr.aria-label]="'LAYOUT.BACK' | translate">
+      <mat-icon class="flip-rtl">arrow_back</mat-icon>
+    </button>
+
+    <div class="mt-brand" *ngIf="isHome">
+      <svg class="diamond-svg" aria-hidden="true"><use href="#hrms-diamond"/></svg>
+      <span>HRMS</span>
+    </div>
+    <h1 class="mt-title" *ngIf="!isHome">{{ pageTitle | translate }}</h1>
+
+    <div class="mt-actions">
+      <app-language-switcher [compact]="true"></app-language-switcher>
+      <div class="notif-wrap">
+        <button class="mt-btn notif-mini-btn" (click)="toggleNotifications()" [attr.aria-label]="'LAYOUT.NOTIFICATIONS' | translate">
+          <mat-icon>notifications_none</mat-icon>
+          <span class="notif-badge" *ngIf="unreadCount">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
+        </button>
+        <div class="notif-dropdown topbar-dropdown" *ngIf="showNotifications">
+          <ng-container *ngTemplateOutlet="notifPanel"></ng-container>
+        </div>
+      </div>
+      <button class="mt-avatar" *ngIf="isHome" (click)="goToProfile()" [attr.aria-label]="'LAYOUT.VIEW_PROFILE' | translate">
+        {{ userInitials }}
+      </button>
+    </div>
+  </header>
+
+  <div class="sidebar-backdrop" *ngIf="isMobile && mobileNavOpen" (click)="closeMobileNav()"></div>
+
+  <aside class="sidebar" [attr.aria-hidden]="isMobile && !mobileNavOpen ? true : null">
     <div class="sidebar-top">
 
-      <div class="brand" *ngIf="sidebarOpen">
+      <div class="brand" *ngIf="expanded">
         <div class="brand-icon">
           <svg class="diamond-svg" aria-label="HRMS logo"><use href="#hrms-diamond"/></svg>
         </div>
@@ -32,143 +70,113 @@
           <div class="portal-badge"
                [style.color]="portalInfo.color"
                [style.background]="portalInfo.color + '18'">
-            <mat-icon>{{ portalInfo.icon }}</mat-icon>{{ portalInfo.label }}
+            <mat-icon>{{ portalInfo.icon }}</mat-icon>{{ portalInfo.label | translate }}
           </div>
         </div>
       </div>
 
-      <div class="brand brand-mini" *ngIf="!sidebarOpen">
+      <div class="brand brand-mini" *ngIf="!expanded">
         <div class="brand-icon">
           <svg class="diamond-svg" aria-label="HRMS logo"><use href="#hrms-diamond"/></svg>
         </div>
       </div>
 
-      <button class="toggle-btn" (click)="toggleSidebar()">
-        <mat-icon>{{ sidebarOpen ? 'menu_open' : 'menu' }}</mat-icon>
+      <button class="toggle-btn" (click)="toggleSidebar()"
+              [attr.aria-label]="(isMobile ? 'LAYOUT.CLOSE_MENU' : 'LAYOUT.TOGGLE_SIDEBAR') | translate">
+        <mat-icon class="flip-rtl">{{ isMobile ? 'close' : (sidebarOpen ? 'menu_open' : 'menu') }}</mat-icon>
       </button>
     </div>
 
     <nav class="nav-list">
       <ng-container *ngFor="let group of navGroups">
-        <div class="nav-section-label" *ngIf="group.label && sidebarOpen">{{ group.label }}</div>
-        <div class="nav-section-divider" *ngIf="group.label && !sidebarOpen"></div>
+        <div class="nav-section-label" *ngIf="group.label && expanded">{{ group.label | translate }}</div>
+        <div class="nav-section-divider" *ngIf="group.label && !expanded"></div>
         <a *ngFor="let item of group.items"
            class="nav-link"
            [routerLink]="[item.path]"
            routerLinkActive="nav-active"
-           [routerLinkActiveOptions]="{exact: true}">
+           [routerLinkActiveOptions]="{exact: true}"
+           [matTooltip]="expanded ? '' : (item.label | translate)"
+           matTooltipPosition="after">
           <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
-          <span class="nav-text" *ngIf="sidebarOpen">{{ item.label }}</span>
+          <span class="nav-text" *ngIf="expanded">{{ item.label | translate }}</span>
         </a>
       </ng-container>
     </nav>
 
     <!-- Footer expanded -->
-    <div class="sidebar-footer" *ngIf="sidebarOpen">
+    <div class="sidebar-footer" *ngIf="expanded">
+
+      <!-- Language -->
+      <app-language-switcher class="lang-switch"></app-language-switcher>
 
       <!-- Theme picker -->
       <div class="theme-picker">
-        <span class="theme-picker-label">Theme</span>
+        <span class="theme-picker-label">{{ 'LAYOUT.THEME' | translate }}</span>
         <div class="theme-dots">
           <button *ngFor="let t of themes"
                   class="theme-dot"
                   [class.active]="themeService.current() === t.id"
                   [style.background]="t.color"
-                  [matTooltip]="t.label"
+                  [matTooltip]="('LAYOUT.THEMES.' + t.id) | translate"
+                  [attr.aria-label]="('LAYOUT.THEMES.' + t.id) | translate"
                   matTooltipPosition="above"
                   (click)="setTheme(t.id)">
           </button>
         </div>
       </div>
 
-      <!-- Notification bell -->
-      <div class="notif-wrap">
-        <button class="notif-btn" (click)="toggleNotifications()" matTooltip="Notifications">
+      <!-- Notification bell (the mobile top bar has its own) -->
+      <div class="notif-wrap" *ngIf="!isMobile">
+        <button class="notif-btn" (click)="toggleNotifications()" [matTooltip]="'LAYOUT.NOTIFICATIONS' | translate">
           <mat-icon>notifications</mat-icon>
           <span class="notif-badge" *ngIf="unreadCount">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
         </button>
         <div class="notif-dropdown" *ngIf="showNotifications">
-          <div class="nd-head">
-            <span>Notifications</span>
-            <button class="nd-readall" *ngIf="unreadCount" (click)="markAllNotificationsRead()">Mark all read</button>
-          </div>
-          <div class="nd-list">
-            <button class="nd-item" *ngFor="let n of notifications" [class.unread]="!n.read_at"
-                    (click)="openNotification(n)">
-              <mat-icon class="nd-ic">{{ n.type === 'policy' || n.type === 'policy_review' ? 'policy' : 'campaign' }}</mat-icon>
-              <div class="nd-body">
-                <div class="nd-title">{{ n.title }}</div>
-                <div class="nd-text" *ngIf="n.body">{{ n.body }}</div>
-                <div class="nd-time">{{ n.created_at | date:'MMM d, h:mm a' }}</div>
-              </div>
-              <span class="nd-dot" *ngIf="!n.read_at"></span>
-            </button>
-            <div class="nd-empty" *ngIf="!notifications.length">
-              <mat-icon>notifications_none</mat-icon>
-              <span>No notifications</span>
-            </div>
-          </div>
+          <ng-container *ngTemplateOutlet="notifPanel"></ng-container>
         </div>
       </div>
 
       <!-- User -->
       <div class="user-card">
-        <button class="user-trigger" (click)="goToProfile()" matTooltip="View profile">
+        <button class="user-trigger" (click)="goToProfile()" [matTooltip]="'LAYOUT.VIEW_PROFILE' | translate">
           <div class="user-avatar">{{ userInitials }}</div>
           <div class="user-info">
             <div class="user-name">{{ user?.name }}</div>
             <div class="user-role">{{ roleLabel }}</div>
           </div>
         </button>
-        <button class="profile-btn" matTooltip="My Profile" (click)="goToProfile()">
+        <button class="profile-btn" [matTooltip]="'LAYOUT.MY_PROFILE' | translate" (click)="goToProfile()">
           <mat-icon>account_circle</mat-icon>
         </button>
-        <button class="logout-btn" matTooltip="Logout" (click)="logout()">
-          <mat-icon>logout</mat-icon>
+        <button class="logout-btn" [matTooltip]="'LAYOUT.LOGOUT' | translate" (click)="logout()">
+          <mat-icon class="flip-rtl">logout</mat-icon>
         </button>
       </div>
     </div>
 
     <!-- Footer collapsed -->
-    <div class="sidebar-footer-mini" *ngIf="!sidebarOpen">
-      <button class="mini-btn" matTooltip="Change theme" (click)="cycleTheme()">
+    <div class="sidebar-footer-mini" *ngIf="!expanded">
+      <app-language-switcher [compact]="true"></app-language-switcher>
+      <button class="mini-btn" [matTooltip]="'LAYOUT.CHANGE_THEME' | translate" (click)="cycleTheme()">
         <mat-icon>palette</mat-icon>
       </button>
       <div class="notif-wrap mini-notif-wrap">
-        <button class="mini-btn notif-mini-btn" (click)="toggleNotifications()" matTooltip="Notifications">
+        <button class="mini-btn notif-mini-btn" (click)="toggleNotifications()" [matTooltip]="'LAYOUT.NOTIFICATIONS' | translate">
           <mat-icon>notifications</mat-icon>
           <span class="notif-badge" *ngIf="unreadCount">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
         </button>
         <div class="notif-dropdown mini-dropdown" *ngIf="showNotifications">
-          <div class="nd-head">
-            <span>Notifications</span>
-            <button class="nd-readall" *ngIf="unreadCount" (click)="markAllNotificationsRead()">Mark all read</button>
-          </div>
-          <div class="nd-list">
-            <button class="nd-item" *ngFor="let n of notifications" [class.unread]="!n.read_at"
-                    (click)="openNotification(n)">
-              <mat-icon class="nd-ic">{{ n.type === 'policy' || n.type === 'policy_review' ? 'policy' : 'campaign' }}</mat-icon>
-              <div class="nd-body">
-                <div class="nd-title">{{ n.title }}</div>
-                <div class="nd-text" *ngIf="n.body">{{ n.body }}</div>
-                <div class="nd-time">{{ n.created_at | date:'MMM d, h:mm a' }}</div>
-              </div>
-              <span class="nd-dot" *ngIf="!n.read_at"></span>
-            </button>
-            <div class="nd-empty" *ngIf="!notifications.length">
-              <mat-icon>notifications_none</mat-icon>
-              <span>No notifications</span>
-            </div>
-          </div>
+          <ng-container *ngTemplateOutlet="notifPanel"></ng-container>
         </div>
       </div>
-      <button class="mini-btn" matTooltip="My Profile" (click)="goToProfile()">
+      <button class="mini-btn" [matTooltip]="'LAYOUT.MY_PROFILE' | translate" (click)="goToProfile()">
         <mat-icon>account_circle</mat-icon>
       </button>
-      <button class="logout-btn-mini" matTooltip="Logout" (click)="logout()">
-        <mat-icon>logout</mat-icon>
+      <button class="logout-btn-mini" [matTooltip]="'LAYOUT.LOGOUT' | translate" (click)="logout()">
+        <mat-icon class="flip-rtl">logout</mat-icon>
       </button>
-      <button class="profile-avatar-mini" matTooltip="{{ user?.name }} — View profile" (click)="goToProfile()">
+      <button class="profile-avatar-mini" [matTooltip]="user?.name + ' — ' + ('LAYOUT.VIEW_PROFILE' | translate)" (click)="goToProfile()">
         <div class="user-avatar-mini">{{ userInitials }}</div>
       </button>
     </div>
@@ -178,4 +186,42 @@
     <router-outlet></router-outlet>
   </main>
 
+  <!-- ── Mobile bottom bar: quick actions + More (opens the full menu) ── -->
+  <nav class="bottom-nav" *ngIf="isMobile" [attr.aria-label]="'LAYOUT.QUICK_NAV' | translate">
+    <a *ngFor="let item of bottomNav" class="bn-item" [routerLink]="[item.path]"
+       [class.bn-active]="isBottomActive(item.path)"
+       [attr.aria-current]="isBottomActive(item.path) ? 'page' : null">
+      <span class="bn-icon"><mat-icon>{{ item.icon }}</mat-icon></span>
+      <span class="bn-label">{{ item.label | translate }}</span>
+    </a>
+    <button class="bn-item" type="button" (click)="toggleSidebar()" [class.bn-active]="mobileNavOpen"
+            [attr.aria-expanded]="mobileNavOpen">
+      <span class="bn-icon"><mat-icon>more_horiz</mat-icon></span>
+      <span class="bn-label">{{ 'LAYOUT.MORE' | translate }}</span>
+    </button>
+  </nav>
+
 </div>
+
+<ng-template #notifPanel>
+  <div class="nd-head">
+    <span>{{ 'LAYOUT.NOTIFICATIONS' | translate }}</span>
+    <button class="nd-readall" *ngIf="unreadCount" (click)="markAllNotificationsRead()">{{ 'LAYOUT.MARK_ALL_READ' | translate }}</button>
+  </div>
+  <div class="nd-list">
+    <button class="nd-item" *ngFor="let n of notifications" [class.unread]="!n.read_at"
+            (click)="openNotification(n)">
+      <mat-icon class="nd-ic">{{ n.type === 'policy' || n.type === 'policy_review' ? 'policy' : 'campaign' }}</mat-icon>
+      <div class="nd-body">
+        <div class="nd-title">{{ n.title }}</div>
+        <div class="nd-text" *ngIf="n.body">{{ n.body }}</div>
+        <div class="nd-time">{{ n.created_at | locDate:'MMM d, h:mm a' }}</div>
+      </div>
+      <span class="nd-dot" *ngIf="!n.read_at"></span>
+    </button>
+    <div class="nd-empty" *ngIf="!notifications.length">
+      <mat-icon>notifications_none</mat-icon>
+      <span>{{ 'LAYOUT.NO_NOTIFICATIONS' | translate }}</span>
+    </div>
+  </div>
+</ng-template>

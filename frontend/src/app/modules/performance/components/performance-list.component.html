@@ -3,11 +3,11 @@
   <!-- Header -->
   <div class="page-hdr">
     <div>
-      <h1 class="page-title"><mat-icon>insights</mat-icon> Performance</h1>
-      <p class="page-sub">Evaluation cycles · Self assessments · Manager reviews · KPIs</p>
+      <h1 class="page-title"><mat-icon>insights</mat-icon> {{ 'PERFORMANCE.TITLE' | translate }}</h1>
+      <p class="page-sub">{{ 'PERFORMANCE.SUBTITLE' | translate }}</p>
     </div>
     <button class="btn-primary" *ngIf="isHR" (click)="openCycleForm()">
-      <mat-icon>add</mat-icon> New Cycle
+      <mat-icon>add</mat-icon> {{ 'PERFORMANCE.NEW_CYCLE' | translate }}
     </button>
   </div>
 
@@ -19,43 +19,43 @@
   <div class="stat-strip">
     <div class="stat-tile" style="--tc:#6366f1">
       <div class="tile-icon"><mat-icon>replay</mat-icon></div>
-      <div><div class="tile-val">{{ stats.total_cycles ?? 0 }}</div><div class="tile-lbl">Total Cycles</div></div>
+      <div><div class="tile-val">{{ stats.total_cycles ?? 0 }}</div><div class="tile-lbl">{{ 'PERFORMANCE.STATS.TOTAL_CYCLES' | translate }}</div></div>
     </div>
     <div class="stat-tile" style="--tc:#10b981">
       <div class="tile-icon"><mat-icon>radio_button_checked</mat-icon></div>
-      <div><div class="tile-val">{{ stats.active_cycles ?? 0 }}</div><div class="tile-lbl">Active</div></div>
+      <div><div class="tile-val">{{ stats.active_cycles ?? 0 }}</div><div class="tile-lbl">{{ 'PERFORMANCE.STATS.ACTIVE' | translate }}</div></div>
     </div>
     <div class="stat-tile" style="--tc:#f59e0b">
       <div class="tile-icon"><mat-icon>hourglass_empty</mat-icon></div>
-      <div><div class="tile-val">{{ stats.pending_self ?? 0 }}</div><div class="tile-lbl">Pending Self</div></div>
+      <div><div class="tile-val">{{ stats.pending_self ?? 0 }}</div><div class="tile-lbl">{{ 'PERFORMANCE.STATS.PENDING_SELF' | translate }}</div></div>
     </div>
     <div class="stat-tile" style="--tc:#3b82f6">
       <div class="tile-icon"><mat-icon>rate_review</mat-icon></div>
-      <div><div class="tile-val">{{ stats.pending_manager ?? 0 }}</div><div class="tile-lbl">Pending Manager</div></div>
+      <div><div class="tile-val">{{ stats.pending_manager ?? 0 }}</div><div class="tile-lbl">{{ 'PERFORMANCE.STATS.PENDING_MANAGER' | translate }}</div></div>
     </div>
     <div class="stat-tile" style="--tc:#10b981">
       <div class="tile-icon"><mat-icon>verified</mat-icon></div>
-      <div><div class="tile-val">{{ stats.finalized ?? 0 }}</div><div class="tile-lbl">Finalized</div></div>
+      <div><div class="tile-val">{{ stats.finalized ?? 0 }}</div><div class="tile-lbl">{{ 'PERFORMANCE.STATS.FINALIZED' | translate }}</div></div>
     </div>
     <div class="stat-tile" style="--tc:#6366f1">
       <div class="tile-icon"><mat-icon>star</mat-icon></div>
-      <div><div class="tile-val">{{ stats.avg_final_rating ?? '—' }}</div><div class="tile-lbl">Avg Rating</div></div>
+      <div><div class="tile-val">{{ stats.avg_final_rating ?? '—' }}</div><div class="tile-lbl">{{ 'PERFORMANCE.STATS.AVG_RATING' | translate }}</div></div>
     </div>
   </div>
 
   <!-- Tabs -->
   <div class="mod-tabs">
     <button class="mod-tab" [class.active]="activeTab==='cycles'"  (click)="switchTab('cycles')">
-      <mat-icon>replay</mat-icon> Cycles
+      <mat-icon>replay</mat-icon> {{ 'PERFORMANCE.TABS.CYCLES' | translate }}
     </button>
     <button class="mod-tab" [class.active]="activeTab==='reviews'" (click)="switchTab('reviews')">
-      <mat-icon>rate_review</mat-icon> Reviews
+      <mat-icon>rate_review</mat-icon> {{ 'PERFORMANCE.TABS.REVIEWS' | translate }}
       <span class="tab-badge" *ngIf="(stats.pending_self??0)+(stats.pending_manager??0)>0">
         {{ (stats.pending_self??0)+(stats.pending_manager??0) }}
       </span>
     </button>
     <button class="mod-tab" [class.active]="activeTab==='kpis'"    (click)="switchTab('kpis')">
-      <mat-icon>track_changes</mat-icon> KPIs
+      <mat-icon>track_changes</mat-icon> {{ 'PERFORMANCE.TABS.KPIS' | translate }}
     </button>
   </div>
 
@@ -63,50 +63,51 @@
   <ng-container *ngIf="activeTab==='cycles'">
     <div class="data-card">
       <div class="loading-bar" *ngIf="loading"></div>
+      <div class="table-scroll">
       <table mat-table [dataSource]="cycles">
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Cycle</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'PERFORMANCE.COLS.CYCLE' | translate }}</th>
           <td mat-cell *matCellDef="let c">
             <div class="name-main">{{ c.name }}</div>
-            <div class="name-sub">{{ c.type | titlecase }}</div>
+            <div class="name-sub">{{ cycleTypeKey(c.type) | translate }}</div>
           </td>
         </ng-container>
         <ng-container matColumnDef="type">
-          <th mat-header-cell *matHeaderCellDef>Type</th>
-          <td mat-cell *matCellDef="let c"><span class="type-tag">{{ c.type | titlecase }}</span></td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'PERFORMANCE.COLS.TYPE' | translate }}</th>
+          <td mat-cell *matCellDef="let c"><span class="type-tag">{{ cycleTypeKey(c.type) | translate }}</span></td>
         </ng-container>
         <ng-container matColumnDef="period">
-          <th mat-header-cell *matHeaderCellDef>Period</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'PERFORMANCE.COLS.PERIOD' | translate }}</th>
           <td mat-cell *matCellDef="let c" class="td-muted">
-            {{ c.start_date | date:'dd MMM yyyy' }} → {{ c.end_date | date:'dd MMM yyyy' }}
+            {{ c.start_date | locDate:'dd MMM yyyy' }} – {{ c.end_date | locDate:'dd MMM yyyy' }}
           </td>
         </ng-container>
         <ng-container matColumnDef="reviews">
-          <th mat-header-cell *matHeaderCellDef>Reviews</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'PERFORMANCE.COLS.REVIEWS' | translate }}</th>
           <td mat-cell *matCellDef="let c">
             <span class="review-count-chip">{{ c.reviews_count ?? 0 }}</span>
             <span class="finalized-count" *ngIf="c.finalized_count">
               <mat-icon style="font-size:12px!important;width:12px!important;height:12px!important">verified</mat-icon>
-              {{ c.finalized_count }} done
+              {{ 'PERFORMANCE.DONE_COUNT' | translate:{ count: c.finalized_count } }}
             </span>
           </td>
         </ng-container>
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.STATUS' | translate }}</th>
           <td mat-cell *matCellDef="let c">
-            <span class="status-badge" [class]="cycleStatusCls(c.status)">{{ c.status | titlecase }}</span>
+            <span class="status-badge" [class]="cycleStatusCls(c.status)">{{ c.status | statusLabel }}</span>
           </td>
         </ng-container>
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let c">
             <div class="row-actions">
-              <button class="row-btn" matTooltip="View reviews" (click)="viewCycle(c); $event.stopPropagation()"><mat-icon>open_in_new</mat-icon></button>
-              <button class="row-btn success" matTooltip="Initiate — create review records" *ngIf="isHR && c.status==='draft'" (click)="initiateCycle(c); $event.stopPropagation()">
+              <button class="row-btn" [matTooltip]="'PERFORMANCE.TOOLTIP.VIEW_REVIEWS' | translate" [attr.aria-label]="'PERFORMANCE.TOOLTIP.VIEW_REVIEWS' | translate" (click)="viewCycle(c); $event.stopPropagation()"><mat-icon>open_in_new</mat-icon></button>
+              <button class="row-btn success" [matTooltip]="'PERFORMANCE.TOOLTIP.INITIATE' | translate" [attr.aria-label]="'PERFORMANCE.TOOLTIP.INITIATE' | translate" *ngIf="isHR && c.status==='draft'" (click)="initiateCycle(c); $event.stopPropagation()">
                 <mat-icon>rocket_launch</mat-icon>
               </button>
-              <button class="row-btn" matTooltip="Edit" *ngIf="isHR" (click)="openCycleForm(c); $event.stopPropagation()"><mat-icon>edit</mat-icon></button>
-              <button class="row-btn warn" matTooltip="Close cycle" *ngIf="isHR && c.status==='active'" (click)="closeCycle(c); $event.stopPropagation()">
+              <button class="row-btn" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate" *ngIf="isHR" (click)="openCycleForm(c); $event.stopPropagation()"><mat-icon>edit</mat-icon></button>
+              <button class="row-btn warn" [matTooltip]="'PERFORMANCE.TOOLTIP.CLOSE_CYCLE' | translate" [attr.aria-label]="'PERFORMANCE.TOOLTIP.CLOSE_CYCLE' | translate" *ngIf="isHR && c.status==='active'" (click)="closeCycle(c); $event.stopPropagation()">
                 <mat-icon>lock</mat-icon>
               </button>
             </div>
@@ -117,10 +118,11 @@
         <tr class="mat-row" *matNoDataRow>
           <td class="mat-cell empty-td" colspan="6">
             <ng-container *ngIf="loading"><mat-spinner diameter="28"></mat-spinner></ng-container>
-            <ng-container *ngIf="!loading"><mat-icon>insights</mat-icon> No performance cycles</ng-container>
+            <ng-container *ngIf="!loading"><mat-icon>insights</mat-icon> {{ 'PERFORMANCE.EMPTY.NO_CYCLES' | translate }}</ng-container>
           </td>
         </tr>
       </table>
+      </div>
     </div>
   </ng-container>
 
@@ -129,64 +131,65 @@
     <div class="filter-bar">
       <div class="search-wrap">
         <mat-icon class="search-icon">search</mat-icon>
-        <input class="search-input" placeholder="Search employee…" [formControl]="searchControl">
+        <input class="search-input" [placeholder]="'PERFORMANCE.SEARCH_EMPLOYEE' | translate" [attr.aria-label]="'PERFORMANCE.SEARCH_EMPLOYEE' | translate" [formControl]="searchControl">
       </div>
       <select class="filter-select" [(ngModel)]="reviewStatus" (change)="loadReviews(1)">
-        <option value="">All Status</option>
-        <option value="pending">Pending Self</option>
-        <option value="self_submitted">Pending Manager</option>
-        <option value="manager_reviewed">Pending Finalize</option>
-        <option value="finalized">Finalized</option>
+        <option value="">{{ 'PERFORMANCE.FILTER.ALL_STATUS' | translate }}</option>
+        <option value="pending">{{ 'PERFORMANCE.FILTER.PENDING_SELF' | translate }}</option>
+        <option value="self_submitted">{{ 'PERFORMANCE.FILTER.PENDING_MANAGER' | translate }}</option>
+        <option value="manager_reviewed">{{ 'PERFORMANCE.FILTER.PENDING_FINALIZE' | translate }}</option>
+        <option value="finalized">{{ 'PERFORMANCE.FILTER.FINALIZED' | translate }}</option>
       </select>
     </div>
     <div class="data-card">
       <div class="loading-bar" *ngIf="loading"></div>
+      <div class="table-scroll">
       <table mat-table [dataSource]="reviews">
         <ng-container matColumnDef="employee">
-          <th mat-header-cell *matHeaderCellDef>Employee</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.EMPLOYEE' | translate }}</th>
           <td mat-cell *matCellDef="let r">
             <div class="emp-cell">
               <div class="av" [style.background]="avatarColor(r.employee?.first_name)">{{ initial(r.employee?.first_name) }}</div>
               <div>
-                <div class="name-main">{{ r.employee?.first_name }} {{ r.employee?.last_name }}</div>
-                <div class="name-sub">{{ r.employee?.department?.name }}</div>
+                <div class="name-main">{{ empName(r.employee) }}</div>
+                <div class="name-sub">{{ r.employee?.department | locName }}</div>
               </div>
             </div>
           </td>
         </ng-container>
         <ng-container matColumnDef="cycle">
-          <th mat-header-cell *matHeaderCellDef>Cycle</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'PERFORMANCE.COLS.CYCLE' | translate }}</th>
           <td mat-cell *matCellDef="let r" class="td-muted">{{ r.cycle?.name }}</td>
         </ng-container>
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.STATUS' | translate }}</th>
           <td mat-cell *matCellDef="let r">
-            <span class="status-badge" [class]="statusCls(r.status)">{{ statusLabel(r.status) }}</span>
+            <span class="status-badge" [class]="statusCls(r.status)">{{ r.status | statusLabel }}</span>
           </td>
         </ng-container>
         <ng-container matColumnDef="self_rating">
-          <th mat-header-cell *matHeaderCellDef>Self</th>
-          <td mat-cell *matCellDef="let r" class="rating-cell" [style.color]="ratingColor(r.self_rating)">
+          <th mat-header-cell *matHeaderCellDef class="num">{{ 'PERFORMANCE.COLS.SELF' | translate }}</th>
+          <td mat-cell *matCellDef="let r" class="rating-cell num" [style.color]="ratingColor(r.self_rating)">
             {{ r.self_rating ? r.self_rating + ' ★' : '—' }}
           </td>
         </ng-container>
         <ng-container matColumnDef="manager_rating">
-          <th mat-header-cell *matHeaderCellDef>Manager</th>
-          <td mat-cell *matCellDef="let r" class="rating-cell" [style.color]="ratingColor(r.manager_rating)">
+          <th mat-header-cell *matHeaderCellDef class="num">{{ 'PERFORMANCE.COLS.MANAGER' | translate }}</th>
+          <td mat-cell *matCellDef="let r" class="rating-cell num" [style.color]="ratingColor(r.manager_rating)">
             {{ r.manager_rating ? r.manager_rating + ' ★' : '—' }}
           </td>
         </ng-container>
         <ng-container matColumnDef="final_rating">
-          <th mat-header-cell *matHeaderCellDef>Final</th>
-          <td mat-cell *matCellDef="let r" class="rating-cell" [style.color]="ratingColor(r.final_rating)">
+          <th mat-header-cell *matHeaderCellDef class="num">{{ 'PERFORMANCE.COLS.FINAL' | translate }}</th>
+          <td mat-cell *matCellDef="let r" class="rating-cell num" [style.color]="ratingColor(r.final_rating)">
             <strong>{{ r.final_rating ? r.final_rating + ' ★' : '—' }}</strong>
           </td>
         </ng-container>
         <ng-container matColumnDef="band">
-          <th mat-header-cell *matHeaderCellDef>Band</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'PERFORMANCE.COLS.BAND' | translate }}</th>
           <td mat-cell *matCellDef="let r">
             <span class="band-badge" [class]="bandCls(r.performance_band)" *ngIf="r.performance_band">
-              {{ r.performance_band | titlecase }}
+              {{ bandKey(r.performance_band) | translate }}
             </span>
             <span class="td-muted" *ngIf="!r.performance_band">—</span>
           </td>
@@ -195,15 +198,15 @@
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let r">
             <div class="row-actions">
-              <button class="row-btn primary" matTooltip="Submit Self Assessment"
+              <button class="row-btn primary" [matTooltip]="'PERFORMANCE.TOOLTIP.SELF_ASSESS' | translate" [attr.aria-label]="'PERFORMANCE.TOOLTIP.SELF_ASSESS' | translate"
                       *ngIf="canSelfAssess(r)" (click)="openSelfAssess(r); $event.stopPropagation()">
                 <mat-icon>edit_note</mat-icon>
               </button>
-              <button class="row-btn primary" matTooltip="Manager Review"
+              <button class="row-btn primary" [matTooltip]="'PERFORMANCE.TOOLTIP.MANAGER_REVIEW' | translate" [attr.aria-label]="'PERFORMANCE.TOOLTIP.MANAGER_REVIEW' | translate"
                       *ngIf="canMgrReview(r)" (click)="openManagerReview(r); $event.stopPropagation()">
                 <mat-icon>rate_review</mat-icon>
               </button>
-              <button class="row-btn success" matTooltip="Finalize"
+              <button class="row-btn success" [matTooltip]="'PERFORMANCE.TOOLTIP.FINALIZE' | translate" [attr.aria-label]="'PERFORMANCE.TOOLTIP.FINALIZE' | translate"
                       *ngIf="canFinalize(r)" (click)="openFinalize(r); $event.stopPropagation()">
                 <mat-icon>verified</mat-icon>
               </button>
@@ -215,16 +218,17 @@
         <tr class="mat-row" *matNoDataRow>
           <td class="mat-cell empty-td" colspan="8">
             <ng-container *ngIf="loading"><mat-spinner diameter="28"></mat-spinner></ng-container>
-            <ng-container *ngIf="!loading"><mat-icon>rate_review</mat-icon> No reviews found</ng-container>
+            <ng-container *ngIf="!loading"><mat-icon>rate_review</mat-icon> {{ 'PERFORMANCE.EMPTY.NO_REVIEWS' | translate }}</ng-container>
           </td>
         </tr>
       </table>
+      </div>
       <div class="pagination-bar" *ngIf="pagination?.last_page > 1">
-        <span class="pg-info">{{ pagination?.from }}–{{ pagination?.to }} of {{ pagination?.total }}</span>
+        <span class="pg-info">{{ 'COMMON.SHOWING' | translate:{ from: pagination?.from, to: pagination?.to, total: pagination?.total } }}</span>
         <div class="pg-btns">
-          <button class="pg-btn" [disabled]="currentPage<=1" (click)="loadReviews(currentPage-1)"><mat-icon>chevron_left</mat-icon></button>
+          <button class="pg-btn" [disabled]="currentPage<=1" (click)="loadReviews(currentPage-1)" [attr.aria-label]="'COMMON.PREVIOUS' | translate"><mat-icon class="flip-rtl">chevron_left</mat-icon></button>
           <button *ngFor="let p of pages" class="pg-btn" [class.active]="p===currentPage" (click)="loadReviews(p)">{{ p }}</button>
-          <button class="pg-btn" [disabled]="currentPage>=pagination?.last_page" (click)="loadReviews(currentPage+1)"><mat-icon>chevron_right</mat-icon></button>
+          <button class="pg-btn" [disabled]="currentPage>=pagination?.last_page" (click)="loadReviews(currentPage+1)" [attr.aria-label]="'COMMON.NEXT' | translate"><mat-icon class="flip-rtl">chevron_right</mat-icon></button>
         </div>
       </div>
     </div>
@@ -233,42 +237,44 @@
   <!-- ══ KPIs ══ -->
   <ng-container *ngIf="activeTab==='kpis'">
     <div class="kpi-toolbar">
-      <h3 class="section-title">KPI Library</h3>
-      <button class="btn-primary" *ngIf="isHR" (click)="openKpiForm()"><mat-icon>add</mat-icon> Add KPI</button>
+      <h3 class="section-title">{{ 'PERFORMANCE.KPI_LIBRARY' | translate }}</h3>
+      <button class="btn-primary" *ngIf="isHR" (click)="openKpiForm()"><mat-icon>add</mat-icon> {{ 'PERFORMANCE.ADD_KPI' | translate }}</button>
     </div>
     <div class="data-card">
+      <div class="table-scroll">
       <table mat-table [dataSource]="kpis">
         <ng-container matColumnDef="title">
-          <th mat-header-cell *matHeaderCellDef>KPI Title</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'PERFORMANCE.COLS.KPI_TITLE' | translate }}</th>
           <td mat-cell *matCellDef="let k"><div class="name-main">{{ k.title }}</div><div class="name-sub td-muted">{{ k.description }}</div></td>
         </ng-container>
         <ng-container matColumnDef="category">
-          <th mat-header-cell *matHeaderCellDef>Category</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'PERFORMANCE.COLS.CATEGORY' | translate }}</th>
           <td mat-cell *matCellDef="let k"><span class="type-tag">{{ k.category }}</span></td>
         </ng-container>
         <ng-container matColumnDef="target">
-          <th mat-header-cell *matHeaderCellDef>Target</th>
-          <td mat-cell *matCellDef="let k" class="td-muted">{{ k.target_value ? k.target_value + ' ' + (k.unit || '') : '—' }}</td>
+          <th mat-header-cell *matHeaderCellDef class="num">{{ 'PERFORMANCE.COLS.TARGET' | translate }}</th>
+          <td mat-cell *matCellDef="let k" class="td-muted num">{{ k.target_value ? k.target_value + ' ' + (k.unit || '') : '—' }}</td>
         </ng-container>
         <ng-container matColumnDef="weight">
-          <th mat-header-cell *matHeaderCellDef>Weight</th>
-          <td mat-cell *matCellDef="let k" class="td-muted">{{ k.weight ? k.weight + '%' : '—' }}</td>
+          <th mat-header-cell *matHeaderCellDef class="num">{{ 'PERFORMANCE.COLS.WEIGHT' | translate }}</th>
+          <td mat-cell *matCellDef="let k" class="td-muted num">{{ k.weight ? k.weight + '%' : '—' }}</td>
         </ng-container>
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let k">
             <div class="row-actions" style="opacity:1">
-              <button class="row-btn" matTooltip="Edit" *ngIf="isHR" (click)="openKpiForm(k)"><mat-icon>edit</mat-icon></button>
-              <button class="row-btn danger" matTooltip="Delete" *ngIf="isHR" (click)="deleteKpi(k.id, $event)"><mat-icon>delete_outline</mat-icon></button>
+              <button class="row-btn" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate" *ngIf="isHR" (click)="openKpiForm(k)"><mat-icon>edit</mat-icon></button>
+              <button class="row-btn danger" [matTooltip]="'COMMON.DELETE' | translate" [attr.aria-label]="'COMMON.DELETE' | translate" *ngIf="isHR" (click)="deleteKpi(k.id, $event)"><mat-icon>delete_outline</mat-icon></button>
             </div>
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="kpiCols; sticky:true"></tr>
         <tr mat-row *matRowDef="let row; columns:kpiCols;" class="data-row"></tr>
         <tr class="mat-row" *matNoDataRow>
-          <td class="mat-cell empty-td" colspan="5"><mat-icon>track_changes</mat-icon> No KPIs defined</td>
+          <td class="mat-cell empty-td" colspan="5"><mat-icon>track_changes</mat-icon> {{ 'PERFORMANCE.EMPTY.NO_KPIS' | translate }}</td>
         </tr>
       </table>
+      </div>
     </div>
   </ng-container>
 </div>
@@ -278,27 +284,27 @@
 <div class="detail-drawer" [class.open]="showDetail">
   <ng-container *ngIf="selectedCycle">
     <div class="drawer-hdr">
-      <div><div class="drawer-name">{{ selectedCycle.name }}</div><div class="drawer-sub">{{ selectedCycle.type | titlecase }} · {{ selectedCycle.start_date | date:'dd MMM yyyy' }} → {{ selectedCycle.end_date | date:'dd MMM yyyy' }}</div></div>
-      <button class="row-btn" (click)="showDetail=false"><mat-icon>close</mat-icon></button>
+      <div><div class="drawer-name">{{ selectedCycle.name }}</div><div class="drawer-sub">{{ cycleTypeKey(selectedCycle.type) | translate }} · {{ selectedCycle.start_date | locDate:'dd MMM yyyy' }} – {{ selectedCycle.end_date | locDate:'dd MMM yyyy' }}</div></div>
+      <button class="row-btn" (click)="showDetail=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
     </div>
     <div class="drawer-body">
       <div class="cycle-reviews-list">
         <div class="cr-item" *ngFor="let r of selectedCycle.reviews">
           <div class="av sm" [style.background]="avatarColor(r.employee?.first_name)">{{ initial(r.employee?.first_name) }}</div>
           <div style="flex:1">
-            <div class="name-main">{{ r.employee?.first_name }} {{ r.employee?.last_name }}</div>
-            <div class="name-sub">{{ r.employee?.department?.name }}</div>
+            <div class="name-main">{{ empName(r.employee) }}</div>
+            <div class="name-sub">{{ r.employee?.department | locName }}</div>
           </div>
-          <span class="status-badge" [class]="statusCls(r.status)" style="font-size:10px">{{ statusLabel(r.status) }}</span>
+          <span class="status-badge" [class]="statusCls(r.status)" style="font-size:10px">{{ r.status | statusLabel }}</span>
           <span class="rating-cell" [style.color]="ratingColor(r.final_rating)" *ngIf="r.final_rating">{{ r.final_rating }} ★</span>
         </div>
-        <div class="empty-td" *ngIf="!selectedCycle.reviews?.length">No reviews yet. Initiate the cycle to create review records.</div>
+        <div class="empty-td" *ngIf="!selectedCycle.reviews?.length">{{ 'PERFORMANCE.EMPTY.NO_CYCLE_REVIEWS' | translate }}</div>
       </div>
     </div>
     <div class="drawer-footer">
-      <button class="btn-outline" (click)="showDetail=false">Close</button>
+      <button class="btn-outline" (click)="showDetail=false">{{ 'COMMON.CLOSE' | translate }}</button>
       <button class="btn-primary success" *ngIf="isHR && selectedCycle.status==='draft'" (click)="initiateCycle(selectedCycle); showDetail=false">
-        <mat-icon>rocket_launch</mat-icon> Initiate Cycle
+        <mat-icon>rocket_launch</mat-icon> {{ 'PERFORMANCE.INITIATE_CYCLE' | translate }}
       </button>
     </div>
   </ng-container>
@@ -308,34 +314,34 @@
 <div class="modal-backdrop" *ngIf="showCycleForm" (click)="showCycleForm=false"></div>
 <div class="modal-panel wide-modal" *ngIf="showCycleForm" [formGroup]="cycleForm">
   <div class="modal-hdr">
-    <h3><mat-icon>{{ editCycleId ? 'edit' : 'add_circle' }}</mat-icon> {{ editCycleId ? 'Edit Cycle' : 'New Performance Cycle' }}</h3>
-    <button class="row-btn" (click)="showCycleForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>{{ editCycleId ? 'edit' : 'add_circle' }}</mat-icon> {{ (editCycleId ? 'PERFORMANCE.FORM.EDIT_CYCLE' : 'PERFORMANCE.FORM.NEW_CYCLE_TITLE') | translate }}</h3>
+    <button class="row-btn" (click)="showCycleForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Cycle Name <span class="req">*</span></label>
-        <input class="field-input" placeholder="e.g. Annual Review 2025" formControlName="name">
+        <label class="field-label">{{ 'PERFORMANCE.FORM.CYCLE_NAME' | translate }} <span class="req">*</span></label>
+        <input class="field-input" [placeholder]="'PERFORMANCE.FORM.CYCLE_NAME_PH' | translate" formControlName="name">
       </div>
       <div class="field-group">
-        <label class="field-label">Type <span class="req">*</span></label>
+        <label class="field-label">{{ 'COMMON.TYPE' | translate }} <span class="req">*</span></label>
         <select class="field-select-full" formControlName="type">
-          <option *ngFor="let t of cycleTypes" [value]="t.value">{{ t.label }}</option>
+          <option *ngFor="let t of cycleTypes" [value]="t.value">{{ t.label | translate }}</option>
         </select>
       </div>
     </div>
     <div class="two-col">
-      <div class="field-group"><label class="field-label">Start Date <span class="req">*</span></label><input class="field-input" type="date" formControlName="start_date"></div>
-      <div class="field-group"><label class="field-label">End Date <span class="req">*</span></label><input class="field-input" type="date" formControlName="end_date"></div>
+      <div class="field-group"><label class="field-label">{{ 'COMMON.START_DATE' | translate }} <span class="req">*</span></label><input class="field-input" type="date" dir="ltr" formControlName="start_date"></div>
+      <div class="field-group"><label class="field-label">{{ 'COMMON.END_DATE' | translate }} <span class="req">*</span></label><input class="field-input" type="date" dir="ltr" formControlName="end_date"></div>
     </div>
     <div class="two-col">
-      <div class="field-group"><label class="field-label">Self Assessment Deadline</label><input class="field-input" type="date" formControlName="self_assessment_deadline"></div>
-      <div class="field-group"><label class="field-label">Manager Review Deadline</label><input class="field-input" type="date" formControlName="manager_review_deadline"></div>
+      <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.SELF_DEADLINE' | translate }}</label><input class="field-input" type="date" dir="ltr" formControlName="self_assessment_deadline"></div>
+      <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.MANAGER_DEADLINE' | translate }}</label><input class="field-input" type="date" dir="ltr" formControlName="manager_review_deadline"></div>
     </div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showCycleForm=false">Cancel</button>
-    <button class="btn-primary" (click)="saveCycle()" [disabled]="submitting"><mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon> {{ submitting ? 'Saving…' : 'Save Cycle' }}</button>
+    <button class="btn-outline" (click)="showCycleForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
+    <button class="btn-primary" (click)="saveCycle()" [disabled]="submitting"><mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon> {{ (submitting ? 'COMMON.SAVING' : 'PERFORMANCE.FORM.SAVE_CYCLE') | translate }}</button>
   </div>
 </div>
 
@@ -343,16 +349,16 @@
 <div class="modal-backdrop" *ngIf="showSelfForm" (click)="showSelfForm=false"></div>
 <div class="modal-panel" *ngIf="showSelfForm && selectedReview" [formGroup]="selfForm">
   <div class="modal-hdr">
-    <h3><mat-icon>edit_note</mat-icon> Self Assessment — {{ selectedReview.cycle?.name }}</h3>
-    <button class="row-btn" (click)="showSelfForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>edit_note</mat-icon> {{ 'PERFORMANCE.FORM.SELF_ASSESSMENT_TITLE' | translate:{ cycle: selectedReview.cycle?.name } }}</h3>
+    <button class="row-btn" (click)="showSelfForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
-    <div class="field-group"><label class="field-label">Rating (1–5) <span class="req">*</span></label><input class="field-input" type="number" min="1" max="5" step="0.5" formControlName="rating"></div>
-    <div class="field-group"><label class="field-label">Comments <span class="req">*</span></label><textarea class="field-textarea" rows="5" placeholder="Describe your achievements and areas of improvement…" formControlName="comments"></textarea></div>
+    <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.RATING' | translate }} <span class="req">*</span></label><input class="field-input" type="number" dir="ltr" min="1" max="5" step="0.5" formControlName="rating"></div>
+    <div class="field-group"><label class="field-label">{{ 'COMMON.COMMENTS' | translate }} <span class="req">*</span></label><textarea class="field-textarea" rows="5" [placeholder]="'PERFORMANCE.FORM.SELF_COMMENTS_PH' | translate" formControlName="comments"></textarea></div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showSelfForm=false">Cancel</button>
-    <button class="btn-primary" (click)="submitSelf()" [disabled]="submitting"><mat-icon>send</mat-icon> {{ submitting ? 'Submitting…' : 'Submit' }}</button>
+    <button class="btn-outline" (click)="showSelfForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
+    <button class="btn-primary" (click)="submitSelf()" [disabled]="submitting"><mat-icon>send</mat-icon> {{ (submitting ? 'COMMON.SUBMITTING' : 'COMMON.SUBMIT') | translate }}</button>
   </div>
 </div>
 
@@ -360,16 +366,16 @@
 <div class="modal-backdrop" *ngIf="showManagerForm" (click)="showManagerForm=false"></div>
 <div class="modal-panel" *ngIf="showManagerForm && selectedReview" [formGroup]="mgrForm">
   <div class="modal-hdr">
-    <h3><mat-icon>rate_review</mat-icon> Manager Review — {{ selectedReview.employee?.first_name }} {{ selectedReview.employee?.last_name }}</h3>
-    <button class="row-btn" (click)="showManagerForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>rate_review</mat-icon> {{ 'PERFORMANCE.FORM.MANAGER_REVIEW_TITLE' | translate:{ name: empName(selectedReview.employee) } }}</h3>
+    <button class="row-btn" (click)="showManagerForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
-    <div class="field-group"><label class="field-label">Rating (1–5) <span class="req">*</span></label><input class="field-input" type="number" min="1" max="5" step="0.5" formControlName="rating"></div>
-    <div class="field-group"><label class="field-label">Comments <span class="req">*</span></label><textarea class="field-textarea" rows="5" placeholder="Evaluation of performance against objectives…" formControlName="comments"></textarea></div>
+    <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.RATING' | translate }} <span class="req">*</span></label><input class="field-input" type="number" dir="ltr" min="1" max="5" step="0.5" formControlName="rating"></div>
+    <div class="field-group"><label class="field-label">{{ 'COMMON.COMMENTS' | translate }} <span class="req">*</span></label><textarea class="field-textarea" rows="5" [placeholder]="'PERFORMANCE.FORM.MANAGER_COMMENTS_PH' | translate" formControlName="comments"></textarea></div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showManagerForm=false">Cancel</button>
-    <button class="btn-primary" (click)="submitManager()" [disabled]="submitting"><mat-icon>send</mat-icon> {{ submitting ? 'Submitting…' : 'Submit Review' }}</button>
+    <button class="btn-outline" (click)="showManagerForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
+    <button class="btn-primary" (click)="submitManager()" [disabled]="submitting"><mat-icon>send</mat-icon> {{ (submitting ? 'COMMON.SUBMITTING' : 'PERFORMANCE.FORM.SUBMIT_REVIEW') | translate }}</button>
   </div>
 </div>
 
@@ -377,30 +383,30 @@
 <div class="modal-backdrop" *ngIf="showFinalizeForm" (click)="showFinalizeForm=false"></div>
 <div class="modal-panel" *ngIf="showFinalizeForm && selectedReview" [formGroup]="finalForm">
   <div class="modal-hdr">
-    <h3><mat-icon>verified</mat-icon> Finalize Review — {{ selectedReview.employee?.first_name }} {{ selectedReview.employee?.last_name }}</h3>
-    <button class="row-btn" (click)="showFinalizeForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>verified</mat-icon> {{ 'PERFORMANCE.FORM.FINALIZE_TITLE' | translate:{ name: empName(selectedReview.employee) } }}</h3>
+    <button class="row-btn" (click)="showFinalizeForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="review-summary">
-      <div class="rs-item"><span class="rs-lbl">Self Rating</span><span class="rs-val" [style.color]="ratingColor(selectedReview.self_rating)">{{ selectedReview.self_rating ?? '—' }} ★</span></div>
-      <div class="rs-item"><span class="rs-lbl">Manager Rating</span><span class="rs-val" [style.color]="ratingColor(selectedReview.manager_rating)">{{ selectedReview.manager_rating ?? '—' }} ★</span></div>
+      <div class="rs-item"><span class="rs-lbl">{{ 'PERFORMANCE.FORM.SELF_RATING' | translate }}</span><span class="rs-val" [style.color]="ratingColor(selectedReview.self_rating)">{{ selectedReview.self_rating ?? '—' }} ★</span></div>
+      <div class="rs-item"><span class="rs-lbl">{{ 'PERFORMANCE.FORM.MANAGER_RATING' | translate }}</span><span class="rs-val" [style.color]="ratingColor(selectedReview.manager_rating)">{{ selectedReview.manager_rating ?? '—' }} ★</span></div>
     </div>
     <div class="two-col">
-      <div class="field-group"><label class="field-label">Final Rating (1–5) <span class="req">*</span></label><input class="field-input" type="number" min="1" max="5" step="0.5" formControlName="final_rating"></div>
+      <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.FINAL_RATING' | translate }} <span class="req">*</span></label><input class="field-input" type="number" dir="ltr" min="1" max="5" step="0.5" formControlName="final_rating"></div>
       <div class="field-group">
-        <label class="field-label">Performance Band <span class="req">*</span></label>
+        <label class="field-label">{{ 'PERFORMANCE.FORM.PERFORMANCE_BAND' | translate }} <span class="req">*</span></label>
         <select class="field-select-full" formControlName="performance_band">
-          <option value="">— Select —</option>
-          <option *ngFor="let b of bands" [value]="b.value">{{ b.label }}</option>
+          <option value="">{{ 'COMMON.SELECT_PLACEHOLDER' | translate }}</option>
+          <option *ngFor="let b of bands" [value]="b.value">{{ b.label | translate }}</option>
         </select>
       </div>
     </div>
-    <div class="field-group"><label class="field-label">Development Plan</label><textarea class="field-textarea" rows="3" placeholder="Goals and development actions for next period…" formControlName="development_plan"></textarea></div>
-    <div class="field-group"><label class="field-label">HR Notes</label><textarea class="field-textarea" rows="2" formControlName="hr_notes"></textarea></div>
+    <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.DEVELOPMENT_PLAN' | translate }}</label><textarea class="field-textarea" rows="3" [placeholder]="'PERFORMANCE.FORM.DEVELOPMENT_PLAN_PH' | translate" formControlName="development_plan"></textarea></div>
+    <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.HR_NOTES' | translate }}</label><textarea class="field-textarea" rows="2" formControlName="hr_notes"></textarea></div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showFinalizeForm=false">Cancel</button>
-    <button class="btn-primary" (click)="submitFinalize()" [disabled]="submitting"><mat-icon>verified</mat-icon> {{ submitting ? 'Finalizing…' : 'Finalize' }}</button>
+    <button class="btn-outline" (click)="showFinalizeForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
+    <button class="btn-primary" (click)="submitFinalize()" [disabled]="submitting"><mat-icon>verified</mat-icon> {{ (submitting ? 'PERFORMANCE.FORM.FINALIZING' : 'PERFORMANCE.FORM.FINALIZE') | translate }}</button>
   </div>
 </div>
 
@@ -408,24 +414,24 @@
 <div class="modal-backdrop" *ngIf="showKpiForm" (click)="showKpiForm=false"></div>
 <div class="modal-panel" *ngIf="showKpiForm" [formGroup]="kpiForm">
   <div class="modal-hdr">
-    <h3><mat-icon>track_changes</mat-icon> {{ editKpiId ? 'Edit KPI' : 'New KPI' }}</h3>
-    <button class="row-btn" (click)="showKpiForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>track_changes</mat-icon> {{ (editKpiId ? 'PERFORMANCE.FORM.EDIT_KPI' : 'PERFORMANCE.FORM.NEW_KPI') | translate }}</h3>
+    <button class="row-btn" (click)="showKpiForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
-    <div class="field-group"><label class="field-label">Title <span class="req">*</span></label><input class="field-input" placeholder="e.g. Customer Satisfaction Score" formControlName="title"></div>
+    <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.KPI_TITLE' | translate }} <span class="req">*</span></label><input class="field-input" [placeholder]="'PERFORMANCE.FORM.KPI_TITLE_PH' | translate" formControlName="title"></div>
     <div class="two-col">
-      <div class="field-group"><label class="field-label">Category <span class="req">*</span></label><input class="field-input" placeholder="e.g. Quality, Sales, Leadership" formControlName="category"></div>
-      <div class="field-group"><label class="field-label">Year <span class="req">*</span></label><input class="field-input" type="number" formControlName="year"></div>
+      <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.CATEGORY' | translate }} <span class="req">*</span></label><input class="field-input" [placeholder]="'PERFORMANCE.FORM.CATEGORY_PH' | translate" formControlName="category"></div>
+      <div class="field-group"><label class="field-label">{{ 'COMMON.YEAR' | translate }} <span class="req">*</span></label><input class="field-input" type="number" dir="ltr" formControlName="year"></div>
     </div>
     <div class="two-col">
-      <div class="field-group"><label class="field-label">Target Value</label><input class="field-input" placeholder="e.g. 95" formControlName="target_value"></div>
-      <div class="field-group"><label class="field-label">Unit</label><input class="field-input" placeholder="e.g. %, score, calls" formControlName="unit"></div>
+      <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.TARGET_VALUE' | translate }}</label><input class="field-input" dir="ltr" [placeholder]="'PERFORMANCE.FORM.TARGET_PH' | translate" formControlName="target_value"></div>
+      <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.UNIT' | translate }}</label><input class="field-input" [placeholder]="'PERFORMANCE.FORM.UNIT_PH' | translate" formControlName="unit"></div>
     </div>
-    <div class="field-group"><label class="field-label">Weight (%)</label><input class="field-input" type="number" placeholder="0–100" formControlName="weight"></div>
-    <div class="field-group"><label class="field-label">Description</label><textarea class="field-textarea" rows="2" formControlName="description"></textarea></div>
+    <div class="field-group"><label class="field-label">{{ 'PERFORMANCE.FORM.WEIGHT_PCT' | translate }}</label><input class="field-input" type="number" dir="ltr" [placeholder]="'PERFORMANCE.FORM.WEIGHT_PH' | translate" formControlName="weight"></div>
+    <div class="field-group"><label class="field-label">{{ 'COMMON.DESCRIPTION' | translate }}</label><textarea class="field-textarea" rows="2" formControlName="description"></textarea></div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showKpiForm=false">Cancel</button>
-    <button class="btn-primary" (click)="saveKpi()" [disabled]="submitting"><mat-icon>save</mat-icon> {{ submitting ? 'Saving…' : 'Save KPI' }}</button>
+    <button class="btn-outline" (click)="showKpiForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
+    <button class="btn-primary" (click)="saveKpi()" [disabled]="submitting"><mat-icon>save</mat-icon> {{ (submitting ? 'COMMON.SAVING' : 'PERFORMANCE.FORM.SAVE_KPI') | translate }}</button>
   </div>
 </div>

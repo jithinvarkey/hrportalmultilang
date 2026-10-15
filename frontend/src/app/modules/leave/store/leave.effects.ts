@@ -4,6 +4,7 @@ import { ToastrService } from 'ngx-toastr';
 import { of } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { LeaveApiService } from '../../../core/services/api.services';
+import { LanguageService } from '../../../core/services/language.service';
 import {
   loadLeaveRequests, loadLeaveRequestsSuccess,
   loadLeaveTypes, loadLeaveTypesSuccess,
@@ -17,7 +18,8 @@ export class LeaveEffects {
   constructor(
     private actions$: Actions,
     private api: LeaveApiService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private lang: LanguageService
   ) {}
 
   load$ = createEffect(() => this.actions$.pipe(
@@ -46,7 +48,7 @@ export class LeaveEffects {
 
   submitSuccess$ = createEffect(() => this.actions$.pipe(
     ofType(submitLeaveSuccess),
-    tap(() => this.toastr.success('Leave request submitted'))
+    tap(() => this.toastr.success(this.lang.t('LEAVE.MSG.SUBMITTED')))
   ), { dispatch: false });
 
   approve$ = createEffect(() => this.actions$.pipe(

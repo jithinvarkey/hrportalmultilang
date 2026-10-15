@@ -7,9 +7,9 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\OnboardingTask;
 use App\Models\User;
+use App\Support\Locale\LocalizedMail;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class OnboardingTaskNotificationService
 {
@@ -49,7 +49,7 @@ class OnboardingTaskNotificationService
             }
 
             try {
-                Mail::to($recipients)->send(new OnboardingTasksAssignedMail($employee, $groupTasks, $group));
+                LocalizedMail::send($recipients, [], fn () => new OnboardingTasksAssignedMail($employee, $groupTasks, $group));
                 Log::info('Onboarding task notification sent.', [
                     'employee_id' => $employee->id,
                     'recipient_group' => $group,

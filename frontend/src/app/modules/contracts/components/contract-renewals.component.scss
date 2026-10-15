@@ -11,7 +11,7 @@
 
 /* ── Stat strip ───────────────────────────────────────────────────── */
 .stat-strip{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
-.stat-tile{display:flex;align-items:center;gap:12px;flex:1;min-width:130px;padding:14px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s;text-align:left;font-family:'Inter',sans-serif;border-left:3px solid var(--tile-color,var(--accent));
+.stat-tile{display:flex;align-items:center;gap:12px;flex:1;min-width:130px;padding:14px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s;text-align:start;font-family:'Inter',sans-serif;border-inline-start:3px solid var(--tile-color,var(--accent));
   &:hover{border-color:var(--tile-color,var(--accent));transform:translateY(-1px);}
   &.active{background:color-mix(in srgb,var(--tile-color,var(--accent)) 10%,var(--surface));border-color:var(--tile-color,var(--accent));}}
 .tile-icon-wrap{width:38px;height:38px;border-radius:10px;background:color-mix(in srgb,var(--tile-color,var(--accent)) 15%,transparent);display:grid;place-items:center;flex-shrink:0;mat-icon{color:var(--tile-color,var(--accent));font-size:20px!important;width:20px!important;height:20px!important;}}
@@ -96,6 +96,7 @@
 .rc-term{display:flex;flex-direction:column;gap:2px;}
 .rt-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;}
 .rt-val{font-size:12px;color:var(--text2);&.expiry{color:#f59e0b;font-weight:600;}}
+.period-arrow{display:inline-block;}
 
 /* ── Banners ──────────────────────────────────────────────────────── */
 .rejection-banner{display:flex;align-items:flex-start;gap:8px;padding:10px 14px;border-radius:9px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:var(--danger);font-size:12px;margin-top:10px;mat-icon{font-size:16px!important;width:16px!important;height:16px!important;flex-shrink:0;margin-top:1px;}}
@@ -158,3 +159,58 @@
 .upload-label{cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
 .link-btn{background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;padding:0 4px;text-decoration:underline;}
 .field-hint{font-size:12px;color:var(--text3);margin-top:6px;display:flex;align-items:center;gap:4px;}
+
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width:1024px) {
+  .stat-tile{min-width:150px;}
+}
+
+@media (max-width:768px) {
+  .page-hdr > .btn-primary{width:100%;justify-content:center;}
+  .mod-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;&::-webkit-scrollbar{display:none;}}
+  .mod-tab{flex-shrink:0;white-space:nowrap;}
+
+  .stat-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  .stat-tile{min-width:0;padding:12px;}
+  .tile-lbl{white-space:normal;}
+
+  .pipeline-bar{padding:14px;}
+  .pipeline-steps{gap:6px 4px;}
+
+  .panel-grid{grid-template-columns:1fr;padding:14px;}
+  .panel-footer{flex-wrap:wrap;> button{flex:1 1 auto;justify-content:center;}}
+
+  .filter-bar{flex-direction:column;align-items:stretch;}
+  .search-wrap{min-width:0;width:100%;}
+  .filter-select{width:100%;min-width:0;}
+  .filter-bar .btn-outline{justify-content:center;}
+
+  .renewal-card{padding:14px;}
+  .rc-emp{min-width:0;}
+  .approval-track{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:10px 12px;}
+  .at-line{min-width:16px;margin:0 6px;}
+  .ac-item{grid-template-columns:1fr;gap:6px;}
+  .rc-doc{flex-wrap:wrap;}
+  .rd-name{min-width:0;}
+  .rc-actions{flex-wrap:wrap;> .btn-sm{flex:1 1 auto;justify-content:center;min-height:38px;}}
+  .btn-sm{min-height:36px;}
+
+  .row-btn, .icon-btn, .icon-btn.sm{width:36px;height:36px;}
+  .pg-btn{width:36px;height:36px;}
+  .pagination-bar{justify-content:center;}
+  .pg-btns{flex-wrap:wrap;justify-content:center;}
+
+  .modal-footer{flex-wrap:wrap;> button{flex:1 1 auto;justify-content:center;}}
+}
+
+@media (max-width:480px) {
+  .page-title{font-size:19px;}
+  .tile-icon-wrap{width:32px;height:32px;}
+  .tile-val{font-size:19px;}
+  .pipeline-steps{flex-direction:column;align-items:stretch;}
+  .ps-arrow{display:none;}
+  .at-label{font-size:10px;}
+  .rc-terms{gap:10px;}
+  .modal-body{padding:14px;}
+}

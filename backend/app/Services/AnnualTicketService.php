@@ -60,17 +60,17 @@ class AnnualTicketService
         $dependentIds = array_values(array_unique(array_map('intval', $dependentIds)));
         $options = $this->options($employee, $year);
         if ($options['already_used']) {
-            throw ValidationException::withMessages(['requires_ticket' => "The annual ticket entitlement for {$year} has already been used."]);
+            throw ValidationException::withMessages(['requires_ticket' => __('The annual ticket entitlement for :year has already been used.', ['year' => $year])]);
         }
         if ($this->isSaudi($employee) && count($dependentIds)) {
-            throw ValidationException::withMessages(['ticket_dependent_ids' => 'Dependent tickets are available only for non-Saudi employees.']);
+            throw ValidationException::withMessages(['ticket_dependent_ids' => __('Dependent tickets are available only for non-Saudi employees.')]);
         }
         if (count($dependentIds) > $options['max_dependents']) {
-            throw ValidationException::withMessages(['ticket_dependent_ids' => "A maximum of {$options['max_dependents']} dependents can be selected."]);
+            throw ValidationException::withMessages(['ticket_dependent_ids' => __('A maximum of :max dependents can be selected.', ['max' => $options['max_dependents']])]);
         }
         $valid = $employee->dependents()->where('is_active', true)->whereIn('id', $dependentIds)->pluck('id')->all();
         if (count($valid) !== count($dependentIds)) {
-            throw ValidationException::withMessages(['ticket_dependent_ids' => 'One or more selected dependents are invalid.']);
+            throw ValidationException::withMessages(['ticket_dependent_ids' => __('One or more selected dependents are invalid.')]);
         }
         return $valid;
     }

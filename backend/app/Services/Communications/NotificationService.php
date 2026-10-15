@@ -95,8 +95,10 @@ class NotificationService
      *
      * @param Collection<int>|array $employeeIds
      */
-    public function emailMany($employeeIds, string $type, string $title, ?string $body, string $link, ?string $titleAr = null, ?string $bodyAr = null): int
+    public function emailMany($employeeIds, string $type, string $title, ?string $body, string $link, ?string $titleAr = null, ?string $bodyAr = null, ?string $messageKey = null, array $messageParams = []): int
     {
+        // $messageKey (e.g. "policy_message.requires_ack" in lang/<locale>/mail_communications.php) replaces $body
+        // with a generated summary written in each recipient's language. HR-authored $body/$bodyAr are sent as written.
         $ids = collect($employeeIds)->filter()->unique()->values();
         if ($ids->isEmpty()) {
             return 0;
@@ -105,7 +107,7 @@ class NotificationService
         $employees = Employee::whereIn('id', $ids)
             ->whereNotNull('email')
             ->where('email', '<>', '')
-            ->get(['id', 'first_name', 'last_name', 'email']);
+            ->get(['id', 'first_name', 'last_name', 'arabic_name', 'email']);
 
         $sent = 0;
         foreach ($employees as $employee) {
@@ -115,9 +117,12 @@ class NotificationService
                     $title,
                     $body,
                     $link,
-                    trim($employee->first_name . ' ' . $employee->last_name) ?: 'Employee',
+                    trim($employee->first_name . ' ' . $employee->last_name) ?: null,
                     $titleAr,
                     $bodyAr,
+                    $employee->arabic_name ?: null,
+                    $messageKey,
+                    $messageParams,
                 ));
                 $sent++;
             } catch (\Throwable $e) {

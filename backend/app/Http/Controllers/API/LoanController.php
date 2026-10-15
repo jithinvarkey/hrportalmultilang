@@ -78,7 +78,8 @@ class LoanController extends Controller {
             foreach ($recipients->filter(fn ($user) => $user->email)->unique('id') as $recipient) {
                 Mail::to($recipient->email)->queue(new LoanRequestSubmittedMail(
                     $loan,
-                    $recipient->name
+                    $recipient->name,
+                    $recipient->employee?->arabic_name
                 ));
             }
         } catch (\Throwable $e) {
@@ -97,8 +98,8 @@ class LoanController extends Controller {
             }
 
             $mail = $action === 'approved'
-                ? new LoanApprovedMail($loan, $employee->first_name ?: $employee->full_name)
-                : new LoanRejectedMail($loan, $employee->first_name ?: $employee->full_name);
+                ? new LoanApprovedMail($loan, $employee->first_name ?: $employee->full_name, $employee->arabic_name)
+                : new LoanRejectedMail($loan, $employee->first_name ?: $employee->full_name, $employee->arabic_name);
 
             Mail::to($employee->email)->queue($mail);
         } catch (\Throwable $e) {
@@ -123,7 +124,8 @@ class LoanController extends Controller {
                     $skippedInstallment,
                     $replacementInstallment,
                     $recipient->name,
-                    auth()->user()->name
+                    auth()->user()->name,
+                    $recipient->employee?->arabic_name
                 ));
             }
         } catch (\Throwable $e) {
@@ -239,11 +241,12 @@ class LoanController extends Controller {
      */
     public function storeType(Request $request): JsonResponse {
         if (!$this->canManageLoanTypes()) {
-            return response()->json(['message' => 'You do not have permission to manage loan types.'], 403);
+            return response()->json(['message' => __('You do not have permission to manage loan types.')], 403);
         }
 
         $validated = $request->validate([
             'name' => 'required|string|max:100',
+            'name_ar' => 'nullable|string|max:150',
             'code' => 'required|string|max:20|unique:loan_types',
             'max_amount' => 'required|numeric|min:0',
             'max_installments' => 'required|integer|min:1|max:120',
@@ -265,13 +268,14 @@ class LoanController extends Controller {
      */
     public function updateType(Request $request, int $id): JsonResponse {
         if (!$this->canManageLoanTypes()) {
-            return response()->json(['message' => 'You do not have permission to manage loan types.'], 403);
+            return response()->json(['message' => __('You do not have permission to manage loan types.')], 403);
         }
 
         $type = LoanType::findOrFail($id);
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:100',
+            'name_ar' => 'nullable|string|max:150',
             'code' => ['sometimes', 'string', 'max:20', Rule::unique('loan_types')->ignore($type->id)],
             'max_amount' => 'sometimes|numeric|min:0',
             'max_installments' => 'sometimes|integer|min:1|max:120',
@@ -362,7 +366,7 @@ class LoanController extends Controller {
 
     public function downloadDetailsReport(Request $request) {
         if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff', 'finance_manager'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => __('Unauthorized.')], 403);
         }
 
         $query = Loan::with(['employee.department', 'loanType', 'installments'])
@@ -450,13 +454,13 @@ class LoanController extends Controller {
 
         if ($loanType->max_amount > 0 && $request->requested_amount > $loanType->max_amount) {
             return response()->json([
-                        'message' => "Amount exceeds maximum allowed ({$loanType->max_amount} SAR) for this loan type.",
+                        'message' => __('Amount exceeds maximum allowed (:max SAR) for this loan type.', ['max' => $loanType->max_amount]),
                             ], 422);
         }
 
         if ($request->installments > $loanType->max_installments) {
             return response()->json([
-                        'message' => "Maximum installments for this loan type is {$loanType->max_installments}.",
+                        'message' => __('Maximum installments for this loan type is :max.', ['max' => $loanType->max_installments]),
                             ], 422);
         }
 
@@ -466,7 +470,7 @@ class LoanController extends Controller {
                 ->exists();
 
         if ($active) {
-            return response()->json(['message' => 'You already have an active loan of this type.'], 422);
+            return response()->json(['message' => __('You already have an active loan of this type.')], 422);
         }
 
         $monthly = $this->service->calculateMonthlyInstallment((float) $request->requested_amount, (int) $request->installments, (float) ($loanType->interest_rate ?? 0));
@@ -491,7 +495,7 @@ class LoanController extends Controller {
         ]);
         $this->notifyLoanApprovers($loan);
 
-        return response()->json(['message' => 'Loan request submitted.', 'loan' => $loan->load('loanType')], 201);
+        return response()->json(['message' => __('Loan request submitted.'), 'loan' => $loan->load('loanType')], 201);
     }
 
     // ── Show single loan ──────────────────────────────────────────────────
@@ -542,11 +546,11 @@ class LoanController extends Controller {
         $user = auth()->user();
 
         if (!$this->canApproveStage($loan->status)) {
-            return response()->json(['message' => 'You are not authorized to approve this loan at its current stage.'], 403);
+            return response()->json(['message' => __('You are not authorized to approve this loan at its current stage.')], 403);
         }
 
         if ($this->isOwnLoan($loan, $user)) {
-            return response()->json(['message' => 'You cannot approve your own loan request.'], 403);
+            return response()->json(['message' => __('You cannot approve your own loan request.')], 403);
         }
 
         switch ($loan->status) {
@@ -624,7 +628,7 @@ class LoanController extends Controller {
                 break;
 
             default:
-                return response()->json(['message' => 'Loan is not in an approvable state.'], 422);
+                return response()->json(['message' => __('Loan is not in an approvable state.')], 422);
         }
 
         $loan->refresh();
@@ -634,7 +638,7 @@ class LoanController extends Controller {
             $this->notifyLoanApprovers($loan);
         }
 
-        return response()->json(['message' => 'Loan approved.', 'loan' => $loan->fresh('loanType')]);
+        return response()->json(['message' => __('Loan approved.'), 'loan' => $loan->fresh('loanType')]);
     }
 
     // ── Reject ────────────────────────────────────────────────────────────
@@ -658,15 +662,15 @@ class LoanController extends Controller {
         };
 
         if (!$stage) {
-            return response()->json(['message' => 'Loan cannot be rejected at this stage.'], 422);
+            return response()->json(['message' => __('Loan cannot be rejected at this stage.')], 422);
         }
 
         if (!$this->canApproveStage($loan->status)) {
-            return response()->json(['message' => 'You are not authorized to reject this loan at its current stage.'], 403);
+            return response()->json(['message' => __('You are not authorized to reject this loan at its current stage.')], 403);
         }
 
         if ($this->isOwnLoan($loan, auth()->user())) {
-            return response()->json(['message' => 'You cannot reject your own loan request.'], 403);
+            return response()->json(['message' => __('You cannot reject your own loan request.')], 403);
         }
 
         $oldStatus = $loan->status;
@@ -686,7 +690,7 @@ class LoanController extends Controller {
         ]);
         $this->notifyLoanEmployee($loan, 'rejected');
 
-        return response()->json(['message' => 'Loan rejected.']);
+        return response()->json(['message' => __('Loan rejected.')]);
     }
 
     // ── Cancel ────────────────────────────────────────────────────────────
@@ -702,7 +706,7 @@ class LoanController extends Controller {
         $user = auth()->user();
 
         if (!in_array($loan->status, ['pending_manager', 'pending_hr', 'pending_finance'])) {
-            return response()->json(['message' => 'Loan cannot be cancelled at this stage.'], 422);
+            return response()->json(['message' => __('Loan cannot be cancelled at this stage.')], 422);
         }
 
         $canCancelAsApprover = ($loan->status === 'pending_manager' && $this->hasAnyRoleDB(['super_admin', 'department_manager']))
@@ -710,7 +714,7 @@ class LoanController extends Controller {
             || ($loan->status === 'pending_finance' && $this->hasAnyRoleDB(['super_admin', 'finance_manager']));
 
         if (!$this->isOwnLoan($loan, $user) && !$canCancelAsApprover) {
-            return response()->json(['message' => 'You are not authorized to cancel this loan request.'], 403);
+            return response()->json(['message' => __('You are not authorized to cancel this loan request.')], 403);
         }
 
         $oldStatus = $loan->status;
@@ -720,7 +724,7 @@ class LoanController extends Controller {
             'to_status' => 'cancelled',
         ]);
 
-        return response()->json(['message' => 'Loan request cancelled.']);
+        return response()->json(['message' => __('Loan request cancelled.')]);
     }
 
     public function destroy(int $id): JsonResponse {
@@ -728,11 +732,11 @@ class LoanController extends Controller {
             $loan = Loan::lockForUpdate()->findOrFail($id);
 
             if (!$this->isOwnLoan($loan, auth()->user())) {
-                return response()->json(['message' => 'You can only delete your own loan request.'], 403);
+                return response()->json(['message' => __('You can only delete your own loan request.')], 403);
             }
 
             if (!$loan->canDeleteRequest()) {
-                return response()->json(['message' => 'Only pending loan requests with no approvals can be deleted.'], 422);
+                return response()->json(['message' => __('Only pending loan requests with no approvals can be deleted.')], 422);
             }
 
             $this->logLoanActivity($loan, 'deleted', 'Loan request deleted before any approval.', [
@@ -741,7 +745,7 @@ class LoanController extends Controller {
             ]);
             $loan->delete();
 
-            return response()->json(['message' => 'Loan request deleted.']);
+            return response()->json(['message' => __('Loan request deleted.')]);
         });
     }
 
@@ -758,7 +762,7 @@ class LoanController extends Controller {
         $loan = Loan::findOrFail($id);
 
         if ($loan->status !== 'approved') {
-            return response()->json(['message' => 'Loan must be approved before disbursement.'], 422);
+            return response()->json(['message' => __('Loan must be approved before disbursement.')], 422);
         }
 
         $oldStatus = $loan->status;
@@ -773,7 +777,7 @@ class LoanController extends Controller {
             'disbursed_date' => $loan->disbursed_date ? $loan->disbursed_date->toDateString() : null,
         ]);
 
-        return response()->json(['message' => 'Loan marked as disbursed.']);
+        return response()->json(['message' => __('Loan marked as disbursed.')]);
     }
 
     // ── Installments ──────────────────────────────────────────────────────
@@ -789,19 +793,19 @@ class LoanController extends Controller {
     public function payInstallment(Request $request, int $loanId, int $instId): JsonResponse {
         if (!$this->hasAnyRoleDB(['finance_manager', 'hr_manager'])) {
             return response()->json([
-                'message' => 'Only the Finance Manager or HR Manager can mark an installment as paid.',
+                'message' => __('Only the Finance Manager or HR Manager can mark an installment as paid.'),
             ], 403);
         }
 
         $inst = LoanInstallment::where('loan_id', $loanId)->findOrFail($instId);
 
         if (!in_array($inst->status, ['pending', 'overdue'])) {
-            return response()->json(['message' => 'Installment is not payable.'], 422);
+            return response()->json(['message' => __('Installment is not payable.')], 422);
         }
 
         if ($inst->payslip_id) {
             return response()->json([
-                'message' => 'This installment is already scheduled for deduction through payroll.',
+                'message' => __('This installment is already scheduled for deduction through payroll.'),
             ], 422);
         }
 
@@ -813,7 +817,7 @@ class LoanController extends Controller {
             'notes' => $request->notes,
         ]);
 
-        return response()->json(['message' => 'Installment marked as paid.']);
+        return response()->json(['message' => __('Installment marked as paid.')]);
     }
 
     /**
@@ -828,12 +832,12 @@ class LoanController extends Controller {
         $inst = LoanInstallment::where('loan_id', $loanId)->findOrFail($instId);
 
         if (!in_array($inst->status, ['pending', 'overdue'])) {
-            return response()->json(['message' => 'Installment cannot be skipped.'], 422);
+            return response()->json(['message' => __('Installment cannot be skipped.')], 422);
         }
 
         if ($inst->payslip_id) {
             return response()->json([
-                'message' => 'This installment is already scheduled for deduction through payroll.',
+                'message' => __('This installment is already scheduled for deduction through payroll.'),
             ], 422);
         }
 
@@ -849,7 +853,7 @@ class LoanController extends Controller {
         ]);
         $this->notifyInstallmentSkipped($loan, $inst->fresh(), $replacementInstallment);
 
-        return response()->json(['message' => 'Installment skipped — rescheduled to end of loan.']);
+        return response()->json(['message' => __('Installment skipped — rescheduled to end of loan.')]);
     }
 
     /**
@@ -860,7 +864,7 @@ class LoanController extends Controller {
     public function markOverdue(): JsonResponse {
         $count = $this->service->markOverdue();
 
-        return response()->json(['message' => "{$count} installments marked as overdue."]);
+        return response()->json(['message' => __(':count installments marked as overdue.', ['count' => $count])]);
     }
 
     // ── My Loans ──────────────────────────────────────────────────────────

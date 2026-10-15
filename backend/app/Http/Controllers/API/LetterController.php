@@ -41,12 +41,12 @@ class LetterController extends Controller
         $typeCode = $req->requestType?->code ?? '';
 
         if (!isset(self::TEMPLATE_MAP[$typeCode])) {
-            return response()->json(['message' => "No letter template available for request type '{$typeCode}'."], 422);
+            return response()->json(['message' => __('No letter template available for request type \':type\'.', ['type' => $typeCode])], 422);
         }
 
         $employee  = $req->employee;
         if (!$employee) {
-            return response()->json(['message' => 'Employee record not found.'], 404);
+            return response()->json(['message' => __('Employee record not found.')], 404);
         }
         $employee->load(['department','designation']);
         $employee->makeVisible(['national_id','bank_account']); // needed for letter generation
@@ -79,7 +79,7 @@ class LetterController extends Controller
     public function generateDirect(Request $request, $empId, $type)
     {
         if (!isset(self::TEMPLATE_MAP[$type])) {
-            return response()->json(['message' => "Unknown letter type '{$type}'."], 422);
+            return response()->json(['message' => __('Unknown letter type \':type\'.', ['type' => $type])], 422);
         }
 
         $employee = Employee::with(['department','designation'])->findOrFail($empId);

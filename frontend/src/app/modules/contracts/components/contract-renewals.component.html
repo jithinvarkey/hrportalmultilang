@@ -3,21 +3,21 @@
   <!-- ── Header ──────────────────────────────────────────────────────── -->
   <div class="page-hdr">
     <div>
-      <h1 class="page-title"><mat-icon>autorenew</mat-icon> Contract Renewals</h1>
-      <p class="page-sub">3-level approval workflow · Manager → HR → CEO · Auto-generated 60 days before expiry</p>
+      <h1 class="page-title"><mat-icon>autorenew</mat-icon> {{ 'CONTRACTS.RENEWALS.TITLE' | translate }}</h1>
+      <p class="page-sub">{{ 'CONTRACTS.RENEWALS.SUBTITLE' | translate }}</p>
     </div>
     <button class="btn-primary" *ngIf="isHR" (click)="showCreateForm=!showCreateForm">
-      <mat-icon>add</mat-icon> Manual Renewal
+      <mat-icon>add</mat-icon> {{ 'CONTRACTS.RENEWALS.MANUAL' | translate }}
     </button>
   </div>
 
   <!-- ── Module tabs ────────────────────────────────────────────────── -->
   <div class="mod-tabs">
     <a class="mod-tab" routerLink="/contracts" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
-      <mat-icon>description</mat-icon> Contracts
+      <mat-icon>description</mat-icon> {{ 'CONTRACTS.TABS.CONTRACTS' | translate }}
     </a>
     <a class="mod-tab active" routerLink="/contracts/renewals" routerLinkActive="active">
-      <mat-icon>autorenew</mat-icon> Renewals
+      <mat-icon>autorenew</mat-icon> {{ 'CONTRACTS.TABS.RENEWALS' | translate }}
       <span class="tab-badge" *ngIf="(stats.pending + stats.manager_approved + stats.hr_approved) > 0">
         {{ stats.pending + stats.manager_approved + stats.hr_approved }}
       </span>
@@ -38,24 +38,24 @@
       <div class="tile-icon-wrap"><mat-icon>{{ t.icon }}</mat-icon></div>
       <div class="tile-body">
         <div class="tile-val">{{ stats[t.key] ?? 0 }}</div>
-        <div class="tile-lbl">{{ t.label }}</div>
+        <div class="tile-lbl">{{ t.labelKey | translate }}</div>
       </div>
     </button>
   </div>
 
   <!-- ── Approval pipeline visual ────────────────────────────────────── -->
   <div class="pipeline-bar">
-    <div class="pipeline-label">Approval Pipeline</div>
+    <div class="pipeline-label">{{ 'CONTRACTS.RENEWALS.PIPELINE' | translate }}</div>
     <div class="pipeline-steps">
       <div class="ps-step" *ngFor="let s of stages; let last = last">
         <div class="ps-icon" [style.--sc]="s.color">
           <mat-icon>{{ s.icon }}</mat-icon>
         </div>
         <div class="ps-info">
-          <div class="ps-name">{{ s.label }}</div>
-          <div class="ps-count">{{ s.key === 'manager' ? (stats.pending ?? 0) : s.key === 'hr' ? (stats.manager_approved ?? 0) : (stats.hr_approved ?? 0) }} pending</div>
+          <div class="ps-name">{{ s.labelKey | translate }}</div>
+          <div class="ps-count">{{ 'CONTRACTS.RENEWALS.PENDING_COUNT' | translate:{ count: (s.key === 'manager' ? (stats.pending ?? 0) : s.key === 'hr' ? (stats.manager_approved ?? 0) : (stats.hr_approved ?? 0)) } }}</div>
         </div>
-        <mat-icon class="ps-arrow" *ngIf="!last">arrow_forward</mat-icon>
+        <mat-icon class="ps-arrow flip-rtl" *ngIf="!last">arrow_forward</mat-icon>
       </div>
     </div>
   </div>
@@ -63,51 +63,51 @@
   <!-- ── Create form ─────────────────────────────────────────────────── -->
   <div class="settings-panel" *ngIf="showCreateForm" [formGroup]="createForm">
     <div class="panel-hdr">
-      <div class="panel-title"><mat-icon>add_circle</mat-icon> Create Manual Renewal Request</div>
-      <button class="icon-btn sm" (click)="showCreateForm=false"><mat-icon>close</mat-icon></button>
+      <div class="panel-title"><mat-icon>add_circle</mat-icon> {{ 'CONTRACTS.RENEWALS.CREATE.TITLE' | translate }}</div>
+      <button class="icon-btn sm" (click)="showCreateForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
     </div>
     <div class="panel-grid">
       <div class="field-group">
-        <label class="field-label">Active Contract <span class="req">*</span></label>
+        <label class="field-label">{{ 'CONTRACTS.RENEWALS.CREATE.ACTIVE_CONTRACT' | translate }} <span class="req">*</span></label>
         <select class="field-input" formControlName="contract_id">
-          <option value="">— Select contract —</option>
+          <option value="">{{ 'CONTRACTS.RENEWALS.CREATE.SELECT_CONTRACT' | translate }}</option>
           <option *ngFor="let c of contracts" [value]="c.id">
             {{ c.reference }} · {{ c.employee?.full_name }}
-            (expires {{ c.end_date ? (c.end_date | date:'dd MMM yyyy') : 'unlimited' }})
+            {{ 'CONTRACTS.RENEWALS.CREATE.EXPIRES_ON' | translate:{ date: (c.end_date ? (c.end_date | locDate:'dd MMM yyyy') : ('CONTRACTS.RENEWALS.CREATE.NO_EXPIRY' | translate)) } }}
           </option>
         </select>
       </div>
       <div class="field-group">
-        <label class="field-label">Proposed Start <span class="req">*</span></label>
-        <input class="field-input" type="date" formControlName="proposed_start_date">
+        <label class="field-label">{{ 'CONTRACTS.RENEWALS.CREATE.PROPOSED_START' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="date" dir="ltr" formControlName="proposed_start_date">
       </div>
       <div class="field-group">
-        <label class="field-label">Proposed End</label>
-        <input class="field-input" type="date" formControlName="proposed_end_date">
+        <label class="field-label">{{ 'CONTRACTS.RENEWALS.CREATE.PROPOSED_END' | translate }}</label>
+        <input class="field-input" type="date" dir="ltr" formControlName="proposed_end_date">
       </div>
       <div class="field-group">
-        <label class="field-label">Proposed Salary</label>
-        <input class="field-input" type="number" placeholder="SAR" formControlName="proposed_salary">
+        <label class="field-label">{{ 'CONTRACTS.RENEWALS.CREATE.PROPOSED_SALARY' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" [placeholder]="'COMMON.SAR' | translate" formControlName="proposed_salary">
       </div>
       <div class="field-group" style="grid-column:1/-1">
-        <label class="field-label">Notes</label>
-        <input class="field-input" placeholder="Reason for renewal…" formControlName="notes">
+        <label class="field-label">{{ 'COMMON.NOTES' | translate }}</label>
+        <input class="field-input" [placeholder]="'CONTRACTS.RENEWALS.CREATE.NOTES_PLACEHOLDER' | translate" formControlName="notes">
       </div>
       <div class="field-group" style="grid-column:1/-1">
-        <label class="field-label">Supporting Document (PDF, DOC, DOCX — max 10 MB)</label>
+        <label class="field-label">{{ 'CONTRACTS.RENEWALS.CREATE.DOCUMENT' | translate }}</label>
         <input type="file" accept=".pdf,.doc,.docx" (change)="onFileSelected($event)">
         <div class="field-hint" *ngIf="selectedFile">
           <mat-icon style="font-size:15px;width:15px;height:15px;vertical-align:middle">description</mat-icon>
           {{ selectedFile.name }}
-          <button type="button" class="link-btn" (click)="clearSelectedFile()">Remove</button>
+          <button type="button" class="link-btn" (click)="clearSelectedFile()">{{ 'CONTRACTS.FORM.REMOVE' | translate }}</button>
         </div>
       </div>
     </div>
     <div class="panel-footer">
-      <button class="btn-outline" (click)="showCreateForm=false">Cancel</button>
+      <button class="btn-outline" (click)="showCreateForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
       <button class="btn-primary" (click)="createManual()" [disabled]="submitting">
         <mat-icon>{{ submitting ? 'hourglass_empty' : 'send' }}</mat-icon>
-        {{ submitting ? 'Submitting…' : 'Submit for Approval' }}
+        {{ (submitting ? 'COMMON.SUBMITTING' : 'CONTRACTS.RENEWALS.CREATE.SUBMIT_FOR_APPROVAL') | translate }}
       </button>
     </div>
   </div>
@@ -116,18 +116,18 @@
   <div class="filter-bar">
     <div class="search-wrap">
       <mat-icon class="search-icon">search</mat-icon>
-      <input class="search-input" placeholder="Search employee name…" [formControl]="searchControl" (keyup.enter)="loadRenewals(1)">
+      <input class="search-input" [placeholder]="'CONTRACTS.RENEWALS.FILTER.SEARCH_PLACEHOLDER' | translate" [formControl]="searchControl" (keyup.enter)="loadRenewals(1)">
     </div>
     <select class="filter-select" [(ngModel)]="statusFilter" (change)="loadRenewals(1)">
-      <option value="">All Status</option>
-      <option value="pending">Awaiting Manager</option>
-      <option value="manager_approved">Awaiting HR</option>
-      <option value="hr_approved">Awaiting CEO</option>
-      <option value="approved">Approved</option>
-      <option value="rejected">Rejected</option>
+      <option value="">{{ 'CONTRACTS.RENEWALS.FILTER.ALL_STATUS' | translate }}</option>
+      <option value="pending">{{ 'CONTRACTS.RENEWALS.STATS.AWAITING_MANAGER' | translate }}</option>
+      <option value="manager_approved">{{ 'CONTRACTS.RENEWALS.STATS.AWAITING_HR' | translate }}</option>
+      <option value="hr_approved">{{ 'CONTRACTS.RENEWALS.STATS.AWAITING_CEO' | translate }}</option>
+      <option value="approved">{{ 'approved' | statusLabel }}</option>
+      <option value="rejected">{{ 'rejected' | statusLabel }}</option>
     </select>
     <button class="btn-outline" (click)="statusFilter=''; loadRenewals(1)">
-      <mat-icon>filter_list_off</mat-icon> Clear
+      <mat-icon>filter_list_off</mat-icon> {{ 'COMMON.CLEAR' | translate }}
     </button>
   </div>
 
@@ -155,8 +155,8 @@
           </div>
           <div class="rc-meta">
             <span class="ref-chip">{{ r.reference }}</span>
-            <span class="auto-chip" *ngIf="r.auto_generated" matTooltip="Auto-generated 60 days before expiry">
-              <mat-icon>autorenew</mat-icon> Auto
+            <span class="auto-chip" *ngIf="r.auto_generated" [matTooltip]="'CONTRACTS.RENEWALS.AUTO_TOOLTIP' | translate">
+              <mat-icon>autorenew</mat-icon> {{ 'CONTRACTS.RENEWALS.AUTO' | translate }}
             </span>
             <span class="status-badge" [class]="statusClass(r.status)">{{ stageLabel(r.status) }}</span>
           </div>
@@ -170,7 +170,7 @@
               <span *ngIf="!r.approvals.manager.approved">1</span>
             </div>
             <div class="at-label">
-              Manager
+              {{ 'CONTRACTS.RENEWALS.STAGES.MANAGER' | translate }}
               <span *ngIf="r.approvals.manager.approved_by" class="at-by">{{ r.approvals.manager.approved_by }}</span>
             </div>
           </div>
@@ -181,7 +181,7 @@
               <span *ngIf="!r.approvals.hr.approved">2</span>
             </div>
             <div class="at-label">
-              HR
+              {{ 'CONTRACTS.RENEWALS.STAGES.HR' | translate }}
               <span *ngIf="r.approvals.hr.approved_by" class="at-by">{{ r.approvals.hr.approved_by }}</span>
             </div>
           </div>
@@ -192,7 +192,7 @@
               <span *ngIf="!r.approvals.ceo.approved">3</span>
             </div>
             <div class="at-label">
-              CEO
+              {{ 'CONTRACTS.RENEWALS.STAGES.CEO' | translate }}
               <span *ngIf="r.approvals.ceo.approved_by" class="at-by">{{ r.approvals.ceo.approved_by }}</span>
             </div>
           </div>
@@ -202,43 +202,43 @@
           *ngIf="r.approvals.manager.approved || r.approvals.hr.approved || r.approvals.ceo.approved || r.rejection">
           <div class="ac-title">
             <mat-icon>rate_review</mat-icon>
-            Approver Comments
+            {{ 'CONTRACTS.RENEWALS.COMMENTS.TITLE' | translate }}
           </div>
 
           <div class="ac-item" *ngIf="r.approvals.manager.approved">
             <div class="ac-meta">
-              <span>Manager</span>
-              <small>{{ r.approvals.manager.approved_by || 'Approved' }} · {{ formatDateTime(r.approvals.manager.approved_at) }}</small>
+              <span>{{ 'CONTRACTS.RENEWALS.STAGES.MANAGER' | translate }}</span>
+              <small>{{ r.approvals.manager.approved_by || ('CONTRACTS.RENEWALS.COMMENTS.APPROVED' | translate) }} · {{ formatDateTime(r.approvals.manager.approved_at) }}</small>
             </div>
             <div class="ac-note" [class.empty]="!r.approvals.manager.notes">
-              {{ r.approvals.manager.notes || 'No comment added.' }}
+              {{ r.approvals.manager.notes || ('CONTRACTS.RENEWALS.COMMENTS.NO_COMMENT' | translate) }}
             </div>
           </div>
 
           <div class="ac-item" *ngIf="r.approvals.hr.approved">
             <div class="ac-meta">
-              <span>HR</span>
-              <small>{{ r.approvals.hr.approved_by || 'Approved' }} · {{ formatDateTime(r.approvals.hr.approved_at) }}</small>
+              <span>{{ 'CONTRACTS.RENEWALS.STAGES.HR' | translate }}</span>
+              <small>{{ r.approvals.hr.approved_by || ('CONTRACTS.RENEWALS.COMMENTS.APPROVED' | translate) }} · {{ formatDateTime(r.approvals.hr.approved_at) }}</small>
             </div>
             <div class="ac-note" [class.empty]="!r.approvals.hr.notes">
-              {{ r.approvals.hr.notes || 'No comment added.' }}
+              {{ r.approvals.hr.notes || ('CONTRACTS.RENEWALS.COMMENTS.NO_COMMENT' | translate) }}
             </div>
           </div>
 
           <div class="ac-item" *ngIf="r.approvals.ceo.approved">
             <div class="ac-meta">
-              <span>CEO</span>
-              <small>{{ r.approvals.ceo.approved_by || 'Approved' }} · {{ formatDateTime(r.approvals.ceo.approved_at) }}</small>
+              <span>{{ 'CONTRACTS.RENEWALS.STAGES.CEO' | translate }}</span>
+              <small>{{ r.approvals.ceo.approved_by || ('CONTRACTS.RENEWALS.COMMENTS.APPROVED' | translate) }} · {{ formatDateTime(r.approvals.ceo.approved_at) }}</small>
             </div>
             <div class="ac-note" [class.empty]="!r.approvals.ceo.notes">
-              {{ r.approvals.ceo.notes || 'No comment added.' }}
+              {{ r.approvals.ceo.notes || ('CONTRACTS.RENEWALS.COMMENTS.NO_COMMENT' | translate) }}
             </div>
           </div>
 
           <div class="ac-item rejected" *ngIf="r.rejection">
             <div class="ac-meta">
-              <span>Rejected at {{ r.rejection.stage }}</span>
-              <small>{{ r.rejection.by || 'Rejected' }} · {{ formatDateTime(r.rejection.at) }}</small>
+              <span>{{ 'CONTRACTS.RENEWALS.COMMENTS.REJECTED_AT' | translate:{ stage: stageName(r.rejection.stage) } }}</span>
+              <small>{{ r.rejection.by || ('CONTRACTS.RENEWALS.COMMENTS.REJECTED' | translate) }} · {{ formatDateTime(r.rejection.at) }}</small>
             </div>
             <div class="ac-note">{{ r.rejection.reason }}</div>
           </div>
@@ -247,16 +247,16 @@
         <!-- Contract expiry + proposed terms -->
         <div class="rc-terms">
           <div class="rc-term">
-            <span class="rt-lbl">Expires</span>
+            <span class="rt-lbl">{{ 'CONTRACTS.RENEWALS.TERMS.EXPIRES' | translate }}</span>
             <span class="rt-val expiry">{{ formatDate(r.contract?.end_date ?? null) }}</span>
           </div>
           <div class="rc-term">
-            <span class="rt-lbl">Proposed Period</span>
-            <span class="rt-val">{{ formatDate(r.proposed_start_date) }} → {{ r.proposed_end_date ? formatDate(r.proposed_end_date) : 'Unlimited' }}</span>
+            <span class="rt-lbl">{{ 'CONTRACTS.RENEWALS.TERMS.PROPOSED_PERIOD' | translate }}</span>
+            <span class="rt-val">{{ formatDate(r.proposed_start_date) }} <span class="flip-rtl period-arrow">→</span> {{ r.proposed_end_date ? formatDate(r.proposed_end_date) : ('CONTRACTS.UNLIMITED' | translate) }}</span>
           </div>
           <div class="rc-term" *ngIf="r.proposed_salary">
-            <span class="rt-lbl">Proposed Salary</span>
-            <span class="rt-val">{{ formatSalary(r.proposed_salary) }}</span>
+            <span class="rt-lbl">{{ 'CONTRACTS.RENEWALS.TERMS.PROPOSED_SALARY' | translate }}</span>
+            <span class="rt-val ltr">{{ formatSalary(r.proposed_salary) }}</span>
           </div>
         </div>
 
@@ -266,15 +266,15 @@
             <mat-icon>description</mat-icon>
             <span class="rd-name">{{ r.document.name }}</span>
             <button class="btn-sm" (click)="downloadDocument(r)">
-              <mat-icon>download</mat-icon> Download
+              <mat-icon>download</mat-icon> {{ 'COMMON.DOWNLOAD' | translate }}
             </button>
           </ng-container>
           <ng-container *ngIf="!r.document">
             <mat-icon class="muted">upload_file</mat-icon>
-            <span class="rd-name muted">No document</span>
+            <span class="rd-name muted">{{ 'CONTRACTS.RENEWALS.NO_DOCUMENT' | translate }}</span>
             <label class="btn-sm upload-label">
               <mat-icon>{{ uploadingDocId === r.id ? 'hourglass_empty' : 'upload' }}</mat-icon>
-              {{ uploadingDocId === r.id ? 'Uploading…' : 'Upload' }}
+              {{ (uploadingDocId === r.id ? 'CONTRACTS.DETAIL.UPLOADING' : 'COMMON.UPLOAD') | translate }}
               <input type="file" accept=".pdf,.doc,.docx" hidden
                 (change)="onRowFileSelected($event, r)" [disabled]="uploadingDocId === r.id">
             </label>
@@ -284,30 +284,29 @@
         <!-- Rejection banner -->
         <div class="rejection-banner" *ngIf="r.status === 'rejected'">
           <mat-icon>cancel</mat-icon>
-          Rejected at <strong>{{ r.rejection?.stage }}</strong> stage by {{ r.rejection?.by }}:
-          "{{ r.rejection?.reason }}"
+          <span>{{ 'CONTRACTS.RENEWALS.REJECTION_BANNER' | translate:{ stage: stageName(r.rejection?.stage), by: r.rejection?.by || '', reason: r.rejection?.reason || '' } }}</span>
         </div>
 
         <!-- Action buttons -->
         <div class="rc-actions" *ngIf="canApprove(r) || canReject(r)" (click)="$event.stopPropagation()">
           <button class="btn-sm approve" *ngIf="canApprove(r)" (click)="openApprove(r)">
-            <mat-icon>check_circle</mat-icon> Approve
+            <mat-icon>check_circle</mat-icon> {{ 'CONTRACTS.ACTION.APPROVE' | translate }}
           </button>
           <button class="btn-sm reject" *ngIf="canReject(r)" (click)="openReject(r)">
-            <mat-icon>cancel</mat-icon> Reject
+            <mat-icon>cancel</mat-icon> {{ 'COMMON.REJECT' | translate }}
           </button>
         </div>
 
         <div class="approved-banner" *ngIf="r.status === 'approved' && r.new_contract_id">
-          <mat-icon>check_circle</mat-icon> New contract created automatically
+          <mat-icon>check_circle</mat-icon> {{ 'CONTRACTS.RENEWALS.NEW_CONTRACT_CREATED' | translate }}
         </div>
 
       </div>
 
       <div class="empty-state-card" *ngIf="!loading && !renewals.length">
         <mat-icon>autorenew</mat-icon>
-        <p>No renewal requests found</p>
-        <span>Requests are auto-generated 60 days before active contracts expire</span>
+        <p>{{ 'CONTRACTS.RENEWALS.EMPTY' | translate }}</p>
+        <span>{{ 'CONTRACTS.RENEWALS.EMPTY_HINT' | translate }}</span>
       </div>
     </ng-container>
 
@@ -315,11 +314,11 @@
 
   <!-- Pagination -->
   <div class="pagination-bar" *ngIf="pagination?.last_page > 1">
-    <span class="pg-info">{{ pagination?.from }}–{{ pagination?.to }} of {{ pagination?.total }}</span>
+    <span class="pg-info">{{ 'COMMON.SHOWING' | translate:{ from: pagination?.from, to: pagination?.to, total: pagination?.total } }}</span>
     <div class="pg-btns">
-      <button class="pg-btn" [disabled]="currentPage<=1" (click)="loadRenewals(currentPage-1)"><mat-icon>chevron_left</mat-icon></button>
+      <button class="pg-btn" [disabled]="currentPage<=1" (click)="loadRenewals(currentPage-1)"><mat-icon class="flip-rtl">chevron_left</mat-icon></button>
       <button *ngFor="let p of pages" class="pg-btn" [class.active]="p===currentPage" (click)="loadRenewals(p)">{{ p }}</button>
-      <button class="pg-btn" [disabled]="currentPage>=pagination?.last_page" (click)="loadRenewals(currentPage+1)"><mat-icon>chevron_right</mat-icon></button>
+      <button class="pg-btn" [disabled]="currentPage>=pagination?.last_page" (click)="loadRenewals(currentPage+1)"><mat-icon class="flip-rtl">chevron_right</mat-icon></button>
     </div>
   </div>
 
@@ -335,46 +334,44 @@
       <mat-icon [style.color]="actionType==='approve' ? 'var(--success)' : 'var(--danger)'">
         {{ actionType === 'approve' ? 'check_circle' : 'cancel' }}
       </mat-icon>
-      {{ actionType === 'approve' ? 'Approve' : 'Reject' }} Renewal —
-      {{ selectedRenewal.reference }}
+      {{ (actionType === 'approve' ? 'CONTRACTS.RENEWALS.DIALOG.APPROVE_TITLE' : 'CONTRACTS.RENEWALS.DIALOG.REJECT_TITLE') | translate:{ ref: selectedRenewal.reference } }}
     </h3>
-    <button class="row-btn" (click)="showActionDialog=false"><mat-icon>close</mat-icon></button>
+    <button class="row-btn" (click)="showActionDialog=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <!-- Stage info -->
     <div class="stage-info">
       <mat-icon>info_outline</mat-icon>
-      You are {{ actionType === 'approve' ? 'approving' : 'rejecting' }} at
-      <strong>{{ stageLabel(selectedRenewal.status) }}</strong> stage.
+      <span [innerHTML]="(actionType === 'approve' ? 'CONTRACTS.RENEWALS.DIALOG.STAGE_INFO_APPROVE' : 'CONTRACTS.RENEWALS.DIALOG.STAGE_INFO_REJECT') | translate:{ stage: stageLabel(selectedRenewal.status) }"></span>
     </div>
     <!-- Employee summary -->
     <div class="field-group">
-      <label class="field-label">Employee</label>
+      <label class="field-label">{{ 'COMMON.EMPLOYEE' | translate }}</label>
       <div style="font-size:13px;color:var(--text)">
         {{ selectedRenewal.employee?.full_name }} — {{ selectedRenewal.contract?.reference }}
-        (expires {{ formatDate(selectedRenewal.contract?.end_date ?? null) }})
+        {{ 'CONTRACTS.RENEWALS.DIALOG.EXPIRES_ON' | translate:{ date: formatDate(selectedRenewal.contract?.end_date ?? null) } }}
       </div>
     </div>
     <!-- Notes / Reason -->
     <div class="field-group" *ngIf="actionType==='approve'">
-      <label class="field-label">Notes (optional)</label>
+      <label class="field-label">{{ 'CONTRACTS.RENEWALS.DIALOG.NOTES_OPTIONAL' | translate }}</label>
       <textarea class="field-textarea" rows="3" [(ngModel)]="actionNotes"
-        placeholder="Any remarks for the next approver…"></textarea>
+        [placeholder]="'CONTRACTS.RENEWALS.DIALOG.NOTES_PLACEHOLDER' | translate"></textarea>
     </div>
     <div class="field-group" *ngIf="actionType==='reject'">
-      <label class="field-label">Rejection Reason <span class="req">*</span></label>
+      <label class="field-label">{{ 'CONTRACTS.RENEWALS.DIALOG.REJECTION_REASON' | translate }} <span class="req">*</span></label>
       <textarea class="field-textarea" rows="3" [(ngModel)]="actionRejectionReason"
-        placeholder="Please provide a reason for rejection…"></textarea>
+        [placeholder]="'CONTRACTS.RENEWALS.DIALOG.REJECTION_PLACEHOLDER' | translate"></textarea>
     </div>
     <div class="alert alert-error" *ngIf="errorMsg"><mat-icon>error_outline</mat-icon> {{ errorMsg }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showActionDialog=false">Cancel</button>
+    <button class="btn-outline" (click)="showActionDialog=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button [class]="actionType==='approve' ? 'btn-primary' : 'btn-danger'"
             (click)="submitAction()"
             [disabled]="actionLoading===selectedRenewal.id">
       <mat-icon>{{ actionLoading ? 'hourglass_empty' : (actionType==='approve' ? 'check_circle' : 'cancel') }}</mat-icon>
-      {{ actionLoading ? 'Processing…' : (actionType==='approve' ? 'Confirm Approval' : 'Confirm Rejection') }}
+      {{ (actionLoading ? 'CONTRACTS.RENEWALS.DIALOG.PROCESSING' : (actionType==='approve' ? 'CONTRACTS.RENEWALS.DIALOG.CONFIRM_APPROVAL' : 'CONTRACTS.RENEWALS.DIALOG.CONFIRM_REJECTION')) | translate }}
     </button>
   </div>
 </div>

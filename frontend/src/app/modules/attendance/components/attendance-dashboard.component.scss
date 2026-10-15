@@ -158,7 +158,7 @@ canvas { width: 100% !important; height: 200px !important; }
 .akpi-card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 14px; padding: 18px 20px;
-  border-left: 3px solid var(--c, var(--accent));
+  border-inline-start: 3px solid var(--c, var(--accent));
   mat-icon { color: var(--c, var(--accent)); font-size: 22px !important; width: 22px !important; height: 22px !important; margin-bottom: 8px; display: block; }
 }
 .akpi-val { font-family: 'IBM Plex Sans', sans-serif; font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
@@ -169,7 +169,7 @@ canvas { width: 100% !important; height: 200px !important; }
   thead th {
     padding: 9px 16px; font-size: 10px; font-weight: 700; color: var(--text3);
     text-transform: uppercase; letter-spacing: .1em; background: var(--surface2);
-    border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap;
+    border-bottom: 1px solid var(--border); text-align: start; white-space: nowrap;
   }
   td { padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
   tbody tr:last-child td { border-bottom: none; }
@@ -317,5 +317,125 @@ canvas { width: 100% !important; height: 200px !important; }
       width:100%;
       justify-content:center;
     }
+  }
+}
+
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .presence-card { flex: 1 1 220px; }
+  .checkin-card  { padding: 18px; }
+}
+
+@media (max-width: 768px) {
+  .dash-header {
+    h1 { font-size: 19px; }
+  }
+  .header-right { width: 100%; justify-content: space-between; }
+  .live-clock   { font-size: 20px; }
+  .refresh-btn  { width: 38px; height: 38px; }
+
+  .hr-action-btn { min-height: 44px; }
+
+  .checkin-card  { flex-direction: column; align-items: stretch; gap: 14px; }
+  .checkin-right { flex-direction: row; flex-wrap: wrap; }
+  .btn-ci, .btn-co { flex: 1 1 140px; justify-content: center; min-height: 40px; }
+  .ci-times      { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .ci-time-block { min-width: 0; }
+  .ci-arrow      { display: none; }
+
+  /* KPI strip becomes a 2-column grid */
+  .kpi-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+  .kpi-sep   { display: none; }
+  .kpi-item  { min-width: 0; padding: 6px 4px; }
+  .kpi-lbl   { white-space: normal; }
+
+  .two-col .dash-card { min-width: 0; flex: 1 1 100%; }
+  canvas { height: 220px !important; }
+  .chart-card .chart-body { padding: 10px; }
+
+  .day-pills { padding: 12px; }
+  .day-pill  { min-width: 64px; padding: 8px 10px; }
+
+  .admin-top     { flex-direction: column; }
+  .presence-card { flex: 1 1 auto; }
+  .presence-legend { flex-direction: row; flex-wrap: wrap; gap: 8px 16px; }
+  .admin-kpis    { min-width: 0; gap: 10px; }
+  .akpi-card     { padding: 14px; }
+  .akpi-val      { font-size: 24px; }
+
+  .att-table { min-width: 520px; }
+  .att-table thead th, .att-table td { padding-inline: 12px; }
+
+  .hr-report-action input { height: 36px; }
+}
+
+@media (max-width: 480px) {
+  .kpi-val   { font-size: 18px; }
+  .admin-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .akpi-val  { font-size: 20px; }
+  .hr-report-action .report-fields { grid-template-columns: 1fr; }
+}
+
+/* ── Phone app look ───────────────────────────────────────────────── */
+.ci-ring { display: none; }
+@media (max-width: 768px) {
+  /* The top bar shows the page name; keep the clock and refresh */
+  .dash-header > div:first-child { display: none; }
+  .dash-header { margin-bottom: 12px; }
+
+  .hr-action-btn, .hr-report-action, .dash-card { border-radius: 16px; }
+
+  /* Today card: ring, three time tiles, then the buttons */
+  .checkin-card { border-radius: 18px; padding: 18px 16px; align-items: center; }
+  .ci-ring {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    width: 168px; height: 168px; border-radius: 50%; margin: 4px auto 2px;
+    border: 10px solid var(--surface2); box-sizing: border-box;
+    &.done { border-color: color-mix(in srgb, var(--success) 75%, transparent); }
+  }
+  .ci-ring-ok { color: var(--success); font-size: 26px !important; width: 26px !important; height: 26px !important; }
+  .ci-ring-time { font-size: 30px; font-weight: 800; color: var(--text); line-height: 1.1; }
+  .ci-ring-lbl  { font-size: 11px; color: var(--text3); }
+  .checkin-left { width: 100%; }
+  .ci-label { text-align: center; }
+  .ci-arrow { display: none; }
+  .ci-times { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .ci-time-block {
+    flex-direction: column; align-items: center; text-align: center; gap: 4px;
+    padding: 10px 4px; border-radius: 14px; background: var(--surface2);
+  }
+  .checkin-right { width: 100%; flex-wrap: nowrap; }
+  .btn-ci, .btn-co { min-height: 46px; border-radius: 14px; font-size: 14px; }
+
+  /* Month KPIs: 3 tiles per row */
+  .kpi-strip {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
+    background: transparent; border: none; padding: 0;
+  }
+  .kpi-sep { display: none; }
+  .kpi-item {
+    flex-direction: column; align-items: center; text-align: center; gap: 6px; min-width: 0;
+    padding: 12px 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  }
+
+  /* Admin KPIs: 2 per row */
+  .admin-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
+  .akpi-card { border-radius: 16px; }
+
+  /* Recent log as cards: date on top, then times, duration and status */
+  .table-scroll:has(> .att-recent) { overflow: visible; }
+  .att-recent {
+    min-width: 0 !important; display: block;
+    thead { display: none; }
+    tbody { display: flex; flex-direction: column; gap: 8px; padding: 0 12px 12px; }
+    tr {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: center; gap: 4px 8px;
+      padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface2);
+    }
+    td { display: block; padding: 0 !important; border: none !important; font-size: 13px; }
+    td:first-child { grid-column: 1 / -2; font-weight: 700; color: var(--text); }
+    td:last-child  { grid-column: -2; grid-row: 1; justify-self: end; }
+    td.empty-row   { grid-column: 1 / -1; }
   }
 }

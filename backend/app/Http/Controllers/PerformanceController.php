@@ -37,6 +37,7 @@ class PerformanceController extends Controller
             ->map(fn($r) => [
                 'name'       => $r->employee?->first_name . ' ' . $r->employee?->last_name,
                 'department' => $r->employee?->department?->name,
+                'department_ar' => $r->employee?->department?->name_ar,
                 'score'      => $r->final_score,
             ]);
 

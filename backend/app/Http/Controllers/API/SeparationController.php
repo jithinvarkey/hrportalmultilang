@@ -62,7 +62,7 @@ class SeparationController extends Controller
             'checklistItems.completedBy',
         ])->findOrFail($id);
         if (!$this->canViewSeparation($sep)) {
-            return response()->json(['message' => 'You do not have permission to view this separation.'], 403);
+            return response()->json(['message' => __('You do not have permission to view this separation.')], 403);
         }
 
         // HR/CEO can see the full checklist. Other departmental users receive
@@ -136,7 +136,7 @@ class SeparationController extends Controller
         if ($sep->type === 'resignation' && $clearanceAccess['finance']) {
             $sep->setAttribute('finance_loans', Loan::query()
                 ->with([
-                    'loanType:id,name',
+                    'loanType:id,name,name_ar',
                     'installments' => fn ($query) => $query
                         ->whereIn('status', ['pending','overdue'])
                         ->orderBy('due_date'),
@@ -167,11 +167,11 @@ class SeparationController extends Controller
         $employeeId = $isHR ? (int) $request->employee_id : (int) $user->employee?->id;
 
         if (!$employeeId) {
-            return response()->json(['message' => 'Your user is not linked to an employee record.'], 422);
+            return response()->json(['message' => __('Your user is not linked to an employee record.')], 422);
         }
 
         if (!$isHR && $request->type !== 'resignation') {
-            return response()->json(['message' => 'Employees can submit resignation requests only.'], 403);
+            return response()->json(['message' => __('Employees can submit resignation requests only.')], 403);
         }
 
         $type = $isHR ? $request->type : 'resignation';
@@ -206,7 +206,7 @@ class SeparationController extends Controller
 
         $this->service->notifySubmitted($sep);
 
-        return response()->json(['message' => 'Separation request created.', 'separation' => $sep->load('employee')], 201);
+        return response()->json(['message' => __('Separation request created.'), 'separation' => $sep->load('employee')], 201);
     }
 
     // ── Update (HR can edit before approval) ──────────────────────────────
@@ -214,10 +214,10 @@ class SeparationController extends Controller
     {
         $sep = Separation::with('employee')->findOrFail($id);
         if (!$this->canViewSeparation($sep)) {
-            return response()->json(['message' => 'You do not have permission to edit this separation.'], 403);
+            return response()->json(['message' => __('You do not have permission to edit this separation.')], 403);
         }
         if (!in_array($sep->status, ['draft','pending_manager','pending_hr'])) {
-            return response()->json(['message' => 'Cannot edit at this stage.'], 422);
+            return response()->json(['message' => __('Cannot edit at this stage.')], 422);
         }
         $payload = $request->only([
             'last_working_day','reason','reason_category','hr_notes',
@@ -228,7 +228,7 @@ class SeparationController extends Controller
         }
         if (array_key_exists('last_working_day', $payload)) {
             if ($sep->manager_approved_at || $sep->hr_approved_at) {
-                return response()->json(['message' => 'The last working day cannot be changed after approval has started.'], 422);
+                return response()->json(['message' => __('The last working day cannot be changed after approval has started.')], 422);
             }
             $lastWorkingDay = Carbon::parse($payload['last_working_day']);
             $payload['notice_period_days'] = (int) $lastWorkingDay->diffInDays(now()->startOfDay());
@@ -251,7 +251,7 @@ class SeparationController extends Controller
         switch ($sep->status) {
             case 'pending_manager':
                 if (!$this->canApproveManagerStage($sep, $user)) {
-                    return response()->json(['message' => 'Only the employee direct manager, HR Manager, or Super Admin can approve this stage.'], 403);
+                    return response()->json(['message' => __('Only the employee direct manager, HR Manager, or Super Admin can approve this stage.')], 403);
                 }
                 $hrAlreadyApproved = $sep->hr_approved_at !== null;
                 $sep->update([
@@ -267,10 +267,10 @@ class SeparationController extends Controller
             case 'pending_hr':
                 if (!$this->canApproveHrStage($user, $sep)) {
                     return response()->json(['message' => $sep->type === 'termination'
-                        ? 'Only HR Manager or Super Admin can approve a termination.'
+                        ? __('Only HR Manager or Super Admin can approve a termination.')
                         : ($sep->type === 'resignation'
-                            ? 'Only HR Manager or Super Admin can approve this stage.'
-                            : 'Only HR Manager, Finance Manager, or Super Admin can approve this stage.')], 403);
+                            ? __('Only HR Manager or Super Admin can approve this stage.')
+                            : __('Only HR Manager, Finance Manager, or Super Admin can approve this stage.'))], 403);
                 }
                 $managerAlreadyApproved = $sep->manager_approved_at !== null;
                 // Calculate settlement at HR approval, regardless of whether HR
@@ -300,7 +300,7 @@ class SeparationController extends Controller
             case 'approved':
                 // Move to offboarding — generate checklist
                 if (!$this->canManageOffboarding($user)) {
-                    return response()->json(['message' => 'Only HR Manager, Finance Manager, or CEO can start offboarding.'], 403);
+                    return response()->json(['message' => __('Only HR Manager, Finance Manager, or CEO can start offboarding.')], 403);
                 }
                 $sep->update(['status' => 'offboarding']);
                 $this->service->generateChecklist($sep);
@@ -310,10 +310,10 @@ class SeparationController extends Controller
                 break;
 
             default:
-                return response()->json(['message' => 'Cannot approve at this stage.'], 422);
+                return response()->json(['message' => __('Cannot approve at this stage.')], 422);
         }
 
-        return response()->json(['message' => 'Approved.', 'separation' => $sep->fresh('employee')]);
+        return response()->json(['message' => __('Approved.'), 'separation' => $sep->fresh('employee')]);
     }
 
     // ── Reject ─────────────────────────────────────────────────────────────
@@ -323,14 +323,14 @@ class SeparationController extends Controller
         $sep = Separation::with('employee')->findOrFail($id);
 
         if (!in_array($sep->status, ['pending_manager','pending_hr'])) {
-            return response()->json(['message' => 'Cannot reject at this stage.'], 422);
+            return response()->json(['message' => __('Cannot reject at this stage.')], 422);
         }
         $user = auth()->user();
         if (
             ($sep->status === 'pending_manager' && !$this->canApproveManagerStage($sep, $user)) ||
             ($sep->status === 'pending_hr' && !$this->canApproveHrStage($user, $sep))
         ) {
-            return response()->json(['message' => 'You do not have permission to reject this separation.'], 403);
+            return response()->json(['message' => __('You do not have permission to reject this separation.')], 403);
         }
         $sep->update([
             'status'           => 'rejected',
@@ -338,7 +338,7 @@ class SeparationController extends Controller
             'rejected_at'      => now(),
             'rejection_reason' => $request->reason,
         ]);
-        return response()->json(['message' => 'Separation request rejected.']);
+        return response()->json(['message' => __('Separation request rejected.')]);
     }
 
     // ── Cancel ─────────────────────────────────────────────────────────────
@@ -347,22 +347,22 @@ class SeparationController extends Controller
         $sep = Separation::with('employee')->findOrFail($id);
         $user = auth()->user();
         if ($sep->type === 'termination' && !$this->canApproveHrStage($user, $sep)) {
-            return response()->json(['message' => 'Only HR Manager or CEO can cancel a termination.'], 403);
+            return response()->json(['message' => __('Only HR Manager or CEO can cancel a termination.')], 403);
         }
         $isOwn = (int) $sep->employee_id === (int) $user?->employee?->id;
         if ($sep->status === 'approved' && !$this->canCancelApprovedSeparation($sep, $user)) {
             return response()->json(['message' => $sep->type === 'termination'
-                ? 'Only HR Manager or CEO can cancel an approved termination.'
-                : 'Only HR Manager, Finance Manager, or CEO can cancel an approved separation.'], 403);
+                ? __('Only HR Manager or CEO can cancel an approved termination.')
+                : __('Only HR Manager, Finance Manager, or CEO can cancel an approved separation.')], 403);
         }
         if (!$isOwn && !$this->canApproveManagerStage($sep, $user) && !$this->canApproveHrStage($user, $sep)) {
-            return response()->json(['message' => 'You do not have permission to cancel this separation.'], 403);
+            return response()->json(['message' => __('You do not have permission to cancel this separation.')], 403);
         }
         if (!in_array($sep->status, ['draft','pending_manager','pending_hr','approved'])) {
-            return response()->json(['message' => 'Cannot cancel at this stage.'], 422);
+            return response()->json(['message' => __('Cannot cancel at this stage.')], 422);
         }
         $sep->update(['status' => 'cancelled']);
-        return response()->json(['message' => 'Separation cancelled.']);
+        return response()->json(['message' => __('Separation cancelled.')]);
     }
 
     // ── Complete (after offboarding done) ──────────────────────────────────
@@ -370,18 +370,18 @@ class SeparationController extends Controller
     {
         $sep = Separation::with(['employee', 'checklistItems'])->findOrFail($id);
         if (!$this->canCompleteSeparation(auth()->user())) {
-            return response()->json(['message' => 'Only HR Manager or Super Admin can complete offboarding.'], 403);
+            return response()->json(['message' => __('Only HR Manager or Super Admin can complete offboarding.')], 403);
         }
         if ($sep->status !== 'offboarding') {
-            return response()->json(['message' => 'Separation is not in offboarding stage.'], 422);
+            return response()->json(['message' => __('Separation is not in offboarding stage.')], 422);
         }
         if ($sep->checklistItems->isEmpty()) {
-            return response()->json(['message' => 'No offboarding checklist tasks were generated for this separation.'], 422);
+            return response()->json(['message' => __('No offboarding checklist tasks were generated for this separation.')], 422);
         }
         $pendingTasks = $sep->checklistItems->where('status', 'pending');
         if ($pendingTasks->isNotEmpty()) {
             return response()->json([
-                'message' => "Complete, skip, or mark all offboarding tasks N/A before completing the separation. {$pendingTasks->count()} task(s) remain pending.",
+                'message' => __('Complete, skip, or mark all offboarding tasks N/A before completing the separation. :count task(s) remain pending.', ['count' => $pendingTasks->count()]),
                 'pending_tasks' => $pendingTasks->pluck('title')->values(),
             ], 422);
         }
@@ -396,7 +396,7 @@ class SeparationController extends Controller
             'status'           => 'terminated',
             'termination_date' => $sep->last_working_day,
         ]);
-        return response()->json(['message' => 'Separation completed. Employee marked as terminated.']);
+        return response()->json(['message' => __('Separation completed. Employee marked as terminated.')]);
     }
 
     // ── Update settlement ──────────────────────────────────────────────────
@@ -404,7 +404,7 @@ class SeparationController extends Controller
     {
         $sep = Separation::findOrFail($id);
         if (!$this->canManageOffboarding(auth()->user())) {
-            return response()->json(['message' => 'Only HR Manager, Finance Manager, or CEO can update settlement.'], 403);
+            return response()->json(['message' => __('Only HR Manager, Finance Manager, or CEO can update settlement.')], 403);
         }
         $sep->update($request->only([
             'gratuity_amount','leave_encashment','other_additions','other_deductions',
@@ -418,14 +418,14 @@ class SeparationController extends Controller
     {
         $sep = Separation::findOrFail($id);
         if (!$this->canManageOffboarding(auth()->user())) {
-            return response()->json(['message' => 'Only HR Manager, Finance Manager, or CEO can record exit interviews.'], 403);
+            return response()->json(['message' => __('Only HR Manager, Finance Manager, or CEO can record exit interviews.')], 403);
         }
         $sep->update([
             'exit_interview_done'  => true,
             'exit_interview_date'  => $request->date ?? now()->toDateString(),
             'exit_interview_notes' => $request->notes,
         ]);
-        return response()->json(['message' => 'Exit interview recorded.']);
+        return response()->json(['message' => __('Exit interview recorded.')]);
     }
 
     // ── Checklist item update ─────────────────────────────────────────────
@@ -437,7 +437,7 @@ class SeparationController extends Controller
         ]);
         $item = OffboardingItem::where('separation_id', $sepId)->findOrFail($itemId);
         if (!$this->canUpdateChecklistItem($item, auth()->user())) {
-            return response()->json(['message' => 'You can update only offboarding tasks assigned to your department.'], 403);
+            return response()->json(['message' => __('You can update only offboarding tasks assigned to your department.')], 403);
         }
         $previousStatus = $item->status;
         $item->update([
@@ -467,7 +467,7 @@ class SeparationController extends Controller
     public function templates()
     {
         if (!$this->canManageOffboarding(auth()->user())) {
-            return response()->json(['message' => 'Only HR Manager, Finance Manager, or CEO can manage checklist templates.'], 403);
+            return response()->json(['message' => __('Only HR Manager, Finance Manager, or CEO can manage checklist templates.')], 403);
         }
         return response()->json(['templates' => OffboardingTemplate::orderBy('category')->orderBy('sort_order')->get()]);
     }
@@ -475,7 +475,7 @@ class SeparationController extends Controller
     public function storeTemplate(Request $request)
     {
         if (!$this->canManageOffboarding(auth()->user())) {
-            return response()->json(['message' => 'Only HR Manager, Finance Manager, or CEO can manage checklist templates.'], 403);
+            return response()->json(['message' => __('Only HR Manager, Finance Manager, or CEO can manage checklist templates.')], 403);
         }
         $request->validate(['title' => 'required|string|max:150']);
         return response()->json(['template' => OffboardingTemplate::create($request->all())], 201);
@@ -484,7 +484,7 @@ class SeparationController extends Controller
     public function updateTemplate(Request $request, $id)
     {
         if (!$this->canManageOffboarding(auth()->user())) {
-            return response()->json(['message' => 'Only HR Manager, Finance Manager, or CEO can manage checklist templates.'], 403);
+            return response()->json(['message' => __('Only HR Manager, Finance Manager, or CEO can manage checklist templates.')], 403);
         }
         $t = OffboardingTemplate::findOrFail($id);
         $t->update($request->all());
@@ -494,17 +494,17 @@ class SeparationController extends Controller
     public function deleteTemplate($id)
     {
         if (!$this->canManageOffboarding(auth()->user())) {
-            return response()->json(['message' => 'Only HR Manager, Finance Manager, or CEO can manage checklist templates.'], 403);
+            return response()->json(['message' => __('Only HR Manager, Finance Manager, or CEO can manage checklist templates.')], 403);
         }
         OffboardingTemplate::findOrFail($id)->delete();
-        return response()->json(['message' => 'Template deleted.']);
+        return response()->json(['message' => __('Template deleted.')]);
     }
 
     // ── Calculate settlement preview ───────────────────────────────────────
     public function settlementPreview(Request $request)
     {
         if (!$this->canCreateAnySeparation(auth()->user())) {
-            return response()->json(['message' => 'Only HR can preview settlements while creating separation requests.'], 403);
+            return response()->json(['message' => __('Only HR can preview settlements while creating separation requests.')], 403);
         }
         $emp      = Employee::findOrFail($request->employee_id);
         $gratuity = $this->service->calculateGratuity($emp, $request->type, $request->last_working_day);

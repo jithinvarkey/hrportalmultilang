@@ -1,3 +1,5 @@
+import { TranslateModule } from '@ngx-translate/core';
+import { I18N_PIPES } from '../../../shared/pipes/i18n.pipes';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -37,6 +39,7 @@ describe('EmployeeListComponent', () => {
     await TestBed.configureTestingModule({
       declarations: [EmployeeListComponent],
       imports: [
+        TranslateModule.forRoot(), ...I18N_PIPES,
         HttpClientTestingModule,
         RouterTestingModule,
         ReactiveFormsModule,

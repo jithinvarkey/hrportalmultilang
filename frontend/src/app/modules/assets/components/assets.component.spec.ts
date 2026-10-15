@@ -4,7 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { AssetsComponent } from './assets.component';
+import { TranslateModule } from '@ngx-translate/core';
+
 import { AuthService } from '../../../core/services/auth.service';
+import { I18N_PIPES } from '../../../shared/pipes/i18n.pipes';
 
 /**
  * Unit tests for AssetsComponent.
@@ -24,7 +27,7 @@ describe('AssetsComponent', () => {
     } as unknown as AuthService;
     TestBed.configureTestingModule({
       declarations: [AssetsComponent],
-      imports: [HttpClientTestingModule, FormsModule],
+      imports: [HttpClientTestingModule, FormsModule, TranslateModule.forRoot(), ...I18N_PIPES],
       providers: [{ provide: AuthService, useValue: authStub }],
       schemas: [NO_ERRORS_SCHEMA],
     });
@@ -80,7 +83,7 @@ describe('AssetsComponent', () => {
     component.openForm();
     component.form.name = '';
     component.saveAsset();
-    expect(component.formError).toContain('required');
+    expect(component.formError).toBe('ASSETS.MSG.NAME_CODE_REQUIRED'); // no translations loaded in tests
     httpMock.expectNone(API);
   });
 
@@ -167,7 +170,7 @@ describe('AssetsComponent', () => {
     const bigFile = new File([new Uint8Array(11 * 1024 * 1024)], 'big.pdf');
     const event = { target: { files: [bigFile], value: '' } } as any;
     component.onFileSelected(event);
-    expect(component.formError).toContain('10 MB');
+    expect(component.formError).toBe('ASSETS.MSG.FILE_TOO_LARGE');
     expect(component.selectedFile).toBeNull();
   });
 });

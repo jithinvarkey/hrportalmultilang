@@ -3,11 +3,11 @@
   <!-- ── Header ──────────────────────────────────────────────────────── -->
   <div class="page-hdr">
     <div>
-      <h1 class="page-title"><mat-icon>work</mat-icon> Recruitment</h1>
-      <p class="page-sub">Job postings · Applicant pipeline · Hire management</p>
+      <h1 class="page-title"><mat-icon>work</mat-icon> {{ 'RECRUITMENT.TITLE' | translate }}</h1>
+      <p class="page-sub">{{ 'RECRUITMENT.SUBTITLE' | translate }}</p>
     </div>
     <button class="btn-primary" *ngIf="canManageRecruitment" (click)="openJobForm()">
-      <mat-icon>post_add</mat-icon> Post Job
+      <mat-icon>post_add</mat-icon> {{ 'RECRUITMENT.POST_JOB' | translate }}
     </button>
   </div>
 
@@ -21,22 +21,22 @@
       <div class="tile-icon-wrap"><mat-icon>{{ t.icon }}</mat-icon></div>
       <div class="tile-body">
         <div class="tile-val">{{ stats[t.key] ?? 0 }}</div>
-        <div class="tile-lbl">{{ t.label }}</div>
+        <div class="tile-lbl">{{ t.label | translate }}</div>
       </div>
     </div>
   </div>
 
   <!-- ── Tabs ────────────────────────────────────────────────────────── -->
-  <div class="mod-tabs">
-    <button class="mod-tab" *ngIf="!isInterviewOnly" [class.active]="activeTab==='jobs'"     (click)="switchTab('jobs')">
-      <mat-icon>work</mat-icon> Job Postings
+  <div class="mod-tabs" role="tablist">
+    <button class="mod-tab" role="tab" *ngIf="!isInterviewOnly" [class.active]="activeTab==='jobs'"     (click)="switchTab('jobs')">
+      <mat-icon>work</mat-icon> {{ 'RECRUITMENT.TABS.JOBS' | translate }}
     </button>
-    <button class="mod-tab" [class.active]="activeTab==='pipeline'" (click)="switchTab('pipeline')">
-      <mat-icon>view_kanban</mat-icon> Applicant Pipeline
+    <button class="mod-tab" role="tab" [class.active]="activeTab==='pipeline'" (click)="switchTab('pipeline')">
+      <mat-icon>view_kanban</mat-icon> {{ 'RECRUITMENT.TABS.PIPELINE' | translate }}
       <span class="tab-badge" *ngIf="stats.total_applicants > 0">{{ stats.total_applicants }}</span>
     </button>
-    <button class="mod-tab" *ngIf="!isInterviewOnly" [class.active]="activeTab==='cv_bank'" (click)="switchTab('cv_bank')">
-      <mat-icon>folder_shared</mat-icon> CV Bank
+    <button class="mod-tab" role="tab" *ngIf="!isInterviewOnly" [class.active]="activeTab==='cv_bank'" (click)="switchTab('cv_bank')">
+      <mat-icon>folder_shared</mat-icon> {{ 'RECRUITMENT.TABS.CV_BANK' | translate }}
     </button>
   </div>
 
@@ -48,54 +48,55 @@
     <div class="filter-bar">
       <div class="search-wrap">
         <mat-icon class="search-icon">search</mat-icon>
-        <input class="search-input" placeholder="Search job title…" [formControl]="searchControl">
+        <input class="search-input" [placeholder]="'RECRUITMENT.JOBS.SEARCH_PLACEHOLDER' | translate" [formControl]="searchControl">
       </div>
       <select class="filter-select" [(ngModel)]="statusFilter" (change)="loadJobs(1)">
-        <option value="">All Status</option>
-        <option *ngFor="let s of jobStatuses" [value]="s.value">{{ s.label }}</option>
+        <option value="">{{ 'RECRUITMENT.JOBS.ALL_STATUS' | translate }}</option>
+        <option *ngFor="let s of jobStatuses" [value]="s.value">{{ s.value | statusLabel }}</option>
       </select>
     </div>
 
     <div class="data-card">
       <div class="loading-bar" *ngIf="loading"></div>
-      <table mat-table [dataSource]="jobs">
+      <div class="table-scroll">
+      <table mat-table [dataSource]="jobs" class="jobs-table m-cards">
 
         <ng-container matColumnDef="title">
-          <th mat-header-cell *matHeaderCellDef>Job Title</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'RECRUITMENT.JOBS.COL_TITLE' | translate }}</th>
           <td mat-cell *matCellDef="let r">
             <div class="name-cell">
               <span class="name-main">{{ r.title }}</span>
-              <span class="name-sub">{{ r.location || 'No location' }} · {{ r.vacancies }} vacanc{{ r.vacancies===1?'y':'ies' }}</span>
+              <span class="name-sub">{{ r.location || ('RECRUITMENT.JOBS.NO_LOCATION' | translate) }} · {{ (r.vacancies === 1 ? 'RECRUITMENT.JOBS.VACANCY_ONE' : 'RECRUITMENT.JOBS.VACANCY_MANY') | translate:{ count: r.vacancies } }}</span>
             </div>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="department">
-          <th mat-header-cell *matHeaderCellDef>Department</th>
-          <td mat-cell *matCellDef="let r" class="td-muted">{{ r.department?.name || '—' }}</td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.DEPARTMENT' | translate }}</th>
+          <td mat-cell *matCellDef="let r" class="td-muted">{{ (r.department | locName) || '—' }}</td>
         </ng-container>
 
         <ng-container matColumnDef="type">
-          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.TYPE' | translate }}</th>
           <td mat-cell *matCellDef="let r">
-            <span class="type-tag">{{ (r.employment_type||'').replace('_',' ') | titlecase }}</span>
+            <span class="type-tag">{{ employmentTypeLabel(r.employment_type) }}</span>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="applicants">
-          <th mat-header-cell *matHeaderCellDef>Applicants</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'RECRUITMENT.JOBS.COL_APPLICANTS' | translate }}</th>
           <td mat-cell *matCellDef="let r">
-            <button class="app-count-btn" (click)="viewApplications(r)" matTooltip="View applicants">
+            <button class="app-count-btn" (click)="viewApplications(r)" [matTooltip]="'RECRUITMENT.JOBS.VIEW_APPLICANTS' | translate">
               <mat-icon>people</mat-icon> {{ r.applications_count ?? 0 }}
             </button>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.STATUS' | translate }}</th>
           <td mat-cell *matCellDef="let r">
-            <span class="status-badge" [class]="'status-' + r.status">{{ r.status | titlecase }}</span>
-            <span class="closing-hint" *ngIf="r.closing_date">Closes {{ formatDate(r.closing_date) }}</span>
+            <span class="status-badge" [class]="'status-' + r.status">{{ r.status | statusLabel }}</span>
+            <span class="closing-hint" *ngIf="r.closing_date">{{ 'RECRUITMENT.JOBS.CLOSES_ON' | translate:{ date: formatDate(r.closing_date) } }}</span>
           </td>
         </ng-container>
 
@@ -103,19 +104,19 @@
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let r">
             <div class="row-actions">
-              <button class="row-btn" matTooltip="View applicants" (click)="viewApplications(r)">
+              <button class="row-btn" [matTooltip]="'RECRUITMENT.JOBS.VIEW_APPLICANTS' | translate" [attr.aria-label]="'RECRUITMENT.JOBS.VIEW_APPLICANTS' | translate" (click)="viewApplications(r)">
                 <mat-icon>group</mat-icon>
               </button>
-              <button class="row-btn" matTooltip="Edit" *ngIf="canManageRecruitment" (click)="openJobForm(r); $event.stopPropagation()">
+              <button class="row-btn" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate" *ngIf="canManageRecruitment" (click)="openJobForm(r); $event.stopPropagation()">
                 <mat-icon>edit</mat-icon>
               </button>
-              <button class="row-btn success" matTooltip="Set Open" *ngIf="canManageRecruitment && r.status!=='open'" (click)="changeJobStatus(r,'open',$event)">
+              <button class="row-btn success" [matTooltip]="'RECRUITMENT.JOBS.SET_OPEN' | translate" [attr.aria-label]="'RECRUITMENT.JOBS.SET_OPEN' | translate" *ngIf="canManageRecruitment && r.status!=='open'" (click)="changeJobStatus(r,'open',$event)">
                 <mat-icon>lock_open</mat-icon>
               </button>
-              <button class="row-btn warn" matTooltip="Close Job" *ngIf="canManageRecruitment && r.status==='open'" (click)="changeJobStatus(r,'closed',$event)">
+              <button class="row-btn warn" [matTooltip]="'RECRUITMENT.JOBS.CLOSE_JOB' | translate" [attr.aria-label]="'RECRUITMENT.JOBS.CLOSE_JOB' | translate" *ngIf="canManageRecruitment && r.status==='open'" (click)="changeJobStatus(r,'closed',$event)">
                 <mat-icon>lock</mat-icon>
               </button>
-              <button class="row-btn danger" matTooltip="Delete" *ngIf="canManageRecruitment" (click)="deleteJob(r.id, $event)">
+              <button class="row-btn danger" [matTooltip]="'COMMON.DELETE' | translate" [attr.aria-label]="'COMMON.DELETE' | translate" *ngIf="canManageRecruitment" (click)="deleteJob(r.id, $event)">
                 <mat-icon>delete_outline</mat-icon>
               </button>
             </div>
@@ -126,18 +127,19 @@
         <tr mat-row *matRowDef="let row; columns:displayedColumns;" class="data-row" (click)="viewApplications(row)"></tr>
         <tr class="mat-row" *matNoDataRow>
           <td class="mat-cell empty-td" colspan="6">
-            <ng-container *ngIf="loading"><mat-spinner diameter="28"></mat-spinner> Loading…</ng-container>
-            <ng-container *ngIf="!loading"><mat-icon>work_outline</mat-icon> No job postings</ng-container>
+            <ng-container *ngIf="loading"><mat-spinner diameter="28"></mat-spinner> {{ 'COMMON.LOADING' | translate }}</ng-container>
+            <ng-container *ngIf="!loading"><mat-icon>work_outline</mat-icon> {{ 'RECRUITMENT.JOBS.EMPTY' | translate }}</ng-container>
           </td>
         </tr>
       </table>
+      </div>
 
       <div class="pagination-bar" *ngIf="pagination?.last_page > 1">
-        <span class="pg-info">{{ pagination?.from }}–{{ pagination?.to }} of {{ pagination?.total }}</span>
+        <span class="pg-info">{{ 'COMMON.SHOWING' | translate:{ from: pagination?.from, to: pagination?.to, total: pagination?.total } }}</span>
         <div class="pg-btns">
-          <button class="pg-btn" [disabled]="currentPage<=1" (click)="loadJobs(currentPage-1)"><mat-icon>chevron_left</mat-icon></button>
+          <button class="pg-btn" [disabled]="currentPage<=1" (click)="loadJobs(currentPage-1)" [attr.aria-label]="'COMMON.PREVIOUS' | translate"><mat-icon class="flip-rtl">chevron_left</mat-icon></button>
           <button *ngFor="let p of pages" class="pg-btn" [class.active]="p===currentPage" (click)="loadJobs(p)">{{ p }}</button>
-          <button class="pg-btn" [disabled]="currentPage>=pagination?.last_page" (click)="loadJobs(currentPage+1)"><mat-icon>chevron_right</mat-icon></button>
+          <button class="pg-btn" [disabled]="currentPage>=pagination?.last_page" (click)="loadJobs(currentPage+1)" [attr.aria-label]="'COMMON.NEXT' | translate"><mat-icon class="flip-rtl">chevron_right</mat-icon></button>
         </div>
       </div>
     </div>
@@ -150,27 +152,27 @@
 
     <div class="pipeline-toolbar">
       <button class="btn-outline" (click)="selectedJobFilter=null; loadApplications()">
-        <mat-icon>grid_view</mat-icon> All Jobs
+        <mat-icon>grid_view</mat-icon> {{ 'RECRUITMENT.PIPELINE.ALL_JOBS' | translate }}
       </button>
       <select class="filter-select" [(ngModel)]="stageFilter" (change)="loadApplications(selectedJobFilter ?? undefined)">
-        <option value="">All Stages</option>
-        <option *ngFor="let s of stages" [value]="s.value">{{ s.label }}</option>
+        <option value="">{{ 'RECRUITMENT.PIPELINE.ALL_STAGES' | translate }}</option>
+        <option *ngFor="let s of stages" [value]="s.value">{{ s.value | statusLabel }}</option>
       </select>
-      <span class="pipeline-count">{{ applications.length }} applicants</span>
-      <button class="btn-primary" *ngIf="canManageRecruitment" (click)="openAddApplicantForm()" style="margin-left:auto">
-        <mat-icon>person_add</mat-icon> Add Applicant
+      <span class="pipeline-count">{{ 'RECRUITMENT.PIPELINE.APPLICANT_COUNT' | translate:{ count: applications.length } }}</span>
+      <button class="btn-primary pipeline-add-btn" *ngIf="canManageRecruitment" (click)="openAddApplicantForm()">
+        <mat-icon>person_add</mat-icon> {{ 'RECRUITMENT.PIPELINE.ADD_APPLICANT' | translate }}
       </button>
     </div>
 
     <div class="pipeline-loading" *ngIf="appsLoading">
-      <mat-spinner diameter="32"></mat-spinner> Loading applicants…
+      <mat-spinner diameter="32"></mat-spinner> {{ 'RECRUITMENT.PIPELINE.LOADING' | translate }}
     </div>
 
     <div class="kanban-board" *ngIf="!appsLoading">
       <div class="kanban-col" *ngFor="let s of stages">
         <div class="kc-header" [style.--kc-color]="s.color">
-          <mat-icon>{{ s.icon }}</mat-icon>
-          <span>{{ s.label }}</span>
+          <mat-icon [class.flip-rtl]="s.icon === 'send'">{{ s.icon }}</mat-icon>
+          <span>{{ s.value | statusLabel }}</span>
           <span class="kc-count">{{ appsByStage(s.value).length }}</span>
         </div>
         <div class="kc-body">
@@ -179,36 +181,40 @@
               <div class="av" [style.background]="avatarColor(a.applicant_name)">
                 {{ initial(a.applicant_name) }}
               </div>
-              <div>
+              <div class="ac-text">
                 <div class="ac-name">{{ a.applicant_name }}</div>
                 <div class="ac-sub">{{ a.job_posting?.title || '—' }}</div>
               </div>
             </div>
-            <div class="ac-date">Applied {{ formatDate(a.created_at) }}</div>
+            <div class="ac-date">{{ 'RECRUITMENT.PIPELINE.APPLIED_ON' | translate:{ date: formatDate(a.created_at) } }}</div>
             <div class="ac-actions" *ngIf="isHR" (click)="$event.stopPropagation()">
               <ng-container *ngFor="let ns of stages">
                 <button *ngIf="s.value === 'offer' && ns.value === 'offer'"
-                        class="ac-move-btn offer" [matTooltip]="'Send / Resend Offer'"
+                        class="ac-move-btn offer" [matTooltip]="'RECRUITMENT.PIPELINE.SEND_RESEND_OFFER' | translate"
+                        [attr.aria-label]="'RECRUITMENT.PIPELINE.SEND_RESEND_OFFER' | translate"
                         (click)="openOfferForm(a, $event)">
                   <mat-icon>local_offer</mat-icon>
                 </button>
                 <button *ngIf="ns.value !== s.value && ns.value !== 'rejected' && ns.value !== 'hired' && ns.value !== 'offer'"
-                        class="ac-move-btn" [matTooltip]="'Move to ' + ns.label"
+                        class="ac-move-btn" [matTooltip]="'RECRUITMENT.PIPELINE.MOVE_TO' | translate:{ stage: (ns.value | statusLabel) }"
+                        [attr.aria-label]="'RECRUITMENT.PIPELINE.MOVE_TO' | translate:{ stage: (ns.value | statusLabel) }"
                         (click)="moveStage(a, ns.value, $event)">
-                  <mat-icon>{{ ns.icon }}</mat-icon>
+                  <mat-icon [class.flip-rtl]="ns.icon === 'send'">{{ ns.icon }}</mat-icon>
                 </button>
                 <button *ngIf="ns.value === 'offer' && s.value !== 'offer'"
-                        class="ac-move-btn offer" [matTooltip]="'Send Offer'"
+                        class="ac-move-btn offer" [matTooltip]="'RECRUITMENT.PIPELINE.SEND_OFFER' | translate"
+                        [attr.aria-label]="'RECRUITMENT.PIPELINE.SEND_OFFER' | translate"
                         (click)="openOfferForm(a, $event)">
                   <mat-icon>local_offer</mat-icon>
                 </button>
                 <button *ngIf="ns.value === 'hired' && (s.value === 'offer' || s.value === 'hired')"
-                        class="ac-move-btn hire" [matTooltip]="s.value === 'hired' ? 'Resend Hire Confirmation' : 'Confirm Hire'"
+                        class="ac-move-btn hire" [matTooltip]="(s.value === 'hired' ? 'RECRUITMENT.HIRE.TITLE_RESEND' : 'RECRUITMENT.HIRE.TITLE_CONFIRM') | translate"
+                        [attr.aria-label]="(s.value === 'hired' ? 'RECRUITMENT.HIRE.TITLE_RESEND' : 'RECRUITMENT.HIRE.TITLE_CONFIRM') | translate"
                         (click)="openHireForm(a, $event)">
                   <mat-icon>how_to_reg</mat-icon>
                 </button>
               </ng-container>
-              <button class="ac-move-btn danger" matTooltip="Reject" (click)="moveStage(a,'rejected',$event)">
+              <button class="ac-move-btn danger" [matTooltip]="'COMMON.REJECT' | translate" [attr.aria-label]="'COMMON.REJECT' | translate" (click)="moveStage(a,'rejected',$event)">
                 <mat-icon>cancel</mat-icon>
               </button>
             </div>
@@ -227,29 +233,29 @@
     <div class="cv-toolbar">
       <div class="search-wrap">
         <mat-icon class="search-ico">search</mat-icon>
-        <input class="search-input" placeholder="Search name, role, skills..."
+        <input class="search-input" [placeholder]="'RECRUITMENT.CV.SEARCH_PLACEHOLDER' | translate"
                [(ngModel)]="cvBankSearch" (keyup.enter)="loadCvBank()">
       </div>
       <div class="cv-filter-group">
         <select class="cv-filter-select" [(ngModel)]="cvBankRating" (change)="loadCvBank()">
-          <option value="">All Ratings</option>
-          <option *ngFor="let r of ratings" [value]="r.value">{{ r.label }}</option>
+          <option value="">{{ 'RECRUITMENT.CV.ALL_RATINGS' | translate }}</option>
+          <option *ngFor="let r of ratings" [value]="r.value">{{ r.label | translate }}</option>
         </select>
         <select class="cv-filter-select" [(ngModel)]="cvBankSource" (change)="loadCvBank()">
-          <option value="">All Sources</option>
-          <option *ngFor="let s of sources" [value]="s">{{ s }}</option>
+          <option value="">{{ 'RECRUITMENT.CV.ALL_SOURCES' | translate }}</option>
+          <option *ngFor="let s of sources" [value]="s">{{ sourceLabel(s) }}</option>
         </select>
         <select class="cv-filter-select wide" [(ngModel)]="cvBankPosition" (change)="loadCvBank()">
-          <option value="">All Positions</option>
+          <option value="">{{ 'RECRUITMENT.CV.ALL_POSITIONS' | translate }}</option>
           <option *ngFor="let p of jobPositionOptions" [value]="p">{{ p }}</option>
         </select>
         <select class="cv-filter-select wide" *ngIf="!managerDepartmentId" [(ngModel)]="cvBankDepartment" (change)="loadCvBank()">
-          <option value="">All Departments</option>
-          <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+          <option value="">{{ 'RECRUITMENT.CV.ALL_DEPARTMENTS' | translate }}</option>
+          <option *ngFor="let d of departments" [value]="d.id">{{ d | locName }}</option>
         </select>
       </div>
       <button class="btn-primary" *ngIf="canManageRecruitment" (click)="openCvForm()">
-        <mat-icon>person_add</mat-icon> Add CV
+        <mat-icon>person_add</mat-icon> {{ 'RECRUITMENT.CV.ADD_CV' | translate }}
       </button>
     </div>
 
@@ -267,9 +273,9 @@
               <div class="cv-role">{{ cvPositionLabel(cv) }}</div>
               <div class="cv-meta">{{ cvDepartmentName(cv) }}</div>
               <div class="cv-meta">
-                <span *ngIf="cv.experience_years">{{ cv.experience_years }}y exp</span>
+                <span *ngIf="cv.experience_years">{{ 'RECRUITMENT.CV.EXP_YEARS_SHORT' | translate:{ count: cv.experience_years } }}</span>
                 <span *ngIf="cv.nationality"> - {{ cv.nationality }}</span>
-                <span *ngIf="cv.source"> - {{ cv.source }}</span>
+                <span *ngIf="cv.source"> - {{ sourceLabel(cv.source) }}</span>
               </div>
             </div>
             <span class="cv-rating-badge" [style.background]="ratingColor(cv.rating)+'18'"
@@ -286,17 +292,17 @@
           </div>
 
           <div class="cv-card-footer">
-            <div class="cv-date">{{ cv.cv_path ? 'CV uploaded' : 'No file uploaded' }} - {{ cv.created_at | date:'dd MMM yyyy' }}</div>
+            <div class="cv-date">{{ (cv.cv_path ? 'RECRUITMENT.CV.CV_UPLOADED' : 'RECRUITMENT.CV.NO_FILE') | translate }} - {{ cv.created_at | locDate:'dd MMM yyyy' }}</div>
             <div class="cv-actions" (click)="$event.stopPropagation()">
               <a *ngIf="cv.cv_path" [href]="'/storage/'+cv.cv_path" target="_blank"
-                 class="cv-action-btn" matTooltip="View CV">
+                 class="cv-action-btn" [matTooltip]="'RECRUITMENT.CV.VIEW_CV' | translate" [attr.aria-label]="'RECRUITMENT.CV.VIEW_CV' | translate">
                 <mat-icon>description</mat-icon>
               </a>
-              <button class="cv-action-btn" matTooltip="Link to Job" *ngIf="canManageRecruitment"
+              <button class="cv-action-btn" [matTooltip]="'RECRUITMENT.CV.LINK_TO_JOB' | translate" [attr.aria-label]="'RECRUITMENT.CV.LINK_TO_JOB' | translate" *ngIf="canManageRecruitment"
                       (click)="openLinkModal(cv)">
                 <mat-icon>link</mat-icon>
               </button>
-              <button class="cv-action-btn danger" matTooltip="Remove" *ngIf="canDeleteCv(cv)"
+              <button class="cv-action-btn danger" [matTooltip]="'RECRUITMENT.CV.REMOVE' | translate" [attr.aria-label]="'RECRUITMENT.CV.REMOVE' | translate" *ngIf="canDeleteCv(cv)"
                       (click)="deleteCv(cv)">
                 <mat-icon>delete_outline</mat-icon>
               </button>
@@ -307,10 +313,10 @@
 
       <div class="cv-empty" *ngIf="!cvBankEntries.length">
         <mat-icon>folder_open</mat-icon>
-        <div>No CVs in the bank yet</div>
-        <div class="cv-empty-sub">Add candidates even without an open position</div>
+        <div>{{ 'RECRUITMENT.CV.EMPTY' | translate }}</div>
+        <div class="cv-empty-sub">{{ 'RECRUITMENT.CV.EMPTY_SUB' | translate }}</div>
         <button class="btn-primary" *ngIf="canManageRecruitment" (click)="openCvForm()">
-          <mat-icon>person_add</mat-icon> Add First CV
+          <mat-icon>person_add</mat-icon> {{ 'RECRUITMENT.CV.ADD_FIRST' | translate }}
         </button>
       </div>
     </div>
@@ -332,98 +338,99 @@
         <div class="av lg" [style.background]="avatarColor(selectedApp.applicant_name)">
           {{ initial(selectedApp.applicant_name) }}
         </div>
-        <div>
+        <div class="drawer-hdr-text">
           <div class="drawer-name">{{ selectedApp.applicant_name }}</div>
-          <div class="drawer-sub">{{ selectedApp.applicant_email }}</div>
+          <div class="drawer-sub"><span class="ltr">{{ selectedApp.applicant_email }}</span></div>
         </div>
       </div>
-      <button class="row-btn" (click)="showAppDetail=false"><mat-icon>close</mat-icon></button>
+      <button class="row-btn" (click)="showAppDetail=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
     </div>
     <div class="drawer-body">
       <div class="applicant-edit-error" role="alert" *ngIf="applicantEditError">{{ applicantEditError }}</div>
       <div class="detail-section">
-        <div class="ds-title applicant-detail-title">Application
+        <div class="ds-title applicant-detail-title">{{ 'RECRUITMENT.DETAIL.APPLICATION' | translate }}
           <button class="btn-outline" *ngIf="canEditApplicant && !editingApplicant" [disabled]="applicantEditBusy" (click)="editApplicant()">
-            <mat-icon>edit</mat-icon> Edit details
+            <mat-icon>edit</mat-icon> {{ 'RECRUITMENT.DETAIL.EDIT_DETAILS' | translate }}
           </button>
         </div>
         <form *ngIf="canEditApplicant && editingApplicant" [formGroup]="applicantEditForm" (ngSubmit)="saveApplicantDetails()" class="applicant-edit-form">
-          <label>Position *
+          <label>{{ 'RECRUITMENT.DETAIL.POSITION' | translate }} *
             <select class="field-input" formControlName="job_posting_id">
-              <option value="" disabled>Select a job position</option>
-              <option *ngFor="let job of applicantJobOptions" [ngValue]="job.id">{{ job.title }}{{ job.department?.name ? ' — ' + job.department.name : '' }} ({{ job.status }})</option>
+              <option value="" disabled>{{ 'RECRUITMENT.DETAIL.SELECT_POSITION' | translate }}</option>
+              <option *ngFor="let job of applicantJobOptions" [ngValue]="job.id">{{ job.title }}{{ job.department ? ' — ' + (job.department | locName) : '' }} ({{ job.status | statusLabel }})</option>
             </select>
           </label>
-          <span *ngIf="applicantJobsLoading" role="status">Loading positions…</span>
-          <label>Full name *<input class="field-input" formControlName="applicant_name" maxlength="255" autocomplete="name"></label>
-          <label>Email *<input class="field-input" type="email" formControlName="applicant_email" maxlength="255" autocomplete="email"></label>
-          <label>Phone *<input class="field-input" type="tel" formControlName="applicant_phone" maxlength="30" autocomplete="tel"></label>
-          <label>Expected salary (SAR)<input class="field-input" type="number" formControlName="expected_salary" min="0" max="99999999.99" step="0.01"></label>
-          <label>Available from<input class="field-input" type="date" formControlName="available_from"></label>
-          <label>Cover letter<textarea class="field-input" formControlName="cover_letter_text" rows="4" maxlength="20000"></textarea></label>
+          <span *ngIf="applicantJobsLoading" role="status">{{ 'RECRUITMENT.DETAIL.LOADING_POSITIONS' | translate }}</span>
+          <label>{{ 'RECRUITMENT.FORM.FULL_NAME' | translate }} *<input class="field-input" formControlName="applicant_name" maxlength="255" autocomplete="name"></label>
+          <label>{{ 'COMMON.EMAIL' | translate }} *<input class="field-input" type="email" dir="ltr" formControlName="applicant_email" maxlength="255" autocomplete="email"></label>
+          <label>{{ 'COMMON.PHONE' | translate }} *<input class="field-input" type="tel" dir="ltr" formControlName="applicant_phone" maxlength="30" autocomplete="tel"></label>
+          <label>{{ 'RECRUITMENT.FORM.EXPECTED_SALARY_SAR' | translate }}<input class="field-input" type="number" dir="ltr" formControlName="expected_salary" min="0" max="99999999.99" step="0.01"></label>
+          <label>{{ 'RECRUITMENT.FORM.AVAILABLE_FROM' | translate }}<input class="field-input" type="date" formControlName="available_from"></label>
+          <label>{{ 'RECRUITMENT.DETAIL.COVER_LETTER' | translate }}<textarea class="field-input" formControlName="cover_letter_text" rows="4" maxlength="20000"></textarea></label>
           <div class="applicant-edit-actions">
-            <button class="btn-outline" type="button" [disabled]="applicantEditBusy" (click)="editingApplicant=false; applicantEditError=''">Cancel</button>
-            <button class="btn-primary" type="submit" [disabled]="applicantEditBusy">{{ applicantEditBusy ? 'Saving…' : 'Save changes' }}</button>
+            <button class="btn-outline" type="button" [disabled]="applicantEditBusy" (click)="editingApplicant=false; applicantEditError=''">{{ 'COMMON.CANCEL' | translate }}</button>
+            <button class="btn-primary" type="submit" [disabled]="applicantEditBusy">{{ (applicantEditBusy ? 'COMMON.SAVING' : 'COMMON.SAVE_CHANGES') | translate }}</button>
           </div>
         </form>
         <div class="info-grid" *ngIf="!editingApplicant">
-          <div class="ig-item"><span class="ig-lbl">Job</span><span class="ig-val">{{ selectedApp.job_posting?.title }}</span></div>
-          <div class="ig-item"><span class="ig-lbl">Stage</span>
+          <div class="ig-item"><span class="ig-lbl">{{ 'RECRUITMENT.DETAIL.JOB' | translate }}</span><span class="ig-val">{{ selectedApp.job_posting?.title }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">{{ 'RECRUITMENT.DETAIL.STAGE' | translate }}</span>
             <span class="stage-pill" [style.background]="stageData(selectedApp.stage).color + '18'"
                   [style.color]="stageData(selectedApp.stage).color">
-              {{ stageData(selectedApp.stage).label }}
+              {{ selectedApp.stage | statusLabel }}
             </span>
           </div>
-          <div class="ig-item"><span class="ig-lbl">Applied</span><span class="ig-val">{{ formatDate(selectedApp.created_at) }}</span></div>
-          <div class="ig-item"><span class="ig-lbl">Phone</span><span class="ig-val">{{ selectedApp.applicant_phone || '—' }}</span></div>
-          <div class="ig-item" *ngIf="selectedApp.available_from"><span class="ig-lbl">Available from</span><span class="ig-val">{{ formatDate(selectedApp.available_from) }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">{{ 'RECRUITMENT.DETAIL.APPLIED' | translate }}</span><span class="ig-val">{{ formatDate(selectedApp.created_at) }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">{{ 'COMMON.PHONE' | translate }}</span><span class="ig-val"><span class="ltr">{{ selectedApp.applicant_phone || '—' }}</span></span></div>
+          <div class="ig-item" *ngIf="selectedApp.available_from"><span class="ig-lbl">{{ 'RECRUITMENT.FORM.AVAILABLE_FROM' | translate }}</span><span class="ig-val">{{ formatDate(selectedApp.available_from) }}</span></div>
           <div class="ig-item" *ngIf="isHR && selectedApp.expected_salary">
-            <span class="ig-lbl">Expected Salary</span>
-            <span class="ig-val">{{ selectedApp.expected_salary | number }} SAR</span>
+            <span class="ig-lbl">{{ 'RECRUITMENT.FORM.EXPECTED_SALARY' | translate }}</span>
+            <span class="ig-val">{{ selectedApp.expected_salary | number }} {{ 'COMMON.SAR' | translate }}</span>
           </div>
         </div>
       </div>
       <div class="detail-section" *ngIf="selectedApp.cv_path">
-        <div class="ds-title">CV / Resume</div>
+        <div class="ds-title">{{ 'RECRUITMENT.DETAIL.CV_RESUME' | translate }}</div>
         <a class="doc-link" [href]="'/storage/' + selectedApp.cv_path" target="_blank">
-          <mat-icon>open_in_new</mat-icon> View CV
+          <mat-icon class="flip-rtl">open_in_new</mat-icon> {{ 'RECRUITMENT.CV.VIEW_CV' | translate }}
         </a>
       </div>
       <div class="detail-section" *ngIf="selectedApp.cover_letter_text">
-        <div class="ds-title">Cover Letter</div>
+        <div class="ds-title">{{ 'RECRUITMENT.DETAIL.COVER_LETTER' | translate }}</div>
         <div class="terms-body">{{ selectedApp.cover_letter_text }}</div>
       </div>
       <div class="detail-section interview-detail" *ngIf="selectedApp.latest_interview as interview">
-        <div class="ds-title">Latest Scheduled Interview</div>
+        <div class="ds-title">{{ 'RECRUITMENT.DETAIL.LATEST_INTERVIEW' | translate }}</div>
         <div class="info-grid">
-          <div class="ig-item"><span class="ig-lbl">Date &amp; Time</span><span class="ig-val">{{ formatDateTime(interview.scheduled_at) }}</span></div>
-          <div class="ig-item"><span class="ig-lbl">Round</span><span class="ig-val">{{ interview.round || '—' }}</span></div>
-          <div class="ig-item"><span class="ig-lbl">Format</span><span class="ig-val">{{ interviewFormat(interview.format) }}</span></div>
-          <div class="ig-item"><span class="ig-lbl">Duration</span><span class="ig-val">{{ interview.duration_minutes ? interview.duration_minutes + ' minutes' : '—' }}</span></div>
-          <div class="ig-item interview-wide"><span class="ig-lbl">Interviewer(s)</span><span class="ig-val">{{ interview.interviewers?.join(', ') || '—' }}</span></div>
-          <div class="ig-item interview-wide"><span class="ig-lbl">Location / Meeting Link</span>
+          <div class="ig-item"><span class="ig-lbl">{{ 'RECRUITMENT.INTERVIEW.DATE_TIME' | translate }}</span><span class="ig-val">{{ formatDateTime(interview.scheduled_at) }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">{{ 'RECRUITMENT.INTERVIEW.ROUND' | translate }}</span><span class="ig-val">{{ roundLabel(interview.round) }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">{{ 'RECRUITMENT.INTERVIEW.FORMAT_LABEL' | translate }}</span><span class="ig-val">{{ interviewFormat(interview.format) }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">{{ 'RECRUITMENT.INTERVIEW.DURATION' | translate }}</span><span class="ig-val">{{ interview.duration_minutes ? ('RECRUITMENT.INTERVIEW.MINUTES_COUNT' | translate:{ count: interview.duration_minutes }) : '—' }}</span></div>
+          <div class="ig-item interview-wide"><span class="ig-lbl">{{ 'RECRUITMENT.DETAIL.INTERVIEWERS' | translate }}</span><span class="ig-val">{{ interview.interviewers?.join(', ') || '—' }}</span></div>
+          <div class="ig-item interview-wide"><span class="ig-lbl">{{ 'RECRUITMENT.DETAIL.LOCATION_LINK' | translate }}</span>
             <a *ngIf="isWebLink(interview.location_or_link); else locationText" class="interview-link"
                [href]="interview.location_or_link" target="_blank" rel="noopener noreferrer">
-              {{ interview.location_or_link }} <mat-icon>open_in_new</mat-icon>
+              <span class="ltr">{{ interview.location_or_link }}</span> <mat-icon class="flip-rtl">open_in_new</mat-icon>
             </a>
             <ng-template #locationText><span class="ig-val">{{ interview.location_or_link || '—' }}</span></ng-template>
           </div>
         </div>
       </div>
       <div class="detail-section" *ngIf="isHR">
-        <div class="ds-title" style="display:flex;align-items:center;justify-content:space-between">
-          HR Notes
-          <button class="icon-btn-sm" *ngIf="canEditApplicant" (click)="editingNotes=!editingNotes; hrNotesText=selectedApp.hr_notes||''">
+        <div class="ds-title ds-title-row">
+          {{ 'RECRUITMENT.DETAIL.HR_NOTES' | translate }}
+          <button class="icon-btn-sm" *ngIf="canEditApplicant" (click)="editingNotes=!editingNotes; hrNotesText=selectedApp.hr_notes||''"
+                  [attr.aria-label]="(editingNotes ? 'COMMON.CANCEL' : 'COMMON.EDIT') | translate">
             <mat-icon>{{ editingNotes ? 'close' : 'edit' }}</mat-icon>
           </button>
         </div>
         <div class="terms-body" *ngIf="!editingNotes && selectedApp.hr_notes">{{ selectedApp.hr_notes }}</div>
-        <div class="no-notes" *ngIf="!editingNotes && !selectedApp.hr_notes">No notes yet</div>
+        <div class="no-notes" *ngIf="!editingNotes && !selectedApp.hr_notes">{{ 'RECRUITMENT.DETAIL.NO_NOTES' | translate }}</div>
         <ng-container *ngIf="canEditApplicant && editingNotes">
           <textarea class="notes-input" [(ngModel)]="hrNotesText" rows="3"
-                    placeholder="Internal HR notes…"></textarea>
+                    [placeholder]="'RECRUITMENT.DETAIL.NOTES_PLACEHOLDER' | translate"></textarea>
           <button class="btn-primary" style="margin-top:6px" (click)="saveHrNotes(selectedApp)">
-            Save Notes
+            {{ 'RECRUITMENT.DETAIL.SAVE_NOTES' | translate }}
           </button>
         </ng-container>
       </div>
@@ -433,22 +440,22 @@
       <ng-container [ngSwitch]="selectedApp.stage">
         <ng-container *ngSwitchCase="'applied'">
           <button class="btn-primary" (click)="moveStage(selectedApp,'screening',$event)">
-            <mat-icon>manage_search</mat-icon> Move to Screening
+            <mat-icon>manage_search</mat-icon> {{ 'RECRUITMENT.DETAIL.MOVE_TO_SCREENING' | translate }}
           </button>
         </ng-container>
         <ng-container *ngSwitchCase="'screening'">
           <button class="btn-primary" (click)="openInterviewForm(selectedApp)">
-            <mat-icon>video_call</mat-icon> Schedule Interview
+            <mat-icon>video_call</mat-icon> {{ 'RECRUITMENT.INTERVIEW.SCHEDULE' | translate }}
           </button>
         </ng-container>
         <ng-container *ngSwitchCase="'interview'">
           <button class="btn-primary" (click)="openOfferForm(selectedApp)">
-            <mat-icon>local_offer</mat-icon> Send Offer
+            <mat-icon>local_offer</mat-icon> {{ 'RECRUITMENT.PIPELINE.SEND_OFFER' | translate }}
           </button>
         </ng-container>
         <ng-container *ngSwitchCase="'offer'">
           <button class="btn-primary" (click)="openHireForm(selectedApp, $event)">
-            <mat-icon>how_to_reg</mat-icon> Hire
+            <mat-icon>how_to_reg</mat-icon> {{ 'RECRUITMENT.DETAIL.HIRE' | translate }}
           </button>
         </ng-container>
       </ng-container>
@@ -456,9 +463,9 @@
       <button class="btn-outline btn-danger-outline"
               *ngIf="selectedApp.stage!=='hired' && selectedApp.stage!=='rejected'"
               (click)="moveStage(selectedApp,'rejected',$event); showAppDetail=false">
-        <mat-icon>cancel</mat-icon> Reject
+        <mat-icon>cancel</mat-icon> {{ 'COMMON.REJECT' | translate }}
       </button>
-      <button class="btn-outline" (click)="showAppDetail=false">Close</button>
+      <button class="btn-outline" (click)="showAppDetail=false">{{ 'COMMON.CLOSE' | translate }}</button>
     </div>
   </ng-container>
 </div>
@@ -467,87 +474,87 @@
 <div class="modal-backdrop" *ngIf="showJobForm" (click)="showJobForm=false"></div>
 <div class="modal-panel wide-modal" *ngIf="showJobForm" [formGroup]="jobForm">
   <div class="modal-hdr">
-    <h3><mat-icon>{{ editJobId ? 'edit' : 'post_add' }}</mat-icon> {{ editJobId ? 'Edit Job' : 'Post New Job' }}</h3>
-    <button class="row-btn" (click)="showJobForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>{{ editJobId ? 'edit' : 'post_add' }}</mat-icon> {{ (editJobId ? 'RECRUITMENT.JOB_FORM.EDIT_TITLE' : 'RECRUITMENT.JOB_FORM.NEW_TITLE') | translate }}</h3>
+    <button class="row-btn" (click)="showJobForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Job Position <span class="req">*</span></label>
+        <label class="field-label">{{ 'RECRUITMENT.JOB_FORM.JOB_POSITION' | translate }} <span class="req">*</span></label>
         <select class="field-select-full" formControlName="designation_id" (change)="onJobPositionChange()">
-          <option value="">Select job position</option>
+          <option value="">{{ 'RECRUITMENT.JOB_FORM.SELECT_JOB_POSITION' | translate }}</option>
           <option *ngFor="let p of jobPositionList" [value]="p.id">
-            {{ p.title }}{{ p.department?.name ? ' - ' + p.department.name : '' }}
+            {{ p | locName:'title' }}{{ p.department ? ' - ' + (p.department | locName) : '' }}
           </option>
         </select>
         <input type="hidden" formControlName="title">
       </div>
       <div class="field-group">
-        <label class="field-label">Employment Type <span class="req">*</span></label>
+        <label class="field-label">{{ 'RECRUITMENT.FORM.EMPLOYMENT_TYPE' | translate }} <span class="req">*</span></label>
         <select class="field-select-full" formControlName="employment_type">
-          <option *ngFor="let t of employmentTypes" [value]="t.value">{{ t.label }}</option>
+          <option *ngFor="let t of employmentTypes" [value]="t.value">{{ t.label | translate }}</option>
         </select>
       </div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Department</label>
+        <label class="field-label">{{ 'COMMON.DEPARTMENT' | translate }}</label>
         <select class="field-select-full" formControlName="department_id" (change)="onJobDepartmentChange()" [disabled]="!!managerDepartmentId">
-          <option value="">— Select —</option>
-          <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+          <option value="">{{ 'COMMON.SELECT_PLACEHOLDER' | translate }}</option>
+          <option *ngFor="let d of departments" [value]="d.id">{{ d | locName }}</option>
         </select>
       </div>
       <div class="field-group">
-        <label class="field-label">Status</label>
+        <label class="field-label">{{ 'COMMON.STATUS' | translate }}</label>
         <select class="field-select-full" formControlName="status">
-          <option *ngFor="let s of jobStatuses" [value]="s.value">{{ s.label }}</option>
+          <option *ngFor="let s of jobStatuses" [value]="s.value">{{ s.value | statusLabel }}</option>
         </select>
       </div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Salary Min (SAR)</label>
-        <input class="field-input" type="number" formControlName="salary_min">
+        <label class="field-label">{{ 'RECRUITMENT.JOB_FORM.SALARY_MIN' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" formControlName="salary_min">
       </div>
       <div class="field-group">
-        <label class="field-label">Salary Max (SAR)</label>
-        <input class="field-input" type="number" formControlName="salary_max">
+        <label class="field-label">{{ 'RECRUITMENT.JOB_FORM.SALARY_MAX' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" formControlName="salary_max">
       </div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Location</label>
-        <input class="field-input" placeholder="e.g. Riyadh, Remote" formControlName="location">
+        <label class="field-label">{{ 'RECRUITMENT.JOB_FORM.LOCATION' | translate }}</label>
+        <input class="field-input" [placeholder]="'RECRUITMENT.JOB_FORM.LOCATION_PLACEHOLDER' | translate" formControlName="location">
       </div>
       <div class="field-group">
-        <label class="field-label">Closing Date</label>
+        <label class="field-label">{{ 'RECRUITMENT.JOB_FORM.CLOSING_DATE' | translate }}</label>
         <input class="field-input" type="date" formControlName="closing_date">
       </div>
     </div>
     <div class="field-group">
-      <label class="field-label">Description</label>
-      <textarea class="field-textarea" rows="4" placeholder="Role overview and responsibilities…" formControlName="description"></textarea>
+      <label class="field-label">{{ 'COMMON.DESCRIPTION' | translate }}</label>
+      <textarea class="field-textarea" rows="4" [placeholder]="'RECRUITMENT.JOB_FORM.DESCRIPTION_PLACEHOLDER' | translate" formControlName="description"></textarea>
     </div>
     <div class="field-group">
-      <label class="field-label">Requirements</label>
-      <textarea class="field-textarea" rows="3" placeholder="Qualifications, experience, skills…" formControlName="requirements"></textarea>
+      <label class="field-label">{{ 'RECRUITMENT.JOB_FORM.REQUIREMENTS' | translate }}</label>
+      <textarea class="field-textarea" rows="3" [placeholder]="'RECRUITMENT.JOB_FORM.REQUIREMENTS_PLACEHOLDER' | translate" formControlName="requirements"></textarea>
     </div>
     <div class="field-group">
-      <label class="field-label">Benefits</label>
-      <textarea class="field-textarea" rows="2" placeholder="What the company offers…" formControlName="benefits"></textarea>
+      <label class="field-label">{{ 'RECRUITMENT.JOB_FORM.BENEFITS' | translate }}</label>
+      <textarea class="field-textarea" rows="2" [placeholder]="'RECRUITMENT.JOB_FORM.BENEFITS_PLACEHOLDER' | translate" formControlName="benefits"></textarea>
     </div>
   </div>
   <div class="modal-footer">
-    <div class="field-err" *ngIf="errorMsg" style="margin-right:auto">{{ errorMsg }}</div>
-    <button class="btn-outline" (click)="showJobForm=false">Cancel</button>
+    <div class="field-err footer-err" *ngIf="errorMsg">{{ errorMsg }}</div>
+    <button class="btn-outline" (click)="showJobForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="saveJob()" [disabled]="submitting">
       <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ submitting ? 'Saving…' : (editJobId ? 'Update Job' : 'Post Job') }}
+      {{ (submitting ? 'COMMON.SAVING' : (editJobId ? 'RECRUITMENT.JOB_FORM.UPDATE_JOB' : 'RECRUITMENT.POST_JOB')) | translate }}
     </button>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════
-       CV BANK TAB
+       CV BANK TAB (legacy copy, never rendered)
   ══════════════════════════════════════════════════════════════════ -->
   <ng-container *ngIf="false">
 
@@ -555,23 +562,23 @@
     <div class="cv-toolbar">
       <div class="search-wrap">
         <mat-icon class="search-ico">search</mat-icon>
-        <input class="search-input" placeholder="Search name, role, skills…"
+        <input class="search-input" [placeholder]="'RECRUITMENT.CV.SEARCH_PLACEHOLDER' | translate"
                [(ngModel)]="cvBankSearch" (keyup.enter)="loadCvBank()">
       </div>
       <select class="field-select" [(ngModel)]="cvBankRating" (change)="loadCvBank()">
-        <option value="">All Ratings</option>
-        <option *ngFor="let r of ratings" [value]="r.value">{{ r.label }}</option>
+        <option value="">{{ 'RECRUITMENT.CV.ALL_RATINGS' | translate }}</option>
+        <option *ngFor="let r of ratings" [value]="r.value">{{ r.label | translate }}</option>
       </select>
       <select class="field-select" [(ngModel)]="cvBankSource" (change)="loadCvBank()">
-        <option value="">All Sources</option>
-        <option *ngFor="let s of sources" [value]="s">{{ s }}</option>
+        <option value="">{{ 'RECRUITMENT.CV.ALL_SOURCES' | translate }}</option>
+        <option *ngFor="let s of sources" [value]="s">{{ sourceLabel(s) }}</option>
       </select>
       <select class="field-select" [(ngModel)]="cvBankDepartment" (change)="loadCvBank()">
-        <option value="">All Departments</option>
-        <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+        <option value="">{{ 'RECRUITMENT.CV.ALL_DEPARTMENTS' | translate }}</option>
+        <option *ngFor="let d of departments" [value]="d.id">{{ d | locName }}</option>
       </select>
       <button class="btn-primary" (click)="openCvForm()">
-        <mat-icon>person_add</mat-icon> Add CV
+        <mat-icon>person_add</mat-icon> {{ 'RECRUITMENT.CV.ADD_CV' | translate }}
       </button>
     </div>
 
@@ -592,9 +599,9 @@
               <div class="cv-role">{{ cvPositionLabel(cv) }}</div>
               <div class="cv-meta">{{ cvDepartmentName(cv) }}</div>
               <div class="cv-meta">
-                <span *ngIf="cv.experience_years">{{ cv.experience_years }}y exp</span>
+                <span *ngIf="cv.experience_years">{{ 'RECRUITMENT.CV.EXP_YEARS_SHORT' | translate:{ count: cv.experience_years } }}</span>
                 <span *ngIf="cv.nationality"> · {{ cv.nationality }}</span>
-                <span *ngIf="cv.source"> · {{ cv.source }}</span>
+                <span *ngIf="cv.source"> · {{ sourceLabel(cv.source) }}</span>
               </div>
             </div>
             <span class="cv-rating-badge" [style.background]="ratingColor(cv.rating)+'18'"
@@ -611,17 +618,17 @@
           </div>
 
           <div class="cv-card-footer">
-            <div class="cv-date">{{ cv.cv_path ? 'CV uploaded' : 'No file uploaded' }} - {{ cv.created_at | date:'dd MMM yyyy' }}</div>
+            <div class="cv-date">{{ (cv.cv_path ? 'RECRUITMENT.CV.CV_UPLOADED' : 'RECRUITMENT.CV.NO_FILE') | translate }} - {{ cv.created_at | locDate:'dd MMM yyyy' }}</div>
             <div class="cv-actions" (click)="$event.stopPropagation()">
               <a *ngIf="cv.cv_path" [href]="'/storage/'+cv.cv_path" target="_blank"
-                 class="cv-action-btn" matTooltip="View CV">
+                 class="cv-action-btn" [matTooltip]="'RECRUITMENT.CV.VIEW_CV' | translate">
                 <mat-icon>description</mat-icon>
               </a>
-              <button class="cv-action-btn" matTooltip="Link to Job" *ngIf="canManageRecruitment"
+              <button class="cv-action-btn" [matTooltip]="'RECRUITMENT.CV.LINK_TO_JOB' | translate" *ngIf="canManageRecruitment"
                       (click)="openLinkModal(cv)">
                 <mat-icon>link</mat-icon>
               </button>
-              <button class="cv-action-btn danger" matTooltip="Remove" *ngIf="canDeleteCv(cv)"
+              <button class="cv-action-btn danger" [matTooltip]="'RECRUITMENT.CV.REMOVE' | translate" *ngIf="canDeleteCv(cv)"
                       (click)="deleteCv(cv)">
                 <mat-icon>delete_outline</mat-icon>
               </button>
@@ -633,10 +640,10 @@
       <!-- Empty state -->
       <div class="cv-empty" *ngIf="!cvBankEntries.length">
         <mat-icon>folder_open</mat-icon>
-        <div>No CVs in the bank yet</div>
-        <div class="cv-empty-sub">Add candidates even without an open position</div>
+        <div>{{ 'RECRUITMENT.CV.EMPTY' | translate }}</div>
+        <div class="cv-empty-sub">{{ 'RECRUITMENT.CV.EMPTY_SUB' | translate }}</div>
         <button class="btn-primary" *ngIf="canManageRecruitment" (click)="openCvForm()">
-          <mat-icon>person_add</mat-icon> Add First CV
+          <mat-icon>person_add</mat-icon> {{ 'RECRUITMENT.CV.ADD_FIRST' | translate }}
         </button>
       </div>
     </div>
@@ -654,8 +661,8 @@
 <div class="modal-backdrop" *ngIf="showHireForm" (click)="showHireForm=false"></div>
 <div class="modal-panel wide-modal" *ngIf="showHireForm && selectedApp" [formGroup]="hireForm">
   <div class="modal-hdr">
-    <h3><mat-icon style="color:var(--success)">how_to_reg</mat-icon> {{ selectedApp.stage === 'hired' ? 'Resend Hire Confirmation' : 'Confirm Hire' }}</h3>
-    <button class="icon-btn" (click)="showHireForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon style="color:var(--success)">how_to_reg</mat-icon> {{ (selectedApp.stage === 'hired' ? 'RECRUITMENT.HIRE.TITLE_RESEND' : 'RECRUITMENT.HIRE.TITLE_CONFIRM') | translate }}</h3>
+    <button class="icon-btn" (click)="showHireForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
 
@@ -664,86 +671,84 @@
       <div class="cv-avatar" [style.background]="avatarColor(selectedApp.applicant_name)">
         {{ initial(selectedApp.applicant_name) }}
       </div>
-      <div>
+      <div class="hire-candidate-text">
         <div class="name-main">{{ selectedApp.applicant_name }}</div>
-        <div class="name-sub">{{ selectedApp.applicant_email }}
-          <span *ngIf="selectedApp.applicant_phone"> · {{ selectedApp.applicant_phone }}</span>
+        <div class="name-sub"><span class="ltr">{{ selectedApp.applicant_email }}</span>
+          <span *ngIf="selectedApp.applicant_phone"> · <span class="ltr">{{ selectedApp.applicant_phone }}</span></span>
         </div>
         <div class="name-sub" *ngIf="selectedApp.job_posting">
-          Applying for: <strong>{{ selectedApp.job_posting?.title }}</strong>
+          {{ 'RECRUITMENT.HIRE.APPLYING_FOR' | translate }} <strong>{{ selectedApp.job_posting?.title }}</strong>
         </div>
       </div>
     </div>
 
     <div class="hire-info-box">
       <mat-icon>info_outline</mat-icon>
-      {{ selectedApp.stage === 'hired'
-        ? 'This will reuse the existing employee and user account, generate a new password, and email a fresh onboarding link.'
-        : 'This will create an Employee record, generate login credentials, assign leave allocations, and create onboarding tasks automatically.' }}
+      {{ (selectedApp.stage === 'hired' ? 'RECRUITMENT.HIRE.INFO_RESEND' : 'RECRUITMENT.HIRE.INFO_NEW') | translate }}
     </div>
 
     <!-- Core fields -->
-    <div class="section-divider">Employment Details</div>
+    <div class="section-divider">{{ 'RECRUITMENT.HIRE.EMPLOYMENT_DETAILS' | translate }}</div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Joining Date <span class="req">*</span></label>
+        <label class="field-label">{{ 'RECRUITMENT.HIRE.JOINING_DATE' | translate }} <span class="req">*</span></label>
         <input class="field-input" type="date" formControlName="joining_date">
       </div>
       <div class="field-group">
-        <label class="field-label">Basic Salary (SAR) <span class="req">*</span></label>
-        <input class="field-input" type="number" placeholder="e.g. 8000" formControlName="salary">
-        <div class="field-hint">Housing and travel allowance will default to 25% and 10% of basic salary.</div>
+        <label class="field-label">{{ 'RECRUITMENT.HIRE.BASIC_SALARY_SAR' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="number" dir="ltr" [placeholder]="'RECRUITMENT.FORM.SALARY_PLACEHOLDER' | translate" formControlName="salary">
+        <div class="field-hint">{{ 'RECRUITMENT.HIRE.ALLOWANCE_HINT' | translate }}</div>
       </div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Department</label>
+        <label class="field-label">{{ 'COMMON.DEPARTMENT' | translate }}</label>
         <div class="field-input">{{ hireDepartmentName() }}</div>
       </div>
       <div class="field-group">
-        <label class="field-label">Position</label>
+        <label class="field-label">{{ 'RECRUITMENT.DETAIL.POSITION' | translate }}</label>
         <div class="field-input">{{ hirePositionName() }}</div>
       </div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Employment Type</label>
+        <label class="field-label">{{ 'RECRUITMENT.FORM.EMPLOYMENT_TYPE' | translate }}</label>
         <select class="field-select-full" formControlName="employment_type">
-          <option *ngFor="let t of employmentTypes" [value]="t.value">{{ t.label }}</option>
+          <option *ngFor="let t of employmentTypes" [value]="t.value">{{ t.label | translate }}</option>
         </select>
       </div>
     </div>
     <div class="field-group">
-      <label class="field-label">Probation Period (days)</label>
-      <input class="field-input" type="number" formControlName="probation_period" min="0" max="365">
-      <div class="field-hint">Standard is 90 days. A probation review task will be created automatically.</div>
+      <label class="field-label">{{ 'RECRUITMENT.HIRE.PROBATION_DAYS' | translate }}</label>
+      <input class="field-input" type="number" dir="ltr" formControlName="probation_period" min="0" max="365">
+      <div class="field-hint">{{ 'RECRUITMENT.HIRE.PROBATION_HINT' | translate }}</div>
     </div>
 
     <!-- Onboarding tasks preview -->
-    <div class="section-divider">Onboarding Tasks — will be created automatically</div>
+    <div class="section-divider">{{ 'RECRUITMENT.HIRE.ONBOARDING_TASKS_AUTO' | translate }}</div>
     <div class="onboard-tasks-preview">
-      <div class="otp-item" *ngFor="let t of ['Company laptop and accessories','Email and system accounts','ID badge and access card','Workstation and desk allocation','Employment contract','Personal documents','Bank and payroll details','Compliance training','Team introduction']">
+      <div class="otp-item" *ngFor="let t of onboardingTaskKeys">
         <mat-icon style="color:var(--success);font-size:14px;width:14px;height:14px">check_circle</mat-icon>
-        {{ t }}
+        {{ 'RECRUITMENT.ONBOARDING_TASK.' + t | translate }}
       </div>
     </div>
 
     <!-- Additional custom tasks -->
     <div class="field-group">
-      <label class="field-label">Additional Custom Tasks <span class="field-hint">(one per line, optional)</span></label>
+      <label class="field-label">{{ 'RECRUITMENT.HIRE.CUSTOM_TASKS' | translate }} <span class="field-hint">{{ 'RECRUITMENT.HIRE.CUSTOM_TASKS_HINT' | translate }}</span></label>
       <textarea class="field-textarea" rows="3" formControlName="custom_tasks"
-                placeholder="e.g. Submit medical fitness certificate&#10;Complete safety induction&#10;Collect access badge from security"></textarea>
+                [placeholder]="'RECRUITMENT.HIRE.CUSTOM_TASKS_PLACEHOLDER' | translate"></textarea>
     </div>
 
     <div class="field-err" *ngIf="errorMsg">{{ errorMsg }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showHireForm=false">Cancel</button>
+    <button class="btn-outline" (click)="showHireForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="confirmHire()" [disabled]="submitting || hireForm.invalid">
       <mat-icon>{{ submitting ? 'hourglass_empty' : 'how_to_reg' }}</mat-icon>
-      {{ submitting
-        ? (selectedApp.stage === 'hired' ? 'Sending confirmation…' : 'Creating employee record…')
-        : (selectedApp.stage === 'hired' ? 'Update Password & Resend' : 'Confirm Hire & Create Employee') }}
+      {{ (submitting
+        ? (selectedApp.stage === 'hired' ? 'RECRUITMENT.HIRE.SENDING_CONFIRMATION' : 'RECRUITMENT.HIRE.CREATING_EMPLOYEE')
+        : (selectedApp.stage === 'hired' ? 'RECRUITMENT.HIRE.UPDATE_RESEND' : 'RECRUITMENT.HIRE.CONFIRM_CREATE')) | translate }}
     </button>
   </div>
 </div>
@@ -752,8 +757,8 @@
 <div class="modal-backdrop" *ngIf="showHireSuccess" (click)="showHireSuccess=false"></div>
 <div class="modal-panel" *ngIf="showHireSuccess && hireResult" style="max-width:500px">
   <div class="modal-hdr" style="border-bottom-color:rgba(16,185,129,.3)">
-    <h3 style="color:var(--success)"><mat-icon>celebration</mat-icon> {{ hireResult.is_new_employee ? 'Employee Created!' : 'Confirmation Resent!' }}</h3>
-    <button class="icon-btn" (click)="showHireSuccess=false"><mat-icon>close</mat-icon></button>
+    <h3 style="color:var(--success)"><mat-icon>celebration</mat-icon> {{ (hireResult.is_new_employee ? 'RECRUITMENT.HIRE_SUCCESS.EMPLOYEE_CREATED' : 'RECRUITMENT.HIRE_SUCCESS.CONFIRMATION_RESENT') | translate }}</h3>
+    <button class="icon-btn" (click)="showHireSuccess=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
 
@@ -762,51 +767,51 @@
       <div class="hs-icon"><mat-icon>badge</mat-icon></div>
       <div>
         <div class="hs-name">{{ hireResult.employee?.first_name }} {{ hireResult.employee?.last_name }}</div>
-        <div class="hs-code">{{ hireResult.employee_code }} · {{ hireResult.employee?.department?.name || 'Department TBD' }}</div>
+        <div class="hs-code"><span class="ltr">{{ hireResult.employee_code }}</span> · {{ (hireResult.employee?.department | locName) || ('RECRUITMENT.HIRE_SUCCESS.DEPARTMENT_TBD' | translate) }}</div>
       </div>
     </div>
 
     <!-- Login credentials (new or reset by this confirmation) -->
     <div class="creds-box" *ngIf="hireResult.temp_password">
-      <div class="creds-title"><mat-icon>key</mat-icon> Login Credentials — share with employee</div>
+      <div class="creds-title"><mat-icon>key</mat-icon> {{ 'RECRUITMENT.HIRE_SUCCESS.CREDENTIALS_TITLE' | translate }}</div>
       <div class="cred-row">
-        <span class="cred-lbl">Email</span>
-        <span class="cred-val">{{ hireResult.login_email }}</span>
+        <span class="cred-lbl">{{ 'COMMON.EMAIL' | translate }}</span>
+        <span class="cred-val ltr">{{ hireResult.login_email }}</span>
       </div>
       <div class="cred-row">
-        <span class="cred-lbl">Password</span>
-        <span class="cred-val mono">{{ hireResult.temp_password }}</span>
+        <span class="cred-lbl">{{ 'RECRUITMENT.HIRE_SUCCESS.PASSWORD' | translate }}</span>
+        <span class="cred-val mono ltr">{{ hireResult.temp_password }}</span>
       </div>
       <div class="creds-note">
         <mat-icon>warning_amber</mat-icon>
-        Employee must change their password on first login.
+        {{ 'RECRUITMENT.HIRE_SUCCESS.CHANGE_PASSWORD_NOTE' | translate }}
       </div>
     </div>
 
     <div class="existing-account-note" *ngIf="!hireResult.is_new_account && !hireResult.temp_password">
       <mat-icon>info_outline</mat-icon>
-      An account already existed for this email — employee can log in with their existing credentials.
+      {{ 'RECRUITMENT.HIRE_SUCCESS.EXISTING_ACCOUNT' | translate }}
     </div>
 
     <!-- Onboarding tasks -->
     <div class="onboard-summary">
       <mat-icon>assignment</mat-icon>
-      <strong>{{ hireResult.onboarding_tasks }}</strong> onboarding tasks {{ hireResult.is_new_employee ? 'created' : 'available' }} in the employee's profile.
+      <span>{{ (hireResult.is_new_employee ? 'RECRUITMENT.HIRE_SUCCESS.ONBOARDING_CREATED' : 'RECRUITMENT.HIRE_SUCCESS.ONBOARDING_AVAILABLE') | translate:{ count: hireResult.onboarding_tasks } }}</span>
     </div>
 
     <!-- Document requirements to communicate -->
-    <div class="section-divider">Documents to Request from Employee</div>
+    <div class="section-divider">{{ 'RECRUITMENT.HIRE_SUCCESS.DOCS_TO_REQUEST' | translate }}</div>
     <div class="doc-checklist">
-      <div class="dc-item" *ngFor="let d of ['Copy of National ID / Iqama','Educational certificates (attested)','Bank account details for salary transfer','Signed employment contract','Passport copy (if applicable)','Medical fitness certificate']">
-        <mat-icon>description</mat-icon> {{ d }}
+      <div class="dc-item" *ngFor="let d of requiredDocKeys">
+        <mat-icon>description</mat-icon> {{ 'RECRUITMENT.REQUIRED_DOC.' + d | translate }}
       </div>
     </div>
 
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showHireSuccess=false">Close</button>
+    <button class="btn-outline" (click)="showHireSuccess=false">{{ 'COMMON.CLOSE' | translate }}</button>
     <a class="btn-primary" routerLink="/employees">
-      <mat-icon>open_in_new</mat-icon> View Employee Profile
+      <mat-icon class="flip-rtl">open_in_new</mat-icon> {{ 'RECRUITMENT.HIRE_SUCCESS.VIEW_EMPLOYEE' | translate }}
     </a>
   </div>
 </div>
@@ -814,28 +819,28 @@
 <div class="modal-backdrop" *ngIf="showCvForm" (click)="showCvForm=false"></div>
 <div class="modal-panel" *ngIf="showCvForm">
   <div class="modal-hdr">
-    <h3><mat-icon>person_add</mat-icon> Add CV to Bank</h3>
-    <button class="icon-btn" (click)="showCvForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>person_add</mat-icon> {{ 'RECRUITMENT.CV_FORM.TITLE' | translate }}</h3>
+    <button class="icon-btn" (click)="showCvForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Full Name <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="cvForm.applicant_name" placeholder="e.g. Ahmed Al-Rashidi">
+        <label class="field-label">{{ 'RECRUITMENT.FORM.FULL_NAME' | translate }} <span class="req">*</span></label>
+        <input class="field-input" [(ngModel)]="cvForm.applicant_name" [placeholder]="'RECRUITMENT.FORM.NAME_PLACEHOLDER' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Email <span class="req">*</span></label>
-        <input class="field-input" type="email" [(ngModel)]="cvForm.applicant_email">
+        <label class="field-label">{{ 'COMMON.EMAIL' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="email" dir="ltr" [(ngModel)]="cvForm.applicant_email">
       </div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Phone <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="cvForm.applicant_phone" placeholder="+966 5x xxx xxxx">
+        <label class="field-label">{{ 'COMMON.PHONE' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="tel" dir="ltr" [(ngModel)]="cvForm.applicant_phone" placeholder="+966 5x xxx xxxx">
       </div>
       <div class="field-group">
-        <label class="field-label">Job Position</label>
-        <input class="field-input" [(ngModel)]="cvForm.position_applied" list="cv-position-options" placeholder="e.g. Software Engineer">
+        <label class="field-label">{{ 'RECRUITMENT.JOB_FORM.JOB_POSITION' | translate }}</label>
+        <input class="field-input" [(ngModel)]="cvForm.position_applied" list="cv-position-options" [placeholder]="'RECRUITMENT.CV_FORM.POSITION_PLACEHOLDER' | translate">
         <datalist id="cv-position-options">
           <option *ngFor="let p of jobPositionOptions" [value]="p"></option>
         </datalist>
@@ -843,67 +848,67 @@
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Nationality</label>
-        <input class="field-input" [(ngModel)]="cvForm.nationality" placeholder="e.g. Saudi, Indian">
+        <label class="field-label">{{ 'RECRUITMENT.CV_FORM.NATIONALITY' | translate }}</label>
+        <input class="field-input" [(ngModel)]="cvForm.nationality" [placeholder]="'RECRUITMENT.CV_FORM.NATIONALITY_PLACEHOLDER' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Experience (years)</label>
-        <input class="field-input" type="number" [(ngModel)]="cvForm.experience_years" min="0" max="50">
+        <label class="field-label">{{ 'RECRUITMENT.CV_FORM.EXPERIENCE_YEARS' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" [(ngModel)]="cvForm.experience_years" min="0" max="50">
       </div>
     </div>
     <div class="field-group">
-      <label class="field-label">Department</label>
+      <label class="field-label">{{ 'COMMON.DEPARTMENT' | translate }}</label>
       <select class="field-select-full" [(ngModel)]="cvForm.department_id" [disabled]="!!managerDepartmentId">
-        <option value="">No department</option>
-        <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+        <option value="">{{ 'RECRUITMENT.CV.NO_DEPARTMENT' | translate }}</option>
+        <option *ngFor="let d of departments" [value]="d.id">{{ d | locName }}</option>
       </select>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Source</label>
+        <label class="field-label">{{ 'RECRUITMENT.CV_FORM.SOURCE' | translate }}</label>
         <select class="field-select-full" [(ngModel)]="cvForm.source">
-          <option *ngFor="let s of sources" [value]="s">{{ s }}</option>
+          <option *ngFor="let s of sources" [value]="s">{{ sourceLabel(s) }}</option>
         </select>
       </div>
       <div class="field-group">
-        <label class="field-label">Expected Salary (SAR)</label>
-        <input class="field-input" type="number" [(ngModel)]="cvForm.expected_salary">
+        <label class="field-label">{{ 'RECRUITMENT.FORM.EXPECTED_SALARY_SAR' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" [(ngModel)]="cvForm.expected_salary">
       </div>
     </div>
     <div class="field-group">
-      <label class="field-label">Skills <span class="field-hint">(comma separated)</span></label>
-      <input class="field-input" [(ngModel)]="cvForm.skills" placeholder="e.g. Angular, Laravel, MySQL">
+      <label class="field-label">{{ 'RECRUITMENT.CV_FORM.SKILLS' | translate }} <span class="field-hint">{{ 'RECRUITMENT.CV_FORM.COMMA_SEPARATED' | translate }}</span></label>
+      <input class="field-input" [(ngModel)]="cvForm.skills" [placeholder]="'RECRUITMENT.CV_FORM.SKILLS_PLACEHOLDER' | translate">
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Available From</label>
+        <label class="field-label">{{ 'RECRUITMENT.FORM.AVAILABLE_FROM' | translate }}</label>
         <input class="field-input" type="date" [(ngModel)]="cvForm.available_from">
       </div>
       <div class="field-group">
-        <label class="field-label">Rating</label>
+        <label class="field-label">{{ 'RECRUITMENT.CV_FORM.RATING' | translate }}</label>
         <select class="field-select-full" [(ngModel)]="cvForm.rating">
-          <option *ngFor="let r of ratings" [value]="r.value">{{ r.label }}</option>
+          <option *ngFor="let r of ratings" [value]="r.value">{{ r.label | translate }}</option>
         </select>
       </div>
     </div>
     <div class="field-group">
-      <label class="field-label">Notes</label>
+      <label class="field-label">{{ 'COMMON.NOTES' | translate }}</label>
       <textarea class="field-textarea" rows="2" [(ngModel)]="cvForm.notes"
-                placeholder="Internal notes about this candidate…"></textarea>
+                [placeholder]="'RECRUITMENT.CV_FORM.NOTES_PLACEHOLDER' | translate"></textarea>
     </div>
     <div class="field-group">
-      <label class="field-label">CV File <span class="field-hint">(PDF, DOC — max 5 MB)</span></label>
+      <label class="field-label">{{ 'RECRUITMENT.FORM.CV_FILE' | translate }} <span class="field-hint">{{ 'RECRUITMENT.FORM.CV_FILE_HINT' | translate }}</span></label>
       <input type="file" accept=".pdf,.doc,.docx" (change)="onCvFileSelected($event)"
-             style="font-size:12px;color:var(--text2)">
+             class="file-input">
       <div class="field-err" *ngIf="cvFileError">{{ cvFileError }}</div>
     </div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showCvForm=false">Cancel</button>
+    <button class="btn-outline" (click)="showCvForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="submitCv()"
             [disabled]="cvFormSubmitting || !cvForm.applicant_name || !cvForm.applicant_email || !cvForm.applicant_phone">
       <mat-icon>{{ cvFormSubmitting ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ cvFormSubmitting ? 'Saving…' : 'Save to CV Bank' }}
+      {{ (cvFormSubmitting ? 'COMMON.SAVING' : 'RECRUITMENT.CV_FORM.SAVE') | translate }}
     </button>
   </div>
 </div>
@@ -912,28 +917,27 @@
 <div class="modal-backdrop" *ngIf="showLinkModal" (click)="showLinkModal=false"></div>
 <div class="modal-panel" *ngIf="showLinkModal" style="max-width:400px">
   <div class="modal-hdr">
-    <h3><mat-icon>link</mat-icon> Link CV to Job</h3>
-    <button class="icon-btn" (click)="showLinkModal=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>link</mat-icon> {{ 'RECRUITMENT.LINK.TITLE' | translate }}</h3>
+    <button class="icon-btn" (click)="showLinkModal=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <p style="font-size:13px;color:var(--text2);margin-bottom:12px">
-      Linking <strong>{{ selectedCv?.applicant_name }}</strong> to a job will move them into
-      the applicant pipeline for that position.
+      <strong>{{ selectedCv?.applicant_name }}</strong> — {{ 'RECRUITMENT.LINK.INTRO' | translate }}
     </p>
     <div class="field-group">
-      <label class="field-label">Select Job Posting <span class="req">*</span></label>
+      <label class="field-label">{{ 'RECRUITMENT.LINK.SELECT_JOB_POSTING' | translate }} <span class="req">*</span></label>
       <select class="field-select-full" [(ngModel)]="linkJobId">
-        <option value="">— Select a job —</option>
+        <option value="">{{ 'RECRUITMENT.FORM.SELECT_JOB' | translate }}</option>
         <option *ngFor="let j of jobs" [value]="j.id">
-          {{ j.title }} ({{ j.status }})
+          {{ j.title }} ({{ j.status | statusLabel }})
         </option>
       </select>
     </div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showLinkModal=false">Cancel</button>
+    <button class="btn-outline" (click)="showLinkModal=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="confirmLink()" [disabled]="!linkJobId">
-      <mat-icon>link</mat-icon> Link to Job
+      <mat-icon>link</mat-icon> {{ 'RECRUITMENT.CV.LINK_TO_JOB' | translate }}
     </button>
   </div>
 </div>
@@ -941,8 +945,8 @@
 <div class="modal-backdrop" *ngIf="showOfferForm" (click)="showOfferForm=false"></div>
 <div class="modal-panel" *ngIf="showOfferForm" style="max-width:440px">
   <div class="modal-hdr">
-    <h3><mat-icon style="color:var(--accent)">local_offer</mat-icon> Send Job Offer</h3>
-    <button class="icon-btn" (click)="showOfferForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon style="color:var(--accent)">local_offer</mat-icon> {{ 'RECRUITMENT.OFFER.TITLE' | translate }}</h3>
+    <button class="icon-btn" (click)="showOfferForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body" *ngIf="selectedApp">
     <div class="approve-info">
@@ -950,45 +954,45 @@
       <div class="name-sub">{{ selectedApp.job_posting?.title }}</div>
     </div>
     <div class="field-group">
-      <label class="field-label">Basic Salary (SAR/month) <span class="req">*</span></label>
-      <input class="field-input" type="number" [(ngModel)]="offerForm.basic_salary"
-             (ngModelChange)="onOfferBasicSalaryChange($event)" placeholder="e.g. 8000">
+      <label class="field-label">{{ 'RECRUITMENT.OFFER.BASIC_SALARY_MONTH' | translate }} <span class="req">*</span></label>
+      <input class="field-input" type="number" dir="ltr" [(ngModel)]="offerForm.basic_salary"
+             (ngModelChange)="onOfferBasicSalaryChange($event)" [placeholder]="'RECRUITMENT.FORM.SALARY_PLACEHOLDER' | translate">
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Housing Allowance</label>
-        <input class="field-input" type="number" [(ngModel)]="offerForm.housing_allowance"
-               placeholder="25% of basic">
-        <span class="field-hint">Default 25% of basic salary.</span>
+        <label class="field-label">{{ 'RECRUITMENT.OFFER.HOUSING' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" [(ngModel)]="offerForm.housing_allowance"
+               [placeholder]="'RECRUITMENT.OFFER.HOUSING_PLACEHOLDER' | translate">
+        <span class="field-hint">{{ 'RECRUITMENT.OFFER.HOUSING_HINT' | translate }}</span>
       </div>
       <div class="field-group">
-        <label class="field-label">Travel Allowance</label>
-        <input class="field-input" type="number" [(ngModel)]="offerForm.transport_allowance"
-               placeholder="10% of basic">
-        <span class="field-hint">Default 10% of basic salary.</span>
+        <label class="field-label">{{ 'RECRUITMENT.OFFER.TRAVEL' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" [(ngModel)]="offerForm.transport_allowance"
+               [placeholder]="'RECRUITMENT.OFFER.TRAVEL_PLACEHOLDER' | translate">
+        <span class="field-hint">{{ 'RECRUITMENT.OFFER.TRAVEL_HINT' | translate }}</span>
       </div>
     </div>
     <div class="field-group">
-      <label class="field-label">Other Allowance <span class="field-hint">(optional)</span></label>
-      <input class="field-input" type="number" [(ngModel)]="offerForm.other_allowance"
-             placeholder="e.g. 500">
+      <label class="field-label">{{ 'RECRUITMENT.OFFER.OTHER' | translate }} <span class="field-hint">({{ 'COMMON.OPTIONAL' | translate }})</span></label>
+      <input class="field-input" type="number" dir="ltr" [(ngModel)]="offerForm.other_allowance"
+             [placeholder]="'RECRUITMENT.OFFER.OTHER_PLACEHOLDER' | translate">
     </div>
     <div class="salary-summary-box">
-      <span>Estimated Gross Salary</span>
-      <strong>SAR {{ offerGrossSalary() | number:'1.2-2' }}</strong>
+      <span>{{ 'RECRUITMENT.OFFER.GROSS' | translate }}</span>
+      <strong>{{ 'COMMON.SAR' | translate }} {{ offerGrossSalary() | number:'1.2-2' }}</strong>
     </div>
     <div class="field-group">
-      <label class="field-label">Offer Notes <span class="field-hint">(optional)</span></label>
+      <label class="field-label">{{ 'RECRUITMENT.OFFER.NOTES' | translate }} <span class="field-hint">({{ 'COMMON.OPTIONAL' | translate }})</span></label>
       <textarea class="field-textarea" rows="3" [(ngModel)]="offerForm.notes"
-                placeholder="Joining date, benefits, any special terms…"></textarea>
+                [placeholder]="'RECRUITMENT.OFFER.NOTES_PLACEHOLDER' | translate"></textarea>
     </div>
     <div class="field-err" *ngIf="errorMsg">{{ errorMsg }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showOfferForm=false">Cancel</button>
+    <button class="btn-outline" (click)="showOfferForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="sendOffer()" [disabled]="offerSubmitting || !offerForm.basic_salary">
-      <mat-icon>{{ offerSubmitting ? 'hourglass_empty' : 'send' }}</mat-icon>
-      {{ offerSubmitting ? 'Sending…' : 'Send Offer' }}
+      <mat-icon [class.flip-rtl]="!offerSubmitting">{{ offerSubmitting ? 'hourglass_empty' : 'send' }}</mat-icon>
+      {{ (offerSubmitting ? 'RECRUITMENT.OFFER.SENDING' : 'RECRUITMENT.PIPELINE.SEND_OFFER') | translate }}
     </button>
   </div>
 </div>
@@ -997,8 +1001,8 @@
 <div class="modal-backdrop" *ngIf="showInterviewForm" (click)="showInterviewForm=false"></div>
 <div class="modal-panel" *ngIf="showInterviewForm">
   <div class="modal-hdr">
-    <h3><mat-icon style="color:var(--warning)">video_call</mat-icon> Schedule Interview</h3>
-    <button class="icon-btn" (click)="showInterviewForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon style="color:var(--warning)">video_call</mat-icon> {{ 'RECRUITMENT.INTERVIEW.SCHEDULE' | translate }}</h3>
+    <button class="icon-btn" (click)="showInterviewForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body" *ngIf="selectedApp">
     <div class="approve-info">
@@ -1007,46 +1011,44 @@
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Round <span class="req">*</span></label>
+        <label class="field-label">{{ 'RECRUITMENT.INTERVIEW.ROUND' | translate }} <span class="req">*</span></label>
         <select class="field-select-full" [(ngModel)]="interviewForm.round">
-          <option>HR</option>
-          <option>Technical</option>
-          <option>Manager</option>
-          <option>Final</option>
+          <option *ngFor="let r of interviewRounds" [value]="r.value">{{ r.label | translate }}</option>
         </select>
       </div>
       <div class="field-group">
-        <label class="field-label">Format</label>
+        <label class="field-label">{{ 'RECRUITMENT.INTERVIEW.FORMAT_LABEL' | translate }}</label>
         <select class="field-select-full" [ngModel]="interviewForm.format" (ngModelChange)="onInterviewFormatChange($event)">
-          <option value="video">Video Call</option>
-          <option value="in_person">Face to Face</option>
-          <option value="phone">Phone</option>
+          <option value="video">{{ 'RECRUITMENT.INTERVIEW.FORMAT_OPTION.VIDEO_CALL' | translate }}</option>
+          <option value="in_person">{{ 'RECRUITMENT.INTERVIEW.FORMAT_OPTION.FACE_TO_FACE' | translate }}</option>
+          <option value="phone">{{ 'RECRUITMENT.INTERVIEW.FORMAT.PHONE' | translate }}</option>
         </select>
       </div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Date & Time <span class="req">*</span></label>
+        <label class="field-label">{{ 'RECRUITMENT.INTERVIEW.DATE_TIME' | translate }} <span class="req">*</span></label>
         <input class="field-input" type="datetime-local" [(ngModel)]="interviewForm.scheduled_at">
       </div>
       <div class="field-group">
-        <label class="field-label">Duration (minutes)</label>
-        <input class="field-input" type="number" [(ngModel)]="interviewForm.duration_minutes" min="15" max="180">
+        <label class="field-label">{{ 'RECRUITMENT.INTERVIEW.DURATION_MINUTES' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" [(ngModel)]="interviewForm.duration_minutes" min="15" max="180">
       </div>
     </div>
     <div class="field-group">
       <label class="field-label">{{ interviewLocationLabel() }} <span class="req">*</span></label>
       <input class="field-input" [(ngModel)]="interviewForm.location_or_link"
+             [attr.dir]="interviewForm.format === 'phone' ? null : 'ltr'"
              [placeholder]="interviewLocationPlaceholder()">
     </div>
     <div class="field-group">
-      <label class="field-label">Interviewers <span class="req">*</span></label>
+      <label class="field-label">{{ 'RECRUITMENT.DETAIL.INTERVIEWERS' | translate }} <span class="req">*</span></label>
       <div class="interviewer-search-wrap">
         <mat-icon>search</mat-icon>
         <input class="field-input" [(ngModel)]="interviewerSearch"
-               placeholder="Search by name, code, department, or email">
+               [placeholder]="'RECRUITMENT.INTERVIEW.SEARCH_PLACEHOLDER' | translate">
         <button type="button" class="interviewer-search-clear" *ngIf="interviewerSearch"
-                (click)="interviewerSearch=''" aria-label="Clear interviewer search">
+                (click)="interviewerSearch=''" [attr.aria-label]="'RECRUITMENT.INTERVIEW.CLEAR_SEARCH' | translate">
           <mat-icon>close</mat-icon>
         </button>
       </div>
@@ -1057,24 +1059,24 @@
                  (change)="toggleInterviewer(e.id, $any($event.target).checked)">
           <span>
             <strong>{{ e.first_name }} {{ e.last_name }}</strong>
-            <small>{{ e.employee_code }}{{ e.department?.name ? ' - ' + e.department.name : '' }}</small>
+            <small>{{ e.employee_code }}{{ e.department ? ' - ' + (e.department | locName) : '' }}</small>
           </span>
         </label>
         <div class="interviewer-empty" *ngIf="!filteredInterviewers().length">
-          No matching interviewers
+          {{ 'RECRUITMENT.INTERVIEW.NO_MATCH' | translate }}
         </div>
       </div>
       <span class="field-hint" *ngIf="interviewForm.interviewer_employee_ids?.length">
-        Selected: {{ selectedInterviewersText() }}
+        {{ 'RECRUITMENT.INTERVIEW.SELECTED' | translate:{ names: selectedInterviewersText() } }}
       </span>
     </div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showInterviewForm=false">Cancel</button>
+    <button class="btn-outline" (click)="showInterviewForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="submitInterview()"
             [disabled]="interviewSubmitting || !interviewForm.scheduled_at || !interviewForm.location_or_link || !interviewForm.interviewer_employee_ids?.length">
       <mat-icon>{{ interviewSubmitting ? 'hourglass_empty' : 'event' }}</mat-icon>
-      {{ interviewSubmitting ? 'Scheduling…' : 'Schedule Interview' }}
+      {{ (interviewSubmitting ? 'RECRUITMENT.INTERVIEW.SCHEDULING' : 'RECRUITMENT.INTERVIEW.SCHEDULE') | translate }}
     </button>
   </div>
 </div>
@@ -1082,80 +1084,80 @@
 <div class="modal-backdrop" *ngIf="showAddApplicant" (click)="showAddApplicant=false"></div>
 <div class="modal-panel" *ngIf="showAddApplicant">
   <div class="modal-hdr">
-    <h3><mat-icon>person_add</mat-icon> Add Applicant</h3>
-    <button class="icon-btn" (click)="showAddApplicant=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>person_add</mat-icon> {{ 'RECRUITMENT.PIPELINE.ADD_APPLICANT' | translate }}</h3>
+    <button class="icon-btn" (click)="showAddApplicant=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
 
     <div class="field-group">
-      <label class="field-label">Job Posting <span class="req">*</span></label>
+      <label class="field-label">{{ 'RECRUITMENT.APPLICANT_FORM.JOB_POSTING' | translate }} <span class="req">*</span></label>
       <select class="field-select-full" [(ngModel)]="applicantForm.job_posting_id">
-        <option value="">— Select a job —</option>
+        <option value="">{{ 'RECRUITMENT.FORM.SELECT_JOB' | translate }}</option>
         <option *ngFor="let j of jobs" [value]="j.id">
-          {{ j.title }} <span *ngIf="j.department">({{ j.department?.name }})</span>
+          {{ j.title }} <span *ngIf="j.department">({{ j.department | locName }})</span>
         </option>
       </select>
     </div>
 
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Full Name <span class="req">*</span></label>
+        <label class="field-label">{{ 'RECRUITMENT.FORM.FULL_NAME' | translate }} <span class="req">*</span></label>
         <input class="field-input" [(ngModel)]="applicantForm.applicant_name"
-               placeholder="e.g. Ahmed Al-Rashidi">
+               [placeholder]="'RECRUITMENT.FORM.NAME_PLACEHOLDER' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Email <span class="req">*</span></label>
-        <input class="field-input" type="email" [(ngModel)]="applicantForm.applicant_email"
-               placeholder="e.g. ahmed@email.com">
+        <label class="field-label">{{ 'COMMON.EMAIL' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="email" dir="ltr" [(ngModel)]="applicantForm.applicant_email"
+               placeholder="ahmed@email.com">
       </div>
     </div>
 
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Phone</label>
-        <input class="field-input" [(ngModel)]="applicantForm.applicant_phone"
+        <label class="field-label">{{ 'COMMON.PHONE' | translate }}</label>
+        <input class="field-input" type="tel" dir="ltr" [(ngModel)]="applicantForm.applicant_phone"
                placeholder="+966 5x xxx xxxx">
       </div>
       <div class="field-group">
-        <label class="field-label">Expected Salary (SAR)</label>
-        <input class="field-input" type="number" [(ngModel)]="applicantForm.expected_salary">
+        <label class="field-label">{{ 'RECRUITMENT.FORM.EXPECTED_SALARY_SAR' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" [(ngModel)]="applicantForm.expected_salary">
       </div>
     </div>
 
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Available From</label>
+        <label class="field-label">{{ 'RECRUITMENT.FORM.AVAILABLE_FROM' | translate }}</label>
         <input class="field-input" type="date" [(ngModel)]="applicantForm.available_from">
       </div>
       <div class="field-group">
-        <label class="field-label">Initial Stage</label>
+        <label class="field-label">{{ 'RECRUITMENT.APPLICANT_FORM.INITIAL_STAGE' | translate }}</label>
         <select class="field-select-full" [(ngModel)]="applicantForm.stage">
-          <option *ngFor="let s of stages.slice(0,4)" [value]="s.value">{{ s.label }}</option>
+          <option *ngFor="let s of stages.slice(0,4)" [value]="s.value">{{ s.value | statusLabel }}</option>
         </select>
       </div>
     </div>
 
     <div class="field-group">
-      <label class="field-label">Cover Letter / Notes</label>
+      <label class="field-label">{{ 'RECRUITMENT.APPLICANT_FORM.COVER_NOTES' | translate }}</label>
       <textarea class="field-textarea" rows="3" [(ngModel)]="applicantForm.cover_letter_text"
-                placeholder="Notes about this candidate, referral source, etc…"></textarea>
+                [placeholder]="'RECRUITMENT.APPLICANT_FORM.COVER_NOTES_PLACEHOLDER' | translate"></textarea>
     </div>
 
     <div class="field-group">
-      <label class="field-label">CV File <span class="field-hint">(PDF, DOC — max 5 MB)</span></label>
+      <label class="field-label">{{ 'RECRUITMENT.FORM.CV_FILE' | translate }} <span class="field-hint">{{ 'RECRUITMENT.FORM.CV_FILE_HINT' | translate }}</span></label>
       <input type="file" accept=".pdf,.doc,.docx" (change)="onApplicantFileSelected($event)"
-             style="font-size:12px;color:var(--text2)">
+             class="file-input">
       <div class="field-err" *ngIf="applicantFileError">{{ applicantFileError }}</div>
     </div>
 
     <div class="field-err" *ngIf="errorMsg">{{ errorMsg }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showAddApplicant=false">Cancel</button>
+    <button class="btn-outline" (click)="showAddApplicant=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="submitApplicant()"
             [disabled]="addApplicantBusy || !applicantForm.job_posting_id || !applicantForm.applicant_name || !applicantForm.applicant_email || !applicantForm.applicant_phone">
       <mat-icon>{{ addApplicantBusy ? 'hourglass_empty' : 'person_add' }}</mat-icon>
-      {{ addApplicantBusy ? 'Adding…' : 'Add to Pipeline' }}
+      {{ (addApplicantBusy ? 'RECRUITMENT.APPLICANT_FORM.ADDING' : 'RECRUITMENT.APPLICANT_FORM.ADD_TO_PIPELINE') | translate }}
     </button>
   </div>
 </div>

@@ -3,12 +3,12 @@
   <!-- ── Page Header ─────────────────────────────────────────────────────── -->
   <div class="page-hdr">
     <div>
-      <h1 class="page-title">Leave Management</h1>
-      <p class="page-sub" *ngIf="isHR">Requests · Calendar · Balances · Leave Types · Holidays</p>
-      <p class="page-sub" *ngIf="!isHR">Requests · Calendar · Balances · Holidays</p>
+      <h1 class="page-title">{{ 'LEAVE.TITLE' | translate }}</h1>
+      <p class="page-sub" *ngIf="isHR">{{ 'LEAVE.SUBTITLE_HR' | translate }}</p>
+      <p class="page-sub" *ngIf="!isHR">{{ 'LEAVE.SUBTITLE' | translate }}</p>
     </div>
     <button class="btn-primary" (click)="openNewRequest()">
-      <mat-icon>add</mat-icon> New Request
+      <mat-icon>add</mat-icon> {{ 'LEAVE.NEW_REQUEST' | translate }}
     </button>
   </div>
 
@@ -20,7 +20,7 @@
       </div>
       <div>
         <div class="stat-val">{{ s.value }}</div>
-        <div class="stat-lbl">{{ s.label }}</div>
+        <div class="stat-lbl">{{ s.label | translate }}</div>
       </div>
     </div>
   </div>
@@ -28,31 +28,33 @@
   <!-- ── My Balance Cards ────────────────────────────────────────────────── -->
   <div class="balance-row" *ngIf="myBalances.length || annualBalanceToday">
     <div class="bal-card annual-today-card" *ngIf="annualBalanceToday">
+      <!-- Phone only: ring showing the share of the year's annual leave still available -->
+      <div class="bal-ring" [style.--pct]="100 - balancePct(annualBalanceToday)" aria-hidden="true"></div>
       <div class="bal-type-dot today-dot"></div>
       <div class="bal-content">
-        <div class="bal-name">Annual Leave Today</div>
+        <div class="bal-name">{{ 'LEAVE.BALANCE.ANNUAL_TODAY' | translate }}</div>
         <div class="bal-numbers">
           <span class="bal-remain">{{ annualBalanceToday.remaining_days | number:'1.1-1' }}</span>
-          <span class="bal-total">days remaining</span>
+          <span class="bal-total">{{ 'LEAVE.BALANCE.DAYS_REMAINING' | translate }}</span>
         </div>
         <div class="bal-track">
           <div class="bal-fill today-fill" [style.width.%]="balancePct(annualBalanceToday)"></div>
         </div>
         <div class="bal-meta">
-          <span>As of {{ annualBalanceToday.balance_as_of | date:'dd MMM yyyy' }}</span>
-          <span>Earned {{ annualBalanceToday.allocated_days | number:'1.1-1' }}</span>
+          <span>{{ 'LEAVE.BALANCE.AS_OF' | translate:{ date: (annualBalanceToday.balance_as_of | locDate:'dd MMM yyyy') } }}</span>
+          <span>{{ 'LEAVE.BALANCE.EARNED' | translate:{ value: (annualBalanceToday.allocated_days | number:'1.1-1') } }}</span>
           <span *ngIf="carryForwardSummary(annualBalanceToday)">{{ carryForwardSummary(annualBalanceToday) }}</span>
-          <span>Taken this period {{ (annualBalanceToday.approved_taken_contract_period || annualBalanceToday.used_days) | number:'1.1-1' }}</span>
+          <span>{{ 'LEAVE.BALANCE.TAKEN_PERIOD' | translate:{ value: ((annualBalanceToday.approved_taken_contract_period || annualBalanceToday.used_days) | number:'1.1-1') } }}</span>
         </div>
       </div>
     </div>
     <div class="bal-card" *ngFor="let b of myBalances">
       <div class="bal-type-dot" [style.background]="leaveTypeColor(b.leave_type?.name)"></div>
       <div class="bal-content">
-        <div class="bal-name">{{ b.leave_type?.name }}</div>
+        <div class="bal-name">{{ b.leave_type | locName }}</div>
         <div class="bal-numbers">
           <span class="bal-remain">{{ b.remaining_days | number:'1.1-1' }}</span>
-          <span class="bal-total">/ {{ balanceTotalDays(b) | number:'1.1-1' }} days</span>
+          <span class="bal-total">{{ 'LEAVE.BALANCE.OF_TOTAL_DAYS' | translate:{ total: (balanceTotalDays(b) | number:'1.1-1') } }}</span>
         </div>
         <div class="bal-track">
           <div class="bal-fill"
@@ -61,21 +63,21 @@
           </div>
         </div>
         <div class="bal-meta">
-          <span *ngIf="isAnnualBalance(b)">Base {{ b.allocated_days | number:'1.1-1' }}</span>
+          <span *ngIf="isAnnualBalance(b)">{{ 'LEAVE.BALANCE.BASE' | translate:{ value: (b.allocated_days | number:'1.1-1') } }}</span>
           <span *ngIf="carryForwardSummary(b)">{{ carryForwardSummary(b) }}</span>
-          <span>Used {{ b.used_days }}</span>
-          <span *ngIf="b.pending_days > 0" style="color:var(--warning)">Pending {{ b.pending_days }}</span>
+          <span>{{ 'LEAVE.BALANCE.USED' | translate:{ value: b.used_days } }}</span>
+          <span *ngIf="b.pending_days > 0" style="color:var(--warning)">{{ 'LEAVE.BALANCE.PENDING' | translate:{ value: b.pending_days } }}</span>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ── Main Tabs ───────────────────────────────────────────────────────── -->
-  <div class="main-tabs">
+  <div class="main-tabs" role="tablist">
     <ng-container *ngFor="let t of tabs">
-      <button *ngIf="(t.id !== 'types' || isHR) && (t.id !== 'my_requests' || showMyRequestsTab)" class="main-tab" [class.active]="activeTab===t.id" (click)="switchTab(t.id)">
+      <button *ngIf="(t.id !== 'types' || isHR) && (t.id !== 'my_requests' || showMyRequestsTab)" class="main-tab" role="tab" [attr.aria-selected]="activeTab===t.id" [class.active]="activeTab===t.id" (click)="switchTab(t.id)">
         <mat-icon>{{ t.icon }}</mat-icon>
-        {{ t.label }}
+        {{ t.label | translate }}
       </button>
     </ng-container>
   </div>
@@ -90,7 +92,7 @@
       <div class="status-tabs">
         <button *ngFor="let t of requestStatusTabs()" class="stab" [class.active]="activeStatus===t.id"
           (click)="switchStatus(t.id)">
-          {{ t.label }}
+          {{ t.label | translate }}
           <span class="stab-badge" *ngIf="statusCount(t.id) > 0">
             {{ statusCount(t.id) }}
           </span>
@@ -99,60 +101,61 @@
       <div class="filter-row">
         <div class="search-wrap">
           <mat-icon class="search-ico">search</mat-icon>
-          <input class="search-input" placeholder="Search employee…" [(ngModel)]="filterSearch" (ngModelChange)="onRequestSearchChange()" (keyup.enter)="load(1)">
+          <input class="search-input" [placeholder]="'LEAVE.REQUESTS.SEARCH_EMPLOYEE' | translate" [attr.aria-label]="'LEAVE.REQUESTS.SEARCH_EMPLOYEE' | translate" [(ngModel)]="filterSearch" (ngModelChange)="onRequestSearchChange()" (keyup.enter)="load(1)">
         </div>
-        <select class="field-select" [(ngModel)]="filterType" (change)="load(1)">
-          <option value="">All Types</option>
-          <option *ngFor="let t of leaveTypes" [value]="t.id">{{ t.name }}</option>
+        <select class="field-select" [(ngModel)]="filterType" (change)="load(1)" [attr.aria-label]="'COMMON.TYPE' | translate">
+          <option value="">{{ 'LEAVE.REQUESTS.ALL_TYPES' | translate }}</option>
+          <option *ngFor="let t of leaveTypes" [value]="t.id">{{ t | locName }}</option>
         </select>
         <button class="btn-outline" *ngIf="isHR" (click)="downloadLeaveDetailsReport()">
-          <mat-icon>download</mat-icon> Leave Report
+          <mat-icon>download</mat-icon> {{ 'LEAVE.REQUESTS.LEAVE_REPORT' | translate }}
         </button>
       </div>
     </div>
 
     <!-- Requests table -->
     <div class="data-card">
-      <table mat-table [dataSource]="requests">
+      <div class="table-scroll">
+      <table mat-table [dataSource]="requests" class="requests-table m-cards">
 
         <ng-container matColumnDef="employee">
-          <th mat-header-cell *matHeaderCellDef>Employee</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.EMPLOYEE' | translate }}</th>
           <td mat-cell *matCellDef="let r">
             <div class="emp-cell">
               <div class="emp-avatar" [style.background]="avatarColor(r.employee?.first_name)">
                 {{ (r.employee?.first_name||'?')[0] }}{{ (r.employee?.last_name||'')[0] }}
               </div>
               <div>
-                <div class="name-main">{{ r.employee?.first_name }} {{ r.employee?.last_name }}</div>
-                <div class="name-sub">{{ r.employee?.department?.name || '—' }}</div>
+                <div class="name-main">{{ employeeName(r.employee) }}</div>
+                <div class="name-sub">{{ (r.employee?.department | locName) || '—' }}</div>
               </div>
             </div>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="type">
-          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.TYPE' | translate }}</th>
           <td mat-cell *matCellDef="let r">
             <span class="type-pill" [style.background]="leaveTypeColor(r.leave_type?.name)+'22'"
               [style.color]="leaveTypeColor(r.leave_type?.name)">
-              {{ r.leave_type?.name || '—' }}
+              {{ (r.leave_type | locName) || '—' }}
             </span>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="dates">
-          <th mat-header-cell *matHeaderCellDef>Date / Time</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.REQUESTS.DATE_TIME' | translate }}</th>
           <td mat-cell *matCellDef="let r">
             <ng-container *ngIf="!r.leave_type?.is_hourly">
               <div class="date-range">
-                <span>{{ r.start_date | date:'dd MMM' }}</span>
-                <mat-icon class="arrow-ico">arrow_forward</mat-icon>
-                <span>{{ r.end_date | date:'dd MMM yyyy' }}</span>
+                <span>{{ r.start_date | locDate:'dd MMM' }}</span>
+                <mat-icon class="arrow-ico flip-rtl">arrow_forward</mat-icon>
+                <span>{{ r.end_date | locDate:'dd MMM yyyy' }}</span>
               </div>
             </ng-container>
             <ng-container *ngIf="r.leave_type?.is_hourly">
               <div class="date-range">
-                <span>{{ r.start_date | date:'dd MMM yyyy' }}</span>
+                <span>{{ r.start_date | locDate:'dd MMM yyyy' }}</span>
               </div>
               <div class="time-range">
                 {{ r.start_time }} – {{ r.end_time }}
@@ -162,27 +165,27 @@
         </ng-container>
 
         <ng-container matColumnDef="days">
-          <th mat-header-cell *matHeaderCellDef>Duration</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.REQUESTS.DURATION' | translate }}</th>
           <td mat-cell *matCellDef="let r">
             <span class="days-badge half-badge" *ngIf="!r.leave_type?.is_hourly && r.is_half_day">
-              ½ {{ r.half_day_period || 'day' }}
+              ½ {{ optionalLabel('LEAVE.PERIOD', r.half_day_period || 'day') }}
             </span>
-            <span class="days-badge" *ngIf="!r.leave_type?.is_hourly && !r.is_half_day">{{ r.total_days }} d</span>
+            <span class="days-badge" *ngIf="!r.leave_type?.is_hourly && !r.is_half_day">{{ 'LEAVE.UNITS.DAYS_SHORT' | translate:{ count: r.total_days } }}</span>
             <span class="hours-badge" *ngIf="r.leave_type?.is_hourly">
-              <mat-icon>timer</mat-icon>{{ r.total_hours }}h
+              <mat-icon>timer</mat-icon>{{ 'LEAVE.UNITS.HOURS_SHORT' | translate:{ count: r.total_hours } }}
             </span>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="reason">
-          <th mat-header-cell *matHeaderCellDef>Reason</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.REASON' | translate }}</th>
           <td mat-cell *matCellDef="let r" class="reason-cell">
             {{ r.reason | slice:0:50 }}{{ r.reason?.length > 50 ? '…' : '' }}
           </td>
         </ng-container>
 
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.STATUS' | translate }}</th>
           <td mat-cell *matCellDef="let r">
             <div class="stage-badge-wrap">
               <span class="status-badge" [class]="statusCls(r.status)">
@@ -191,12 +194,12 @@
               </span>
               <!-- 2-stage progress dots -->
               <div class="mini-progress" *ngIf="r.status === 'pending' || r.status === 'manager_approved'">
-                <span class="mp-dot done" matTooltip="Submitted"></span>
+                <span class="mp-dot done" [matTooltip]="'LEAVE.REQUESTS.PROGRESS_SUBMITTED' | translate"></span>
                 <span class="mp-line"></span>
                 <span class="mp-dot" [class.done]="r.status === 'manager_approved'"
-                      matTooltip="Manager"></span>
+                      [matTooltip]="'LEAVE.REQUESTS.PROGRESS_MANAGER' | translate"></span>
                 <span class="mp-line" [class.done]="r.status === 'manager_approved'"></span>
-                <span class="mp-dot" matTooltip="HR"></span>
+                <span class="mp-dot" [matTooltip]="'LEAVE.REQUESTS.PROGRESS_HR' | translate"></span>
               </div>
             </div>
           </td>
@@ -206,24 +209,24 @@
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let r">
             <div class="row-actions">
-              <button class="row-btn" matTooltip="View Details" (click)="viewRequest(r)">
+              <button class="row-btn" [matTooltip]="'LEAVE.REQUESTS.VIEW_DETAILS' | translate" [attr.aria-label]="'LEAVE.REQUESTS.VIEW_DETAILS' | translate" (click)="viewRequest(r)">
                 <mat-icon>open_in_new</mat-icon>
               </button>
-              <button class="row-btn approve-btn" [matTooltip]="approveLabel(r)"
+              <button class="row-btn approve-btn" [matTooltip]="approveLabel(r)" [attr.aria-label]="approveLabel(r)"
                       *ngIf="canApprove(r)" [disabled]="isActionLoading()"
                       [attr.aria-busy]="isActionLoading(r, 'approve')"
                       (click)="approve(r); $event.stopPropagation()">
                 <mat-spinner *ngIf="isActionLoading(r, 'approve')" diameter="18"></mat-spinner>
                 <mat-icon *ngIf="!isActionLoading(r, 'approve')">{{ approveIcon(r) }}</mat-icon>
               </button>
-              <button class="row-btn reject-btn" matTooltip="Reject"
+              <button class="row-btn reject-btn" [matTooltip]="'COMMON.REJECT' | translate" [attr.aria-label]="'COMMON.REJECT' | translate"
                       *ngIf="canReject(r)" [disabled]="isActionLoading()"
                       [attr.aria-busy]="isActionLoading(r, 'reject')"
                       (click)="openReject(r); $event.stopPropagation()">
                 <mat-spinner *ngIf="isActionLoading(r, 'reject')" diameter="18"></mat-spinner>
                 <mat-icon *ngIf="!isActionLoading(r, 'reject')">cancel</mat-icon>
               </button>
-              <button class="row-btn" matTooltip="Cancel" *ngIf="canCancel(r)"
+              <button class="row-btn" [matTooltip]="'COMMON.CANCEL' | translate" [attr.aria-label]="'COMMON.CANCEL' | translate" *ngIf="canCancel(r)"
                       [disabled]="isActionLoading()"
                       [attr.aria-busy]="isActionLoading(r, 'cancel')"
                       (click)="cancel(r)">
@@ -241,23 +244,26 @@
             <mat-spinner *ngIf="loading" diameter="28"></mat-spinner>
             <ng-container *ngIf="!loading">
               <mat-icon>event_note</mat-icon>
-              <span>No {{ activeTab==='my_requests' ? 'personal' : (activeStatus || '') }} leave requests</span>
+              <span *ngIf="activeTab==='my_requests'">{{ 'LEAVE.REQUESTS.EMPTY_PERSONAL' | translate }}</span>
+              <span *ngIf="activeTab!=='my_requests' && activeStatus">{{ 'LEAVE.REQUESTS.EMPTY_STATUS' | translate:{ status: (activeStatus | statusLabel) } }}</span>
+              <span *ngIf="activeTab!=='my_requests' && !activeStatus">{{ 'LEAVE.REQUESTS.EMPTY' | translate }}</span>
             </ng-container>
           </td>
         </tr>
       </table>
+      </div>
 
       <div class="pagination" *ngIf="pagination?.total">
-        <span class="page-info">{{ pagination?.from }}–{{ pagination?.to }} of {{ pagination?.total }}</span>
-        <label class="page-size-wrap">Rows
+        <span class="page-info">{{ 'COMMON.SHOWING' | translate:{ from: pagination?.from, to: pagination?.to, total: pagination?.total } }}</span>
+        <label class="page-size-wrap">{{ 'COMMON.ROWS_PER_PAGE' | translate }}
           <select class="page-size-select" [(ngModel)]="pageSize" (change)="changePageSize()">
             <option [ngValue]="10">10</option><option [ngValue]="25">25</option>
             <option [ngValue]="50">50</option><option [ngValue]="100">100</option>
           </select>
         </label>
-        <button class="page-btn" [disabled]="currentPage===1" (click)="load(currentPage-1)"><mat-icon>chevron_left</mat-icon></button>
+        <button class="page-btn" [disabled]="currentPage===1" (click)="load(currentPage-1)" [attr.aria-label]="'COMMON.PREVIOUS' | translate"><mat-icon class="flip-rtl">chevron_left</mat-icon></button>
         <button *ngFor="let p of pages" class="page-btn" [class.active]="p===currentPage" (click)="load(p)">{{ p }}</button>
-        <button class="page-btn" [disabled]="currentPage===pagination?.last_page" (click)="load(currentPage+1)"><mat-icon>chevron_right</mat-icon></button>
+        <button class="page-btn" [disabled]="currentPage===pagination?.last_page" (click)="load(currentPage+1)" [attr.aria-label]="'COMMON.NEXT' | translate"><mat-icon class="flip-rtl">chevron_right</mat-icon></button>
       </div>
     </div>
   </ng-container>
@@ -267,30 +273,30 @@
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <ng-container *ngIf="activeTab==='calendar'">
     <div class="calendar-header">
-      <button class="row-btn" (click)="prevMonth()"><mat-icon>chevron_left</mat-icon></button>
+      <button class="row-btn" (click)="prevMonth()" [attr.aria-label]="'LEAVE.CALENDAR.PREV_MONTH' | translate"><mat-icon class="flip-rtl">chevron_left</mat-icon></button>
       <h2 class="cal-month-title">{{ calMonthLabel }}</h2>
-      <button class="row-btn" (click)="nextMonth()"><mat-icon>chevron_right</mat-icon></button>
-      <button class="btn-outline"   *ngIf="canManageHolidays" style="margin-left:auto;font-size:12px" (click)="openHolidayForm()">
-        <mat-icon>add</mat-icon> Add Holiday
+      <button class="row-btn" (click)="nextMonth()" [attr.aria-label]="'LEAVE.CALENDAR.NEXT_MONTH' | translate"><mat-icon class="flip-rtl">chevron_right</mat-icon></button>
+      <button class="btn-outline cal-add-holiday" *ngIf="canManageHolidays" (click)="openHolidayForm()">
+        <mat-icon>add</mat-icon> {{ 'LEAVE.CALENDAR.ADD_HOLIDAY' | translate }}
       </button>
     </div>
 
     <div class="calendar-summary">
       <div>
         <div class="calendar-summary-title">{{ calendarScopeLabel }}</div>
-        <div class="calendar-summary-sub">Only fully approved leave requests are shown.</div>
+        <div class="calendar-summary-sub">{{ 'LEAVE.CALENDAR.ONLY_APPROVED' | translate }}</div>
       </div>
       <div class="calendar-summary-count">
         <mat-spinner *ngIf="loadingCalendar" diameter="18"></mat-spinner>
         <span *ngIf="!loadingCalendar">{{ approvedCalendarCount }}</span>
-        <small>approved</small>
+        <small>{{ 'LEAVE.CALENDAR.APPROVED' | translate }}</small>
       </div>
     </div>
 
     <!-- Calendar grid -->
     <div class="cal-grid">
       <div class="cal-dow" *ngFor="let d of calWeekDays"
-        [class.weekend-dow]="d==='Fri'||d==='Sat'">{{ d }}</div>
+        [class.weekend-dow]="d==='Fri'||d==='Sat'">{{ ('LEAVE.CALENDAR.DOW.' + d) | translate }}</div>
 
       <ng-container *ngFor="let cell of calDays">
         <div *ngIf="!cell" class="cal-cell cal-empty"></div>
@@ -304,21 +310,21 @@
 
           <div class="cal-date" [class.today-num]="cell.isToday">{{ cell.d }}</div>
 
-          <div class="cal-holiday" *ngIf="cell.holiday">
-            <mat-icon>star</mat-icon> {{ cell.holiday.name }}
+          <div class="cal-holiday" *ngIf="cell.holiday" [matTooltip]="cell.holiday.name">
+            <mat-icon>star</mat-icon> <span class="cal-holiday-name">{{ cell.holiday.name }}</span>
           </div>
 
           <div class="cal-leave-chips" *ngIf="cell.leaves?.length">
             <div *ngFor="let l of cell.leaves.slice(0,2)" class="cal-leave-chip"
               [style.background]="leaveTypeColor(l.leave_type?.name)+'33'"
               [style.color]="leaveTypeColor(l.leave_type?.name)"
-              [matTooltip]="(l.employee?.first_name || '') + ' ' + (l.employee?.last_name || '') + ' - ' + (l.leave_type?.name || 'Leave')"
+              [matTooltip]="employeeName(l.employee) + ' - ' + ((l.leave_type | locName) || ('LEAVE.CALENDAR.LEAVE' | translate))"
               (click)="viewRequest(l); $event.stopPropagation()">
               {{ l.employee?.first_name }} {{ l.employee?.last_name?.charAt(0) }}.
             </div>
             <button type="button" class="cal-more" *ngIf="cell.leaves.length > 2"
               (click)="selectCalendarDay(cell); $event.stopPropagation()">
-              +{{ cell.leaves.length - 2 }} more
+              {{ 'LEAVE.CALENDAR.MORE' | translate:{ count: cell.leaves.length - 2 } }}
             </button>
           </div>
         </div>
@@ -329,9 +335,9 @@
       <div class="card-hdr">
         <span class="card-title">
           <mat-icon>event_available</mat-icon>
-          Approved leaves on {{ selectedCalendarCell?.dateStr | date:'EEE, dd MMM yyyy' }}
+          {{ 'LEAVE.CALENDAR.APPROVED_ON' | translate:{ date: (selectedCalendarCell?.dateStr | locDate:'EEE, dd MMM yyyy') } }}
         </span>
-        <span class="status-badge badge-green">{{ selectedCalendarLeaves.length }} approved</span>
+        <span class="status-badge badge-green">{{ 'LEAVE.CALENDAR.APPROVED_COUNT' | translate:{ count: selectedCalendarLeaves.length } }}</span>
       </div>
       <div class="calendar-day-list">
         <button type="button" class="calendar-day-row" *ngFor="let l of selectedCalendarLeaves" (click)="viewRequest(l)">
@@ -340,67 +346,67 @@
               {{ (l.employee?.first_name||'?')[0] }}{{ (l.employee?.last_name||'')[0] }}
             </div>
             <div>
-              <div class="name-main">{{ l.employee?.first_name }} {{ l.employee?.last_name }}</div>
-              <div class="name-sub">{{ l.employee?.department?.name || calendarMeta?.department?.name || '-' }}</div>
+              <div class="name-main">{{ employeeName(l.employee) }}</div>
+              <div class="name-sub">{{ (l.employee?.department | locName) || (calendarMeta?.department | locName) || '-' }}</div>
             </div>
           </div>
           <span class="type-pill"
             [style.background]="leaveTypeColor(l.leave_type?.name)+'22'"
             [style.color]="leaveTypeColor(l.leave_type?.name)">
-            {{ l.leave_type?.name || 'Leave' }}
+            {{ (l.leave_type | locName) || ('LEAVE.CALENDAR.LEAVE' | translate) }}
           </span>
           <div class="date-range">
-            <span>{{ l.start_date | date:'dd MMM' }}</span>
-            <mat-icon class="arrow-ico">arrow_forward</mat-icon>
-            <span>{{ l.end_date | date:'dd MMM yyyy' }}</span>
+            <span>{{ l.start_date | locDate:'dd MMM' }}</span>
+            <mat-icon class="arrow-ico flip-rtl">arrow_forward</mat-icon>
+            <span>{{ l.end_date | locDate:'dd MMM yyyy' }}</span>
           </div>
-          <span class="days-badge" *ngIf="!l.leave_type?.is_hourly">{{ l.total_days }} d</span>
-          <span class="hours-badge" *ngIf="l.leave_type?.is_hourly"><mat-icon>timer</mat-icon>{{ l.total_hours }}h</span>
+          <span class="days-badge" *ngIf="!l.leave_type?.is_hourly">{{ 'LEAVE.UNITS.DAYS_SHORT' | translate:{ count: l.total_days } }}</span>
+          <span class="hours-badge" *ngIf="l.leave_type?.is_hourly"><mat-icon>timer</mat-icon>{{ 'LEAVE.UNITS.HOURS_SHORT' | translate:{ count: l.total_hours } }}</span>
         </button>
       </div>
     </div>
 
     <div class="empty-state calendar-empty" *ngIf="!loadingCalendar && !approvedCalendarCount">
       <mat-icon>event_available</mat-icon>
-      <span>No approved leave in this calendar scope for {{ calMonthLabel }}.</span>
+      <span>{{ 'LEAVE.CALENDAR.EMPTY' | translate:{ month: calMonthLabel } }}</span>
     </div>
 
     <!-- Holidays list -->
     <div class="data-card" style="margin-top:20px" *ngIf="holidays.length">
-      <div class="card-hdr"><span class="card-title"><mat-icon>star</mat-icon> Holidays {{ calYear }}</span></div>
+      <div class="card-hdr"><span class="card-title"><mat-icon>star</mat-icon> {{ 'LEAVE.CALENDAR.HOLIDAYS_YEAR' | translate:{ year: calYear } }}</span></div>
       <div class="holiday-list">
         <div class="holiday-row" *ngFor="let h of holidays">
           <div class="holiday-date">{{ formatHolidayDate(h.date, { weekday:'short', day:'2-digit', month:'short' }) }}</div>
           <div class="holiday-name">{{ h.name }}</div>
-          <span class="status-badge badge-blue" *ngIf="h.is_recurring">Annual</span>
-          <button class="row-btn" *ngIf="canManageHolidays" (click)="openHolidayForm(h)"><mat-icon style="color:var(--accent);font-size:16px">edit</mat-icon></button>
-          <button class="row-btn" *ngIf="canManageHolidays" (click)="deleteHoliday(h.id)"><mat-icon style="color:var(--danger);font-size:16px">delete_outline</mat-icon></button>
+          <span class="status-badge badge-blue" *ngIf="h.is_recurring">{{ 'LEAVE.CALENDAR.ANNUAL' | translate }}</span>
+          <button class="row-btn" *ngIf="canManageHolidays" (click)="openHolidayForm(h)" [matTooltip]="'LEAVE.HOLIDAYS.EDIT' | translate" [attr.aria-label]="'LEAVE.HOLIDAYS.EDIT' | translate"><mat-icon style="color:var(--accent);font-size:16px">edit</mat-icon></button>
+          <button class="row-btn" *ngIf="canManageHolidays" (click)="deleteHoliday(h.id)" [matTooltip]="'LEAVE.HOLIDAYS.DELETE' | translate" [attr.aria-label]="'LEAVE.HOLIDAYS.DELETE' | translate"><mat-icon style="color:var(--danger);font-size:16px">delete_outline</mat-icon></button>
         </div>
       </div>
     </div>
   </ng-container>
 
   <!-- ══════════════════════════════════════════════════════════════════════ -->
-  <!-- TAB: BALANCES                                                          -->
+  <!-- TAB: HOLIDAYS                                                          -->
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <ng-container *ngIf="activeTab==='holidays'">
     <div class="toolbar">
-      <div class="filter-row" style="margin-left:0">
+      <div class="filter-row holiday-filter">
         <div class="search-wrap">
           <mat-icon class="search-ico">calendar_today</mat-icon>
-          <input class="search-input" type="number" min="2000" max="2100" [(ngModel)]="holidayYear" (change)="loadHolidayManagement()" placeholder="Year">
+          <input class="search-input" type="number" dir="ltr" min="2000" max="2100" [(ngModel)]="holidayYear" (change)="loadHolidayManagement()" [placeholder]="'COMMON.YEAR' | translate" [attr.aria-label]="'COMMON.YEAR' | translate">
         </div>
-        <button class="btn-outline" (click)="loadHolidayManagement()"><mat-icon>refresh</mat-icon></button>
+        <button class="btn-outline" (click)="loadHolidayManagement()" [matTooltip]="'COMMON.REFRESH' | translate" [attr.aria-label]="'COMMON.REFRESH' | translate"><mat-icon>refresh</mat-icon></button>
       </div>
-      <button class="btn-primary" *ngIf="canManageHolidays" style="margin-left:auto" (click)="openHolidayForm()">
-        <mat-icon>add</mat-icon> Add Holiday
+      <button class="btn-primary toolbar-end" *ngIf="canManageHolidays" (click)="openHolidayForm()">
+        <mat-icon>add</mat-icon> {{ 'LEAVE.CALENDAR.ADD_HOLIDAY' | translate }}
       </button>
     </div>
 
     <div class="data-card">
       <div class="card-hdr">
-        <span class="card-title"><mat-icon>star</mat-icon> Yearly Holidays {{ holidayYear }}</span>
-        <span class="status-badge badge-blue">{{ managedHolidays.length }} holidays</span>
+        <span class="card-title"><mat-icon>star</mat-icon> {{ 'LEAVE.HOLIDAYS.YEARLY_TITLE' | translate:{ year: holidayYear } }}</span>
+        <span class="status-badge badge-blue">{{ 'LEAVE.HOLIDAYS.COUNT' | translate:{ count: managedHolidays.length } }}</span>
       </div>
       <div class="holiday-list" *ngIf="managedHolidays.length">
         <div class="holiday-row" *ngFor="let h of managedHolidays">
@@ -411,13 +417,13 @@
             </ng-container>
           </div>
           <div class="holiday-name">{{ h.name }}</div>
-          <span class="status-badge badge-blue" *ngIf="h.is_recurring">Recurring</span>
-          <span class="status-badge badge-gray" *ngIf="!h.is_recurring">One time</span>
+          <span class="status-badge badge-blue" *ngIf="h.is_recurring">{{ 'LEAVE.HOLIDAYS.RECURRING' | translate }}</span>
+          <span class="status-badge badge-gray" *ngIf="!h.is_recurring">{{ 'LEAVE.HOLIDAYS.ONE_TIME' | translate }}</span>
           <div class="row-actions" *ngIf="canManageHolidays">
-            <button class="row-btn" matTooltip="Edit holiday" (click)="openHolidayForm(h)">
+            <button class="row-btn" [matTooltip]="'LEAVE.HOLIDAYS.EDIT' | translate" [attr.aria-label]="'LEAVE.HOLIDAYS.EDIT' | translate" (click)="openHolidayForm(h)">
               <mat-icon style="color:var(--accent)">edit</mat-icon>
             </button>
-            <button class="row-btn" matTooltip="Delete holiday" (click)="deleteHoliday(h.id)">
+            <button class="row-btn" [matTooltip]="'LEAVE.HOLIDAYS.DELETE' | translate" [attr.aria-label]="'LEAVE.HOLIDAYS.DELETE' | translate" (click)="deleteHoliday(h.id)">
               <mat-icon style="color:var(--danger)">delete_outline</mat-icon>
             </button>
           </div>
@@ -425,7 +431,7 @@
       </div>
       <div class="empty-state" *ngIf="!holidayLoading && !managedHolidays.length">
         <mat-icon>event_busy</mat-icon>
-        <span>No holidays configured for {{ holidayYear }}.</span>
+        <span>{{ 'LEAVE.HOLIDAYS.EMPTY' | translate:{ year: holidayYear } }}</span>
       </div>
       <div class="empty-state" *ngIf="holidayLoading">
         <mat-spinner diameter="28"></mat-spinner>
@@ -433,82 +439,86 @@
     </div>
   </ng-container>
 
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: BALANCES                                                          -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
   <ng-container *ngIf="activeTab==='balances'">
     <div class="toolbar">
       <div class="search-wrap" *ngIf="isHR || isMgr">
         <mat-icon class="search-ico">search</mat-icon>
-        <input class="search-input" placeholder="Search employee…" [(ngModel)]="filterSearch" (keyup.enter)="loadAllBalances()">
+        <input class="search-input" [placeholder]="'LEAVE.REQUESTS.SEARCH_EMPLOYEE' | translate" [attr.aria-label]="'LEAVE.REQUESTS.SEARCH_EMPLOYEE' | translate" [(ngModel)]="filterSearch" (keyup.enter)="loadAllBalances()">
       </div>
       <div class="balance-year-filter">
-        <label>Contract Year</label>
-        <select [(ngModel)]="balanceYear" (change)="onBalanceYearChange()">
+        <label>{{ 'LEAVE.BALANCES.CONTRACT_YEAR' | translate }}</label>
+        <select [(ngModel)]="balanceYear" (change)="onBalanceYearChange()" [attr.aria-label]="'LEAVE.BALANCES.CONTRACT_YEAR' | translate">
           <option *ngFor="let year of balanceYears" [ngValue]="year">{{ year }}</option>
         </select>
       </div>
       <button class="btn-outline" *ngIf="isHR" (click)="downloadAnnualBalanceReport()">
-        <mat-icon>download</mat-icon> Annual Report
+        <mat-icon>download</mat-icon> {{ 'LEAVE.BALANCES.ANNUAL_REPORT' | translate }}
       </button>
-      <span *ngIf="!isHR && !isMgr" style="font-size:13px;color:var(--text2)">Your leave balance details</span>
-      <button class="btn-outline" (click)="loadAllBalances()"><mat-icon>refresh</mat-icon></button>
+      <span *ngIf="!isHR && !isMgr" style="font-size:13px;color:var(--text2)">{{ 'LEAVE.BALANCES.YOUR_DETAILS' | translate }}</span>
+      <button class="btn-outline" (click)="loadAllBalances()" [matTooltip]="'COMMON.REFRESH' | translate" [attr.aria-label]="'COMMON.REFRESH' | translate"><mat-icon>refresh</mat-icon></button>
     </div>
 
     <div class="data-card">
-      <table mat-table [dataSource]="allBalances">
+      <div class="table-scroll">
+      <table mat-table [dataSource]="allBalances" class="balances-table">
         <ng-container matColumnDef="employee">
-          <th mat-header-cell *matHeaderCellDef>Employee</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.EMPLOYEE' | translate }}</th>
           <td mat-cell *matCellDef="let b">
             <div class="emp-cell">
               <div class="emp-avatar" [style.background]="avatarColor(b.employee?.first_name)">
                 {{ (b.employee?.first_name||'?')[0] }}{{ (b.employee?.last_name||'')[0] }}
               </div>
               <div>
-                <div class="name-main">{{ b.employee?.first_name }} {{ b.employee?.last_name }}</div>
-                <div class="name-sub">{{ b.employee?.department?.name }}</div>
+                <div class="name-main">{{ employeeName(b.employee) }}</div>
+                <div class="name-sub">{{ b.employee?.department | locName }}</div>
               </div>
             </div>
           </td>
         </ng-container>
         <ng-container matColumnDef="leave_type">
-          <th mat-header-cell *matHeaderCellDef>Leave Type</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.BALANCES.LEAVE_TYPE' | translate }}</th>
           <td mat-cell *matCellDef="let b">
             <span class="type-pill"
               [style.background]="leaveTypeColor(b.leave_type?.name)+'22'"
               [style.color]="leaveTypeColor(b.leave_type?.name)">
-              {{ b.leave_type?.name }}
+              {{ b.leave_type | locName }}
             </span>
           </td>
         </ng-container>
         <ng-container matColumnDef="allocated">
-          <th mat-header-cell *matHeaderCellDef>Allocated / Earned</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.BALANCES.ALLOCATED' | translate }}</th>
           <td mat-cell *matCellDef="let b" class="mono-val">
             {{ b.allocated_days }}
             <span *ngIf="contractYearAllocation(b) !== null">({{ contractYearAllocation(b) | number:'1.0-2' }})</span>
           </td>
         </ng-container>
         <ng-container matColumnDef="carry_forward">
-          <th mat-header-cell *matHeaderCellDef>Carry Forward</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.BALANCES.CARRY_FORWARD' | translate }}</th>
           <td mat-cell *matCellDef="let b">
             <ng-container *ngIf="(b.carried_forward_days || 0) > 0; else noCarryForward">
-              <div class="mono-val" style="color:var(--accent)">{{ b.carried_forward_days }} d</div>
+              <div class="mono-val" style="color:var(--accent)">{{ 'LEAVE.UNITS.DAYS_SHORT' | translate:{ count: b.carried_forward_days } }}</div>
               <div class="name-sub">
-                Active {{ b.active_carried_forward_days || 0 }} · Used {{ b.carry_forward_used_days || 0 }}
+                {{ 'LEAVE.BALANCES.CF_ACTIVE_USED' | translate:{ active: (b.active_carried_forward_days || 0), used: (b.carry_forward_used_days || 0) } }}
               </div>
             </ng-container>
             <ng-template #noCarryForward>
-              <span class="status-badge badge-gray">No</span>
+              <span class="status-badge badge-gray">{{ 'COMMON.NO' | translate }}</span>
             </ng-template>
           </td>
         </ng-container>
         <ng-container matColumnDef="used">
-          <th mat-header-cell *matHeaderCellDef>Used</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.BALANCES.USED' | translate }}</th>
           <td mat-cell *matCellDef="let b" class="mono-val" style="color:var(--warning)">{{ b.used_days }}</td>
         </ng-container>
         <ng-container matColumnDef="pending">
-          <th mat-header-cell *matHeaderCellDef>Pending</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.BALANCES.PENDING' | translate }}</th>
           <td mat-cell *matCellDef="let b" class="mono-val" style="color:var(--accent)">{{ b.pending_days }}</td>
         </ng-container>
         <ng-container matColumnDef="remaining">
-          <th mat-header-cell *matHeaderCellDef>Remaining</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.BALANCES.REMAINING' | translate }}</th>
           <td mat-cell *matCellDef="let b">
             <span class="mono-val" [style.color]="b.remaining_days <= 2 ? 'var(--danger)' : 'var(--success)'">
               {{ b.remaining_days }}
@@ -516,7 +526,7 @@
           </td>
         </ng-container>
         <ng-container matColumnDef="bar">
-          <th mat-header-cell *matHeaderCellDef>Usage</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.BALANCES.USAGE' | translate }}</th>
           <td mat-cell *matCellDef="let b" style="min-width:100px">
             <div class="mini-track">
               <div class="mini-fill" [style.width.%]="balancePct(b)" [style.background]="balanceColor(balancePct(b))"></div>
@@ -528,10 +538,11 @@
         <tr mat-row *matRowDef="let row; columns:balanceColumns;" class="data-row"></tr>
         <tr class="mat-row" *matNoDataRow>
           <td class="mat-cell empty-state" colspan="8">
-            <mat-icon>account_balance_wallet</mat-icon><span>No balance data. Load balances first.</span>
+            <mat-icon>account_balance_wallet</mat-icon><span>{{ 'LEAVE.BALANCES.EMPTY' | translate }}</span>
           </td>
         </tr>
       </table>
+      </div>
     </div>
   </ng-container>
 
@@ -540,51 +551,60 @@
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <ng-container *ngIf="activeTab==='types' && isHR">
     <div class="toolbar">
-      <span style="font-size:13px;color:var(--text2)">{{ leaveTypes.length }} leave types configured</span>
-      <button class="btn-primary" *ngIf="isHR" style="margin-left:auto" (click)="openTypeForm()">
-        <mat-icon>add</mat-icon> Add Type
+      <span style="font-size:13px;color:var(--text2)">{{ 'LEAVE.TYPES.COUNT' | translate:{ count: leaveTypes.length } }}</span>
+      <button class="btn-primary toolbar-end" *ngIf="isHR" (click)="openTypeForm()">
+        <mat-icon>add</mat-icon> {{ 'LEAVE.TYPES.ADD' | translate }}
       </button>
     </div>
 
     <div class="data-card">
-      <table mat-table [dataSource]="leaveTypes">
+      <div class="table-scroll">
+      <table mat-table [dataSource]="leaveTypes" class="types-table">
+
+        <ng-container matColumnDef="name_ar">
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.ARABIC_NAME' | translate }}</th>
+          <td mat-cell *matCellDef="let t">
+            <span class="ar-name" lang="ar" dir="rtl" *ngIf="t.name_ar; else noArName">{{ t.name_ar }}</span>
+            <ng-template #noArName><span class="ar-missing">{{ 'COMMON.NOT_SET' | translate }}</span></ng-template>
+          </td>
+        </ng-container>
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.NAME' | translate }}</th>
           <td mat-cell *matCellDef="let t">
             <div style="display:flex;align-items:center;gap:8px">
               <div class="type-dot" [style.background]="leaveTypeColor(t.name)"></div>
               <div>
-                <div class="name-main">{{ t.name }}</div>
+                <div class="name-main" dir="auto">{{ t.name }}</div>
                 <div class="name-sub" *ngIf="t.description">{{ t.description | slice:0:50 }}</div>
               </div>
             </div>
           </td>
         </ng-container>
         <ng-container matColumnDef="code">
-          <th mat-header-cell *matHeaderCellDef>Code</th>
-          <td mat-cell *matCellDef="let t"><span class="code-chip">{{ t.code }}</span></td>
+          <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.CODE' | translate }}</th>
+          <td mat-cell *matCellDef="let t"><span class="code-chip" dir="ltr">{{ t.code }}</span></td>
         </ng-container>
         <ng-container matColumnDef="days">
-          <th mat-header-cell *matHeaderCellDef>Days/Year</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.TYPES.DAYS_YEAR' | translate }}</th>
           <td mat-cell *matCellDef="let t" class="mono-val">{{ t.days_allowed }}</td>
         </ng-container>
         <ng-container matColumnDef="paid">
-          <th mat-header-cell *matHeaderCellDef>Paid</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.TYPES.PAID' | translate }}</th>
           <td mat-cell *matCellDef="let t">
-            <mat-icon [style.color]="t.is_paid ? 'var(--success)' : 'var(--text3)'">
+            <mat-icon [style.color]="t.is_paid ? 'var(--success)' : 'var(--text3)'" [attr.aria-label]="(t.is_paid ? 'COMMON.YES' : 'COMMON.NO') | translate">
               {{ t.is_paid ? 'check_circle' : 'radio_button_unchecked' }}
             </mat-icon>
           </td>
         </ng-container>
         <ng-container matColumnDef="carry">
-          <th mat-header-cell *matHeaderCellDef>Carry Forward</th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'LEAVE.TYPES.CARRY_FORWARD' | translate }}</th>
           <td mat-cell *matCellDef="let t">
-            <span *ngIf="t.carry_forward" class="status-badge badge-blue">{{ t.carry_forward_all ? 'All' : t.max_carry_forward + ' days' }}</span>
-            <span *ngIf="!t.carry_forward" class="status-badge badge-gray">No</span>
+            <span *ngIf="t.carry_forward" class="status-badge badge-blue">{{ t.carry_forward_all ? ('COMMON.ALL' | translate) : ('LEAVE.TYPES.CF_DAYS' | translate:{ count: t.max_carry_forward }) }}</span>
+            <span *ngIf="!t.carry_forward" class="status-badge badge-gray">{{ 'COMMON.NO' | translate }}</span>
             <span *ngIf="t.skip_manager_approval" class="status-badge badge-orange"
-                  matTooltip="Sick leave policy: goes directly to HR">
-              <mat-icon style="font-size:12px!important;width:12px!important;height:12px!important">skip_next</mat-icon>
-              Skip Manager
+                  [matTooltip]="'LEAVE.TYPES.SKIP_MANAGER_TIP' | translate">
+              <mat-icon class="flip-rtl" style="font-size:12px!important;width:12px!important;height:12px!important">skip_next</mat-icon>
+              {{ 'LEAVE.TYPES.SKIP_MANAGER' | translate }}
             </span>
           </td>
         </ng-container>
@@ -592,14 +612,14 @@
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let t">
             <div class="row-actions">
-              <button class="row-btn" matTooltip="Edit Type" (click)="openTypeForm(t)">
+              <button class="row-btn" [matTooltip]="'LEAVE.TYPES.EDIT' | translate" [attr.aria-label]="'LEAVE.TYPES.EDIT' | translate" (click)="openTypeForm(t)">
                 <mat-icon>edit</mat-icon>
               </button>
-              <button class="row-btn" matTooltip="Configure Department Visibility" (click)="openVisibilityPanel(t)">
+              <button class="row-btn" [matTooltip]="'LEAVE.TYPES.VISIBILITY_TIP' | translate" [attr.aria-label]="'LEAVE.TYPES.VISIBILITY_TIP' | translate" (click)="openVisibilityPanel(t)">
                 <mat-icon style="color:var(--success)">visibility</mat-icon>
               </button>
               <button class="row-btn limits-btn" *ngIf="t.is_hourly"
-                matTooltip="Configure Department Limits" (click)="openLimitsPanel(t)">
+                [matTooltip]="'LEAVE.TYPES.LIMITS_TIP' | translate" [attr.aria-label]="'LEAVE.TYPES.LIMITS_TIP' | translate" (click)="openLimitsPanel(t)">
                 <mat-icon style="color:var(--accent2)">tune</mat-icon>
               </button>
             </div>
@@ -608,6 +628,7 @@
         <tr mat-header-row *matHeaderRowDef="typeColumns; sticky:true"></tr>
         <tr mat-row *matRowDef="let row; columns:typeColumns;" class="data-row"></tr>
       </table>
+      </div>
     </div>
   </ng-container>
 </div>
@@ -624,21 +645,21 @@
           {{ (selectedRequest.employee?.first_name||'?')[0] }}{{ (selectedRequest.employee?.last_name||'')[0] }}
         </div>
         <div>
-          <div class="drawer-name">{{ selectedRequest.employee?.first_name }} {{ selectedRequest.employee?.last_name }}</div>
-          <div class="drawer-sub">{{ selectedRequest.employee?.department?.name }} · {{ selectedRequest.employee?.employee_code }}</div>
+          <div class="drawer-name">{{ employeeName(selectedRequest.employee) }}</div>
+          <div class="drawer-sub">{{ selectedRequest.employee?.department | locName }} · <span class="ltr">{{ selectedRequest.employee?.employee_code }}</span></div>
         </div>
       </div>
-      <button class="row-btn" (click)="showDetail=false"><mat-icon>close</mat-icon></button>
+      <button class="row-btn" (click)="showDetail=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
     </div>
 
-    <div class="drawer-tabs" role="tablist" aria-label="Request information">
+    <div class="drawer-tabs" role="tablist" [attr.aria-label]="'LEAVE.DETAIL.TABS_ARIA' | translate">
       <button type="button" role="tab" [attr.aria-selected]="detailDrawerTab === 'details'"
               [class.active]="detailDrawerTab === 'details'" (click)="detailDrawerTab = 'details'">
-        <mat-icon>description</mat-icon> Details
+        <mat-icon>description</mat-icon> {{ 'COMMON.DETAILS' | translate }}
       </button>
       <button type="button" role="tab" [attr.aria-selected]="detailDrawerTab === 'activity'"
               [class.active]="detailDrawerTab === 'activity'" (click)="detailDrawerTab = 'activity'">
-        <mat-icon>history</mat-icon> Activity
+        <mat-icon>history</mat-icon> {{ 'LEAVE.DETAIL.ACTIVITY' | translate }}
         <span class="tab-count" *ngIf="selectedRequest.activities?.length">{{ selectedRequest.activities.length }}</span>
       </button>
     </div>
@@ -659,13 +680,13 @@
                  [class.skipped]="selectedRequest.leave_type?.skip_manager_approval">
               <div class="sh-dot">
                 <mat-icon *ngIf="selectedRequest.status !== 'pending' && !selectedRequest.leave_type?.skip_manager_approval">check</mat-icon>
-                <mat-icon *ngIf="selectedRequest.leave_type?.skip_manager_approval">skip_next</mat-icon>
+                <mat-icon class="flip-rtl" *ngIf="selectedRequest.leave_type?.skip_manager_approval">skip_next</mat-icon>
                 <span *ngIf="selectedRequest.status === 'pending' && !selectedRequest.leave_type?.skip_manager_approval">1</span>
               </div>
               <div class="sh-step-info">
-                <div class="sh-step-label">Manager</div>
-                <div class="sh-step-sub" *ngIf="selectedRequest.leave_type?.skip_manager_approval" style="color:#f59e0b">Bypassed (sick leave policy)</div>
-                <div class="sh-step-sub" *ngIf="selectedRequest.manager_approved_by">{{ selectedRequest.managerApprover?.name || 'Approved' }}</div>
+                <div class="sh-step-label">{{ 'LEAVE.DETAIL.MANAGER' | translate }}</div>
+                <div class="sh-step-sub" *ngIf="selectedRequest.leave_type?.skip_manager_approval" style="color:#f59e0b">{{ 'LEAVE.DETAIL.BYPASSED' | translate }}</div>
+                <div class="sh-step-sub" *ngIf="selectedRequest.manager_approved_by">{{ selectedRequest.managerApprover?.name || ('STATUS.approved' | translate) }}</div>
               </div>
             </div>
             <div class="sh-line" [class.done]="selectedRequest.status !== 'pending'"></div>
@@ -678,13 +699,13 @@
                 <span *ngIf="selectedRequest.status !== 'approved'">2</span>
               </div>
               <div class="sh-step-info">
-                <div class="sh-step-label">HR</div>
-                <div class="sh-step-sub" *ngIf="selectedRequest.status === 'approved'">{{ selectedRequest.approver?.name || 'Approved' }}</div>
+                <div class="sh-step-label">{{ 'LEAVE.DETAIL.HR' | translate }}</div>
+                <div class="sh-step-sub" *ngIf="selectedRequest.status === 'approved'">{{ selectedRequest.approver?.name || ('STATUS.approved' | translate) }}</div>
               </div>
             </div>
           </div>
           <div class="sh-sub" *ngIf="selectedRequest.status==='rejected' && selectedRequest.rejection_reason">
-            Rejected: {{ selectedRequest.rejection_reason }}
+            {{ 'LEAVE.DETAIL.REJECTED_REASON' | translate:{ reason: selectedRequest.rejection_reason } }}
           </div>
         </div>
       </div>
@@ -692,77 +713,77 @@
       <!-- Details grid -->
       <div class="detail-grid">
         <div class="detail-block">
-          <div class="detail-lbl">Leave Type</div>
+          <div class="detail-lbl">{{ 'LEAVE.DETAIL.LEAVE_TYPE' | translate }}</div>
           <span class="type-pill"
             [style.background]="leaveTypeColor(selectedRequest.leave_type?.name)+'22'"
             [style.color]="leaveTypeColor(selectedRequest.leave_type?.name)">
-            {{ selectedRequest.leave_type?.name }}
+            {{ selectedRequest.leave_type | locName }}
           </span>
         </div>
         <div class="detail-block">
-          <div class="detail-lbl">Duration</div>
+          <div class="detail-lbl">{{ 'LEAVE.DETAIL.DURATION' | translate }}</div>
           <div class="detail-val">
-            <span class="days-badge" *ngIf="!selectedRequest.leave_type?.is_hourly">{{ selectedRequest.total_days }} days</span>
+            <span class="days-badge" *ngIf="!selectedRequest.leave_type?.is_hourly">{{ 'COMMON.DAY_COUNT' | translate:{ count: selectedRequest.total_days } }}</span>
             <span class="hours-badge" *ngIf="selectedRequest.leave_type?.is_hourly">
-              <mat-icon>timer</mat-icon>{{ selectedRequest.total_hours }}h
+              <mat-icon>timer</mat-icon>{{ 'LEAVE.UNITS.HOURS_SHORT' | translate:{ count: selectedRequest.total_hours } }}
             </span>
           </div>
         </div>
         <div class="detail-block">
-          <div class="detail-lbl">Date</div>
-          <div class="detail-val">{{ selectedRequest.start_date | date:'EEE, dd MMM yyyy' }}</div>
+          <div class="detail-lbl">{{ 'COMMON.DATE' | translate }}</div>
+          <div class="detail-val">{{ selectedRequest.start_date | locDate:'EEE, dd MMM yyyy' }}</div>
         </div>
         <div class="detail-block" *ngIf="!selectedRequest.leave_type?.is_hourly">
-          <div class="detail-lbl">End Date</div>
-          <div class="detail-val">{{ selectedRequest.end_date | date:'EEE, dd MMM yyyy' }}</div>
+          <div class="detail-lbl">{{ 'COMMON.END_DATE' | translate }}</div>
+          <div class="detail-val">{{ selectedRequest.end_date | locDate:'EEE, dd MMM yyyy' }}</div>
         </div>
         <div class="detail-block" *ngIf="selectedRequest.leave_type?.is_hourly">
-          <div class="detail-lbl">Time</div>
+          <div class="detail-lbl">{{ 'LEAVE.DETAIL.TIME' | translate }}</div>
           <div class="detail-val time-val">
             <mat-icon style="font-size:15px;width:15px;height:15px">schedule</mat-icon>
             {{ selectedRequest.start_time }} – {{ selectedRequest.end_time }}
           </div>
         </div>
         <div class="detail-block reason-block">
-          <div class="detail-lbl"><mat-icon>notes</mat-icon> Reason</div>
+          <div class="detail-lbl"><mat-icon>notes</mat-icon> {{ 'COMMON.REASON' | translate }}</div>
           <div class="detail-val reason-text">{{ selectedRequest.reason }}</div>
         </div>
 
         <!-- Annual leave: travel requirements -->
         <div class="travel-flags" *ngIf="selectedRequest.requires_exit_reentry || selectedRequest.requires_ticket">
-          <div class="tf-title"><mat-icon>card_travel</mat-icon> Travel Services</div>
+          <div class="tf-title"><mat-icon>card_travel</mat-icon> {{ 'LEAVE.DETAIL.TRAVEL_SERVICES' | translate }}</div>
           <div class="tf-item" *ngIf="selectedRequest.requires_exit_reentry">
-            <mat-icon>swap_horiz</mat-icon> Exit Re-entry Visa Required
+            <mat-icon>swap_horiz</mat-icon> {{ 'LEAVE.DETAIL.EXIT_REENTRY_REQUIRED' | translate }}
           </div>
           <div class="tf-item" *ngIf="selectedRequest.requires_ticket">
-            <mat-icon>flight</mat-icon> Air Ticket Required · {{ selectedRequest.ticket_count || 1 }} ticket(s)
+            <mat-icon>flight</mat-icon> {{ 'LEAVE.DETAIL.TICKET_REQUIRED' | translate:{ count: (selectedRequest.ticket_count || 1) } }}
           </div>
           <div class="tf-item" *ngFor="let passenger of selectedRequest.ticket_passengers">
-            <mat-icon>person</mat-icon> {{ passenger.passenger_name }} <span class="name-sub">({{ passenger.passenger_type }})</span>
+            <mat-icon>person</mat-icon> {{ passenger.passenger_name }} <span class="name-sub">({{ passengerTypeLabel(passenger.passenger_type) }})</span>
           </div>
           <div class="tf-item" *ngIf="selectedRequest.destination_country">
-            <mat-icon>location_on</mat-icon> Destination: <strong>{{ selectedRequest.destination_country }}</strong>
+            <mat-icon>location_on</mat-icon> {{ 'LEAVE.DETAIL.DESTINATION' | translate }} <strong>{{ selectedRequest.destination_country }}</strong>
           </div>
         </div>
 
         <!-- Document attachment -->
         <div class="detail-row" *ngIf="selectedRequest.document_path">
-          <div class="detail-lbl"><mat-icon>attach_file</mat-icon> Attachment</div>
+          <div class="detail-lbl"><mat-icon>attach_file</mat-icon> {{ 'COMMON.ATTACHMENT' | translate }}</div>
           <div class="detail-val">
             <a class="doc-link"
                [href]="'/storage/' + selectedRequest.document_path"
                target="_blank" rel="noopener">
-              <mat-icon>open_in_new</mat-icon> View Document
+              <mat-icon>open_in_new</mat-icon> {{ 'LEAVE.DETAIL.VIEW_DOCUMENT' | translate }}
             </a>
           </div>
         </div>
         <div class="detail-block">
-          <div class="detail-lbl">Submitted</div>
-          <div class="detail-val">{{ selectedRequest.created_at | date:'dd MMM yyyy' }}</div>
+          <div class="detail-lbl">{{ 'LEAVE.DETAIL.SUBMITTED' | translate }}</div>
+          <div class="detail-val">{{ selectedRequest.created_at | locDate:'dd MMM yyyy' }}</div>
         </div>
         <div class="detail-block" *ngIf="selectedRequest.approved_at">
-          <div class="detail-lbl">Actioned</div>
-          <div class="detail-val">{{ selectedRequest.approved_at | date:'dd MMM yyyy' }}</div>
+          <div class="detail-lbl">{{ 'LEAVE.DETAIL.ACTIONED' | translate }}</div>
+          <div class="detail-val">{{ selectedRequest.approved_at | locDate:'dd MMM yyyy' }}</div>
         </div>
       </div>
       </ng-container>
@@ -770,18 +791,18 @@
       <div class="activity-timeline" *ngIf="detailDrawerTab === 'activity' && selectedRequest.activities?.length">
         <div class="activity-title">
           <mat-icon>history</mat-icon>
-          Activity Log
+          {{ 'LEAVE.DETAIL.ACTIVITY_LOG' | translate }}
         </div>
         <div class="activity-row" *ngFor="let a of selectedRequest.activities">
           <div class="activity-dot">
-            <mat-icon>{{ activityIcon(a.event) }}</mat-icon>
+            <mat-icon [class.flip-rtl]="activityIcon(a.event) === 'send'">{{ activityIcon(a.event) }}</mat-icon>
           </div>
           <div class="activity-copy">
             <div class="activity-main">{{ a.description }}</div>
             <div class="activity-meta">
               <span>{{ a.causer_name }}</span>
               <span *ngIf="activityStatus(a)">{{ activityStatus(a) }}</span>
-              <span>{{ a.created_at | date:'dd MMM yyyy, h:mm a' }}</span>
+              <span>{{ a.created_at | locDate:'dd MMM yyyy, h:mm a' }}</span>
             </div>
             <div class="activity-note" *ngIf="a.notes">{{ a.notes }}</div>
           </div>
@@ -790,15 +811,15 @@
 
       <div class="activity-empty" *ngIf="detailDrawerTab === 'activity' && !selectedRequest.activities?.length">
         <mat-icon>history</mat-icon>
-        <strong>No activity yet</strong>
-        <span>Actions on this request will appear here.</span>
+        <strong>{{ 'LEAVE.DETAIL.NO_ACTIVITY' | translate }}</strong>
+        <span>{{ 'LEAVE.DETAIL.NO_ACTIVITY_SUB' | translate }}</span>
       </div>
 
     </div>
 
     <div class="drawer-footer">
-      <button class="btn-outline" (click)="showDetail=false">Close</button>
-      <button class="row-btn" [matTooltip]="approveLabel(selectedRequest)" *ngIf="canApprove(selectedRequest)"
+      <button class="btn-outline" (click)="showDetail=false">{{ 'COMMON.CLOSE' | translate }}</button>
+      <button class="row-btn" [matTooltip]="approveLabel(selectedRequest)" [attr.aria-label]="approveLabel(selectedRequest)" *ngIf="canApprove(selectedRequest)"
               [disabled]="isActionLoading()"
               [attr.aria-busy]="isActionLoading(selectedRequest, 'approve')"
               (click)="approve(selectedRequest)">
@@ -811,7 +832,7 @@
               (click)="openReject(selectedRequest)">
         <mat-spinner *ngIf="isActionLoading(selectedRequest, 'reject')" diameter="18"></mat-spinner>
         <mat-icon *ngIf="!isActionLoading(selectedRequest, 'reject')">cancel</mat-icon>
-        {{ isActionLoading(selectedRequest, 'reject') ? 'Rejecting...' : 'Reject' }}
+        {{ (isActionLoading(selectedRequest, 'reject') ? 'LEAVE.DETAIL.REJECTING' : 'COMMON.REJECT') | translate }}
       </button>
       <button class="btn-outline" style="color:var(--text3)"  *ngIf="canCancel(selectedRequest)"
               [disabled]="isActionLoading()"
@@ -819,7 +840,7 @@
               (click)="cancel(selectedRequest)">
         <mat-spinner *ngIf="isActionLoading(selectedRequest, 'cancel')" diameter="18"></mat-spinner>
         <mat-icon *ngIf="!isActionLoading(selectedRequest, 'cancel')">block</mat-icon>
-        {{ isActionLoading(selectedRequest, 'cancel') ? 'Cancelling...' : 'Cancel' }}
+        {{ (isActionLoading(selectedRequest, 'cancel') ? 'LEAVE.DETAIL.CANCELLING' : 'COMMON.CANCEL') | translate }}
       </button>
     </div>
   </ng-container>
@@ -829,35 +850,33 @@
 <div class="modal-backdrop" *ngIf="showNewRequest" (click)="showNewRequest=false"></div>
 <div class="modal-panel" *ngIf="showNewRequest">
   <div class="modal-hdr">
-    <h3><mat-icon>event_available</mat-icon> New Leave Request</h3>
-    <button class="row-btn" (click)="showNewRequest=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>event_available</mat-icon> {{ 'LEAVE.FORM.TITLE' | translate }}</h3>
+    <button class="row-btn" (click)="showNewRequest=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
 
     <!-- Leave Type Selector -->
     <div class="field-group">
-      <label class="field-label">Leave Type <span class="req">*</span></label>
+      <label class="field-label">{{ 'LEAVE.FORM.LEAVE_TYPE' | translate }} <span class="req">*</span></label>
       <select class="field-select" [(ngModel)]="form.leave_type_id" (change)="onLeaveTypeChange()">
-        <option value="">Select type…</option>
+        <option value="">{{ 'LEAVE.FORM.SELECT_TYPE' | translate }}</option>
         <option *ngFor="let t of leaveTypes" [value]="t.id">
-          {{ t.name }}{{ t.is_hourly ? ' (Hourly)' : '' }}
+          {{ t | locName }}{{ t.is_hourly ? ' (' + ('LEAVE.FORM.HOURLY' | translate) + ')' : '' }}
         </option>
       </select>
       <!-- Daily balance hint -->
       <div class="balance-hint" *ngIf="selectedTypeBalance() && !isHourlyExcuse">
         <mat-icon>account_balance_wallet</mat-icon>
-        {{ balanceHintLabel() }}:
-        <strong>{{ selectedTypeBalance().remaining_days }}</strong> days
-        <ng-container *ngIf="isAnnualLeave">
-          (
-          <ng-container *ngIf="selectedTypeBalance().carried_forward_days > 0">
-            carry forward {{ selectedTypeBalance().carried_forward_days }} +
+        <span>
+          {{ balanceHintLabel() }}:
+          <strong>{{ selectedTypeBalance().remaining_days }}</strong> {{ 'LEAVE.FORM.DAYS' | translate }}
+          <ng-container *ngIf="isAnnualLeave">
+            (<ng-container *ngIf="selectedTypeBalance().carried_forward_days > 0">{{ 'LEAVE.FORM.BREAKDOWN_CF' | translate:{ value: selectedTypeBalance().carried_forward_days } }} + </ng-container>{{ 'LEAVE.FORM.BREAKDOWN_EARNED' | translate:{ earned: selectedTypeBalance().allocated_days, taken: selectedTypeBalance().used_days } }})
           </ng-container>
-          earned {{ selectedTypeBalance().allocated_days }} - approved taken {{ selectedTypeBalance().used_days }})
-        </ng-container>
-        <ng-container *ngIf="!isAnnualLeave">
-          of {{ selectedTypeBalance().allocated_days }} days
-        </ng-container>
+          <ng-container *ngIf="!isAnnualLeave">
+            {{ 'LEAVE.FORM.OF_DAYS' | translate:{ count: selectedTypeBalance().allocated_days } }}
+          </ng-container>
+        </span>
       </div>
     </div>
 
@@ -868,23 +887,23 @@
       <div class="excuse-usage-card" *ngIf="excuseUsage">
         <div class="eu-header">
           <mat-icon>timer</mat-icon>
-          <span>{{ excuseUsage.leave_type || selectedType?.name }} Usage — {{ excuseUsage.month }}</span>
+          <span>{{ 'LEAVE.EXCUSE.USAGE_TITLE' | translate:{ type: ((selectedType | locName) || excuseUsage.leave_type), month: excuseUsage.month } }}</span>
         </div>
         <div class="eu-body">
           <div class="eu-stat">
-            <span class="eu-val" style="color:var(--warning)">{{ excuseUsage.used_hours }}h</span>
-            <span class="eu-lbl">Used this month</span>
+            <span class="eu-val" style="color:var(--warning)">{{ 'LEAVE.UNITS.HOURS_SHORT' | translate:{ count: excuseUsage.used_hours } }}</span>
+            <span class="eu-lbl">{{ 'LEAVE.EXCUSE.USED_MONTH' | translate }}</span>
           </div>
           <ng-container *ngIf="!excuseUsage.is_unlimited">
             <div class="eu-divider"></div>
             <div class="eu-stat">
-              <span class="eu-val" style="color:var(--success)">{{ excuseUsage.remaining_hours }}h</span>
-              <span class="eu-lbl">Remaining of {{ excuseUsage.limit_hours }}h</span>
+              <span class="eu-val" style="color:var(--success)">{{ 'LEAVE.UNITS.HOURS_SHORT' | translate:{ count: excuseUsage.remaining_hours } }}</span>
+              <span class="eu-lbl">{{ 'LEAVE.EXCUSE.REMAINING_OF' | translate:{ limit: excuseUsage.limit_hours } }}</span>
             </div>
             <div class="eu-divider"></div>
             <div class="eu-stat">
-              <span class="eu-val">{{ excuseUsage.limit_hours }}h</span>
-              <span class="eu-lbl">Monthly limit</span>
+              <span class="eu-val">{{ 'LEAVE.UNITS.HOURS_SHORT' | translate:{ count: excuseUsage.limit_hours } }}</span>
+              <span class="eu-lbl">{{ 'LEAVE.EXCUSE.MONTHLY_LIMIT' | translate }}</span>
             </div>
             <!-- Progress bar -->
             <div class="eu-bar-wrap">
@@ -898,7 +917,7 @@
             <div class="eu-divider"></div>
             <div class="eu-stat">
               <span class="eu-val" style="color:var(--accent)">∞</span>
-              <span class="eu-lbl">No monthly limit</span>
+              <span class="eu-lbl">{{ 'LEAVE.EXCUSE.NO_LIMIT' | translate }}</span>
             </div>
           </ng-container>
         </div>
@@ -909,33 +928,33 @@
 
       <!-- Date (single day for excuse) -->
       <div class="field-group">
-        <label class="field-label">Date <span class="req">*</span></label>
-        <input class="field-input" type="date" [(ngModel)]="form.start_date">
-        <div class="field-hint">Working days only (Sunday – Thursday)</div>
+        <label class="field-label">{{ 'COMMON.DATE' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="date" dir="ltr" [(ngModel)]="form.start_date">
+        <div class="field-hint">{{ 'LEAVE.FORM.WORKING_DAYS_HINT' | translate }}</div>
       </div>
 
       <!-- Time range -->
       <div class="two-col">
         <div class="field-group">
-          <label class="field-label">From <span class="req">*</span></label>
-          <input class="field-input time-input" type="time" [(ngModel)]="form.start_time"
+          <label class="field-label">{{ 'COMMON.FROM' | translate }} <span class="req">*</span></label>
+          <input class="field-input time-input" type="time" dir="ltr" [(ngModel)]="form.start_time"
             min="08:00" max="16:00" step="900">
-          <div class="field-hint">From 08:00</div>
+          <div class="field-hint">{{ 'LEAVE.FORM.FROM_HINT' | translate }}</div>
         </div>
         <div class="field-group">
-          <label class="field-label">To <span class="req">*</span></label>
-          <input class="field-input time-input" type="time" [(ngModel)]="form.end_time"
+          <label class="field-label">{{ 'COMMON.TO' | translate }} <span class="req">*</span></label>
+          <input class="field-input time-input" type="time" dir="ltr" [(ngModel)]="form.end_time"
             min="08:00" max="16:00" step="900">
-          <div class="field-hint">Up to 16:00</div>
+          <div class="field-hint">{{ 'LEAVE.FORM.TO_HINT' | translate }}</div>
         </div>
       </div>
 
       <!-- Hours preview -->
       <div class="hours-preview" *ngIf="excuseHoursPreview() > 0">
         <mat-icon>timer</mat-icon>
-        <strong>{{ excuseHoursPreview() }}</strong> hour{{ excuseHoursPreview() !== 1 ? 's' : '' }}
+        <strong>{{ excuseHoursPreview() }}</strong> {{ (excuseHoursPreview() !== 1 ? 'LEAVE.FORM.HOURS' : 'LEAVE.FORM.HOUR') | translate }}
         <span style="color:var(--text3);font-size:12px">
-          ({{ form.start_time }} – {{ form.end_time }})
+          (<span dir="ltr">{{ form.start_time }} – {{ form.end_time }}</span>)
         </span>
       </div>
 
@@ -949,16 +968,16 @@
         <label class="hd-toggle">
           <input type="checkbox" [(ngModel)]="form.is_half_day" (change)="onHalfDayChange()">
           <span class="hd-toggle-track"></span>
-          <span class="hd-toggle-label">Half Day</span>
+          <span class="hd-toggle-label">{{ 'LEAVE.FORM.HALF_DAY' | translate }}</span>
         </label>
         <div class="hd-periods" *ngIf="form.is_half_day">
           <button class="period-btn" [class.active]="form.half_day_period==='morning'"
                   type="button" (click)="form.half_day_period='morning'">
-            <mat-icon>wb_sunny</mat-icon> Morning
+            <mat-icon>wb_sunny</mat-icon> {{ 'LEAVE.PERIOD.morning' | translate }}
           </button>
           <button class="period-btn" [class.active]="form.half_day_period==='afternoon'"
                   type="button" (click)="form.half_day_period='afternoon'">
-            <mat-icon>nights_stay</mat-icon> Afternoon
+            <mat-icon>nights_stay</mat-icon> {{ 'LEAVE.PERIOD.afternoon' | translate }}
           </button>
         </div>
       </div>
@@ -966,12 +985,12 @@
       <!-- Date fields -->
       <div class="two-col">
         <div class="field-group">
-          <label class="field-label">{{ form.is_half_day ? 'Date' : 'Start Date' }} <span class="req">*</span></label>
-          <input class="field-input" type="date" [(ngModel)]="form.start_date" (change)="onLeaveStartDateChange()">
+          <label class="field-label">{{ (form.is_half_day ? 'COMMON.DATE' : 'COMMON.START_DATE') | translate }} <span class="req">*</span></label>
+          <input class="field-input" type="date" dir="ltr" [(ngModel)]="form.start_date" (change)="onLeaveStartDateChange()">
         </div>
         <div class="field-group" *ngIf="!form.is_half_day">
-          <label class="field-label">End Date <span class="req">*</span></label>
-          <input class="field-input" type="date" [(ngModel)]="form.end_date" (change)="onLeaveEndDateChange()">
+          <label class="field-label">{{ 'COMMON.END_DATE' | translate }} <span class="req">*</span></label>
+          <input class="field-input" type="date" dir="ltr" [(ngModel)]="form.end_date" (change)="onLeaveEndDateChange()">
         </div>
       </div>
 
@@ -979,13 +998,13 @@
       <div class="days-preview" *ngIf="form.start_date && (form.is_half_day || form.end_date)">
         <mat-icon>event_available</mat-icon>
         <ng-container *ngIf="form.is_half_day">
-          <strong>0.5</strong> day &nbsp;·&nbsp; {{ form.half_day_period === 'afternoon' ? 'Afternoon' : 'Morning' }}
-          <span style="color:var(--text3);font-size:11px">&nbsp;· Deducted from annual leave</span>
+          <strong>0.5</strong> {{ 'LEAVE.FORM.DAY' | translate }} &nbsp;·&nbsp; {{ (form.half_day_period === 'afternoon' ? 'LEAVE.PERIOD.afternoon' : 'LEAVE.PERIOD.morning') | translate }}
+          <span style="color:var(--text3);font-size:11px">&nbsp;· {{ 'LEAVE.FORM.DEDUCTED_ANNUAL' | translate }}</span>
         </ng-container>
         <ng-container *ngIf="!form.is_half_day && workingDaysPreview() > 0">
-          <strong>{{ workingDaysPreview() }}</strong> working days (Sun–Thu)
+          <strong>{{ workingDaysPreview() }}</strong> {{ 'LEAVE.FORM.WORKING_DAYS' | translate }}
           <span *ngIf="formHolidays.length" style="color:var(--text3);font-size:11px">
-            &nbsp;· excluding {{ formHolidays.length }} holiday{{ formHolidays.length === 1 ? '' : 's' }}
+            &nbsp;· {{ (formHolidays.length === 1 ? 'LEAVE.FORM.EXCLUDING_HOLIDAY' : 'LEAVE.FORM.EXCLUDING_HOLIDAYS') | translate:{ count: formHolidays.length } }}
           </span>
         </ng-container>
       </div>
@@ -996,8 +1015,8 @@
     <div class="annual-options" *ngIf="isAnnualLeave && !isHourlyExcuse && !form.is_half_day">
       <div class="ao-header">
         <mat-icon>flight_takeoff</mat-icon>
-        Annual Leave Requirements
-        <span class="ao-header-hint">Select what you need HR to arrange</span>
+        {{ 'LEAVE.FORM.ANNUAL_REQ' | translate }}
+        <span class="ao-header-hint">{{ 'LEAVE.FORM.ANNUAL_REQ_HINT' | translate }}</span>
       </div>
 
       <div class="ao-cards">
@@ -1006,8 +1025,8 @@
           <input type="checkbox" [(ngModel)]="form.requires_exit_reentry">
           <div class="ao-card-icon"><mat-icon>badge</mat-icon></div>
           <div class="ao-card-body">
-            <div class="ao-card-title">Exit Re-entry Visa</div>
-            <div class="ao-card-sub">HR will process your visa before departure</div>
+            <div class="ao-card-title">{{ 'LEAVE.FORM.EXIT_REENTRY' | translate }}</div>
+            <div class="ao-card-sub">{{ 'LEAVE.FORM.EXIT_REENTRY_SUB' | translate }}</div>
           </div>
           <div class="ao-card-check" *ngIf="form.requires_exit_reentry">
             <mat-icon>check_circle</mat-icon>
@@ -1019,8 +1038,8 @@
           <input type="checkbox" [(ngModel)]="form.requires_ticket" (change)="onTicketRequirementChange()">
           <div class="ao-card-icon"><mat-icon>airplane_ticket</mat-icon></div>
           <div class="ao-card-body">
-            <div class="ao-card-title">Is ticket needed?</div>
-            <div class="ao-card-sub">Request your yearly annual ticket entitlement</div>
+            <div class="ao-card-title">{{ 'LEAVE.FORM.TICKET_NEEDED' | translate }}</div>
+            <div class="ao-card-sub">{{ 'LEAVE.FORM.TICKET_SUB' | translate }}</div>
           </div>
           <div class="ao-card-check" *ngIf="form.requires_ticket">
             <mat-icon>check_circle</mat-icon>
@@ -1029,51 +1048,51 @@
       </div>
 
       <div class="ticket-passengers" *ngIf="form.requires_ticket">
-        <div class="ticket-loading" *ngIf="ticketOptionsLoading"><mat-spinner diameter="22"></mat-spinner> Loading ticket eligibility...</div>
+        <div class="ticket-loading" *ngIf="ticketOptionsLoading"><mat-spinner diameter="22"></mat-spinner> {{ 'LEAVE.FORM.TICKET_LOADING' | translate }}</div>
         <ng-container *ngIf="ticketOptions && !ticketOptionsLoading">
-          <div class="ticket-used" *ngIf="ticketOptions.already_used"><mat-icon>error_outline</mat-icon> Ticket entitlement for {{ ticketOptions.year }} has already been used.</div>
-          <div class="passenger-heading">Ticket passengers <span>{{ 1 + (form.ticket_dependent_ids?.length || 0) }} ticket(s)</span></div>
-          <label class="passenger-row selected fixed"><input type="checkbox" checked disabled><mat-icon>person</mat-icon><div><strong>{{ ticketOptions.employee.name }}</strong><small>Employee · Automatically selected</small></div><mat-icon>check_circle</mat-icon></label>
+          <div class="ticket-used" *ngIf="ticketOptions.already_used"><mat-icon>error_outline</mat-icon> {{ 'LEAVE.FORM.TICKET_USED' | translate:{ year: ticketOptions.year } }}</div>
+          <div class="passenger-heading">{{ 'LEAVE.FORM.PASSENGERS' | translate }} <span>{{ 'LEAVE.FORM.TICKET_COUNT' | translate:{ count: 1 + (form.ticket_dependent_ids?.length || 0) } }}</span></div>
+          <label class="passenger-row selected fixed"><input type="checkbox" checked disabled><mat-icon>person</mat-icon><div><strong>{{ ticketOptions.employee.name }}</strong><small>{{ 'LEAVE.FORM.EMPLOYEE_AUTO' | translate }}</small></div><mat-icon>check_circle</mat-icon></label>
           <ng-container *ngIf="!ticketOptions.is_saudi">
-            <div class="dependent-limit">Select up to {{ ticketOptions.max_dependents }} dependents.</div>
+            <div class="dependent-limit">{{ 'LEAVE.FORM.SELECT_DEPENDENTS' | translate:{ max: ticketOptions.max_dependents } }}</div>
             <label class="passenger-row" *ngFor="let d of ticketOptions.dependents" [class.selected]="form.ticket_dependent_ids.includes(d.id)" [class.disabled]="!form.ticket_dependent_ids.includes(d.id) && form.ticket_dependent_ids.length >= ticketOptions.max_dependents">
               <input type="checkbox" [checked]="form.ticket_dependent_ids.includes(d.id)" [disabled]="!form.ticket_dependent_ids.includes(d.id) && form.ticket_dependent_ids.length >= ticketOptions.max_dependents" (change)="toggleTicketDependent(d.id)">
-              <mat-icon>family_restroom</mat-icon><div><strong>{{ d.full_name }}</strong><small>{{ d.relationship | titlecase }}</small></div><mat-icon *ngIf="form.ticket_dependent_ids.includes(d.id)">check_circle</mat-icon>
+              <mat-icon>family_restroom</mat-icon><div><strong>{{ d.full_name }}</strong><small>{{ relationshipLabel(d.relationship) }}</small></div><mat-icon *ngIf="form.ticket_dependent_ids.includes(d.id)">check_circle</mat-icon>
             </label>
-            <div class="dependent-limit" *ngIf="!ticketOptions.dependents.length">No dependents are registered. Contact HR to add dependent details.</div>
+            <div class="dependent-limit" *ngIf="!ticketOptions.dependents.length">{{ 'LEAVE.FORM.NO_DEPENDENTS' | translate }}</div>
           </ng-container>
         </ng-container>
       </div>
 
       <!-- Destination (shown when either is checked) -->
       <div class="field-group" *ngIf="form.requires_exit_reentry || form.requires_ticket">
-        <label class="field-label">Destination Country</label>
+        <label class="field-label">{{ 'LEAVE.FORM.DESTINATION' | translate }}</label>
         <input class="field-input" [(ngModel)]="form.destination_country"
-               placeholder="e.g. India, Philippines, Egypt…">
-        <div class="field-hint">Where are you travelling to?</div>
+               [placeholder]="'LEAVE.FORM.DESTINATION_PH' | translate">
+        <div class="field-hint">{{ 'LEAVE.FORM.DESTINATION_HINT' | translate }}</div>
       </div>
 
       <!-- Auto-request notice -->
       <div class="ao-notice" *ngIf="form.requires_exit_reentry || form.requires_ticket">
         <mat-icon>auto_awesome</mat-icon>
         <div>
-          <strong>Automatic HR request will be created</strong>
-          <span *ngIf="form.requires_exit_reentry"> — Exit re-entry visa</span>
-          <span *ngIf="form.requires_exit_reentry && form.requires_ticket"> and</span>
-          <span *ngIf="form.requires_ticket"> — Air ticket</span>
-          will appear in HR's request queue automatically when you submit.
+          <strong>{{ 'LEAVE.FORM.AUTO_REQ' | translate }}</strong>
+          <span *ngIf="form.requires_exit_reentry"> — {{ 'LEAVE.FORM.AUTO_EXIT' | translate }}</span>
+          <span *ngIf="form.requires_exit_reentry && form.requires_ticket"> {{ 'LEAVE.FORM.AUTO_AND' | translate }}</span>
+          <span *ngIf="form.requires_ticket"> — {{ 'LEAVE.FORM.AUTO_TICKET' | translate }}</span>
+          {{ 'LEAVE.FORM.AUTO_TAIL' | translate }}
         </div>
       </div>
     </div>
 
     <!-- Reason (both types) -->
     <div class="field-group">
-      <label class="field-label">Reason <span class="req">*</span></label>
+      <label class="field-label">{{ 'COMMON.REASON' | translate }} <span class="req">*</span></label>
       <textarea class="field-textarea" rows="3" [(ngModel)]="form.reason"
-        [placeholder]="isHourlyExcuse ? 'Brief description of the excuse...' : 'Provide a reason (min 10 characters)...'">
+        [placeholder]="(isHourlyExcuse ? 'LEAVE.FORM.REASON_PH_EXCUSE' : 'LEAVE.FORM.REASON_PH') | translate">
       </textarea>
       <div class="char-count" [class.warn]="form.reason.length > 0 && form.reason.length < (isHourlyExcuse ? 5 : 10)">
-        {{ form.reason.length }} chars
+        {{ 'LEAVE.FORM.CHARS' | translate:{ count: form.reason.length } }}
       </div>
     </div>
 
@@ -1082,8 +1101,8 @@
     <!-- ── Document upload (shown when leave type requires_document=true) ── -->
     <div class="field-group doc-upload-group" *ngIf="selectedType?.requires_document">
       <label class="field-label">
-        Supporting Document <span class="req">*</span>
-        <span class="field-hint-inline"> — PDF, JPG or PNG, max 5 MB</span>
+        {{ 'LEAVE.FORM.SUPPORTING_DOC' | translate }} <span class="req">*</span>
+        <span class="field-hint-inline"> — {{ 'LEAVE.FORM.DOC_HINT_INLINE' | translate }}</span>
       </label>
       <div class="file-drop-zone" [class.has-file]="selectedFile" [class.error]="fileError">
         <input type="file" #fileInput id="leaveDocInput"
@@ -1091,13 +1110,13 @@
                (change)="onFileSelected($event)" style="display:none">
         <mat-icon>{{ selectedFile ? 'description' : 'cloud_upload' }}</mat-icon>
         <div *ngIf="!selectedFile">
-          <div class="fdz-label">Drop file here or <a (click)="fileInput.click()" class="fdz-link">browse</a></div>
-          <div class="fdz-hint">PDF, JPG, PNG — max 5 MB</div>
+          <div class="fdz-label">{{ 'LEAVE.FORM.DROP_FILE' | translate }} <a (click)="fileInput.click()" class="fdz-link">{{ 'LEAVE.FORM.BROWSE' | translate }}</a></div>
+          <div class="fdz-hint">{{ 'LEAVE.FORM.FILE_HINT' | translate }}</div>
         </div>
         <div *ngIf="selectedFile" class="fdz-selected">
           <span class="fdz-name">{{ selectedFile.name }}</span>
-          <span class="fdz-size">({{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB)</span>
-          <button class="fdz-clear" type="button" (click)="selectedFile=null; fileInput.value=''">
+          <span class="fdz-size">({{ 'LEAVE.FORM.FILE_SIZE_MB' | translate:{ size: (selectedFile.size / 1024 / 1024).toFixed(2) } }})</span>
+          <button class="fdz-clear" type="button" (click)="selectedFile=null; fileInput.value=''" [attr.aria-label]="'COMMON.CLEAR' | translate">
             <mat-icon>close</mat-icon>
           </button>
         </div>
@@ -1108,7 +1127,7 @@
     <!-- Optional upload for non-required types -->
     <div class="field-group doc-upload-group" *ngIf="selectedType && !selectedType.requires_document">
       <label class="field-label">
-        Attach Document <span class="field-hint-inline">(optional)</span>
+        {{ 'LEAVE.FORM.ATTACH_DOC' | translate }} <span class="field-hint-inline">({{ 'COMMON.OPTIONAL' | translate }})</span>
       </label>
       <div class="file-drop-zone" [class.has-file]="selectedFile">
         <input type="file" #fileInputOpt id="leaveDocInputOpt"
@@ -1116,12 +1135,12 @@
                (change)="onFileSelected($event)" style="display:none">
         <mat-icon>{{ selectedFile ? 'description' : 'attach_file' }}</mat-icon>
         <div *ngIf="!selectedFile">
-          <div class="fdz-label"><a (click)="fileInputOpt.click()" class="fdz-link">Click to attach a file</a></div>
-          <div class="fdz-hint">PDF, JPG, PNG — max 5 MB</div>
+          <div class="fdz-label"><a (click)="fileInputOpt.click()" class="fdz-link">{{ 'LEAVE.FORM.CLICK_ATTACH' | translate }}</a></div>
+          <div class="fdz-hint">{{ 'LEAVE.FORM.FILE_HINT' | translate }}</div>
         </div>
         <div *ngIf="selectedFile" class="fdz-selected">
           <span class="fdz-name">{{ selectedFile.name }}</span>
-          <button class="fdz-clear" type="button" (click)="selectedFile=null; fileInputOpt.value=''">
+          <button class="fdz-clear" type="button" (click)="selectedFile=null; fileInputOpt.value=''" [attr.aria-label]="'COMMON.CLEAR' | translate">
             <mat-icon>close</mat-icon>
           </button>
         </div>
@@ -1129,10 +1148,10 @@
     </div>
 
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showNewRequest=false">Cancel</button>
+    <button class="btn-outline" (click)="showNewRequest=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="submitRequest()" [disabled]="submitting">
-      <mat-icon>{{ submitting ? 'hourglass_empty' : 'send' }}</mat-icon>
-      {{ submitting ? 'Submitting…' : 'Submit Request' }}
+      <mat-icon [class.flip-rtl]="!submitting">{{ submitting ? 'hourglass_empty' : 'send' }}</mat-icon>
+      {{ (submitting ? 'COMMON.SUBMITTING' : 'LEAVE.FORM.SUBMIT') | translate }}
     </button>
   </div>
 </div>
@@ -1141,30 +1160,30 @@
 <div class="modal-backdrop" *ngIf="showReject" (click)="!isActionLoading(rejectTarget, 'reject') && (showReject=false)"></div>
 <div class="modal-panel" *ngIf="showReject">
   <div class="modal-hdr">
-    <h3><mat-icon style="color:var(--danger)">cancel</mat-icon> Reject Leave Request</h3>
-    <button class="row-btn" (click)="showReject=false" [disabled]="isActionLoading(rejectTarget, 'reject')"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon style="color:var(--danger)">cancel</mat-icon> {{ 'LEAVE.REJECT.TITLE' | translate }}</h3>
+    <button class="row-btn" (click)="showReject=false" [disabled]="isActionLoading(rejectTarget, 'reject')" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="reject-info" *ngIf="rejectTarget">
-      <div>{{ rejectTarget.employee?.first_name }} {{ rejectTarget.employee?.last_name }}</div>
-      <div class="name-sub">{{ rejectTarget.leave_type?.name }} · {{ rejectTarget.total_days }} days</div>
+      <div>{{ employeeName(rejectTarget.employee) }}</div>
+      <div class="name-sub">{{ rejectTarget.leave_type | locName }} · {{ 'COMMON.DAY_COUNT' | translate:{ count: rejectTarget.total_days } }}</div>
     </div>
     <div class="field-group">
-      <label class="field-label">Rejection Reason <span class="req">*</span></label>
+      <label class="field-label">{{ 'LEAVE.REJECT.REASON' | translate }} <span class="req">*</span></label>
       <textarea class="field-textarea" rows="3" [(ngModel)]="rejectReason"
         [disabled]="isActionLoading(rejectTarget, 'reject')"
-        placeholder="Provide a clear reason…"></textarea>
+        [placeholder]="'LEAVE.REJECT.REASON_PH' | translate"></textarea>
     </div>
     <div class="form-err" *ngIf="rejectError"><mat-icon>error_outline</mat-icon> {{ rejectError }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showReject=false" [disabled]="isActionLoading(rejectTarget, 'reject')">Cancel</button>
+    <button class="btn-outline" (click)="showReject=false" [disabled]="isActionLoading(rejectTarget, 'reject')">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-danger" (click)="confirmReject()"
             [disabled]="!rejectReason.trim() || isActionLoading(rejectTarget, 'reject')"
             [attr.aria-busy]="isActionLoading(rejectTarget, 'reject')">
       <mat-spinner *ngIf="isActionLoading(rejectTarget, 'reject')" diameter="18"></mat-spinner>
       <mat-icon *ngIf="!isActionLoading(rejectTarget, 'reject')">cancel</mat-icon>
-      {{ isActionLoading(rejectTarget, 'reject') ? 'Rejecting...' : 'Reject Request' }}
+      {{ (isActionLoading(rejectTarget, 'reject') ? 'LEAVE.DETAIL.REJECTING' : 'LEAVE.REJECT.SUBMIT') | translate }}
     </button>
   </div>
 </div>
@@ -1173,51 +1192,56 @@
 <div class="modal-backdrop" *ngIf="showTypeForm" (click)="showTypeForm=false"></div>
 <div class="modal-panel" *ngIf="showTypeForm">
   <div class="modal-hdr">
-    <h3><mat-icon>tune</mat-icon> {{ typeEditId ? 'Edit' : 'Add' }} Leave Type</h3>
-    <button class="row-btn" (click)="showTypeForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>tune</mat-icon> {{ (typeEditId ? 'LEAVE.TYPES.FORM.EDIT_TITLE' : 'LEAVE.TYPES.FORM.ADD_TITLE') | translate }}</h3>
+    <button class="row-btn" (click)="showTypeForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Name <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="typeForm.name" placeholder="e.g. Annual Leave">
+        <label class="field-label">{{ 'COMMON.NAME' | translate }} <span class="req">*</span></label>
+        <input class="field-input" dir="ltr" [(ngModel)]="typeForm.name" [placeholder]="'LEAVE.TYPES.FORM.NAME_PH' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Code <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="typeForm.code" placeholder="e.g. AL" style="text-transform:uppercase">
+        <label class="field-label">{{ 'COMMON.CODE' | translate }} <span class="req">*</span></label>
+        <input class="field-input" dir="ltr" [(ngModel)]="typeForm.code" [placeholder]="'LEAVE.TYPES.FORM.CODE_PH' | translate" style="text-transform:uppercase">
       </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">{{ 'LEAVE.TYPES.FORM.NAME_AR' | translate }} <span class="field-hint-inline">({{ 'COMMON.OPTIONAL' | translate }})</span></label>
+      <input class="field-input" dir="rtl" lang="ar" [(ngModel)]="typeForm.name_ar" [placeholder]="'LEAVE.TYPES.FORM.NAME_AR_PH' | translate">
+      <div class="field-hint">{{ 'LEAVE.TYPES.FORM.NAME_AR_HINT' | translate }}</div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Days Allowed / Year</label>
-        <input class="field-input" type="number" [(ngModel)]="typeForm.days_allowed" min="0">
+        <label class="field-label">{{ 'LEAVE.TYPES.FORM.DAYS_ALLOWED' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" [(ngModel)]="typeForm.days_allowed" min="0">
       </div>
       <div class="field-group">
-        <label class="field-label">Carry Forward Rule</label>
+        <label class="field-label">{{ 'LEAVE.TYPES.FORM.CF_RULE' | translate }}</label>
         <select class="field-input" [(ngModel)]="typeForm.carry_forward_all" [disabled]="!typeForm.carry_forward">
-          <option [ngValue]="true">All</option>
-          <option [ngValue]="false">Number</option>
+          <option [ngValue]="true">{{ 'LEAVE.TYPES.FORM.CF_ALL' | translate }}</option>
+          <option [ngValue]="false">{{ 'LEAVE.TYPES.FORM.CF_NUMBER' | translate }}</option>
         </select>
-        <input *ngIf="!typeForm.carry_forward_all" class="field-input" type="number" aria-label="Maximum carry forward days" [(ngModel)]="typeForm.max_carry_forward" min="0" max="65535" step="1" [disabled]="!typeForm.carry_forward">
-        <small>Carried forward days are added to next year's allowance and are used before it.</small>
+        <input *ngIf="!typeForm.carry_forward_all" class="field-input" type="number" dir="ltr" [attr.aria-label]="'LEAVE.TYPES.FORM.CF_MAX_ARIA' | translate" [(ngModel)]="typeForm.max_carry_forward" min="0" max="65535" step="1" [disabled]="!typeForm.carry_forward">
+        <small>{{ 'LEAVE.TYPES.FORM.CF_HELP' | translate }}</small>
       </div>
     </div>
     <div class="checkbox-row">
-      <label class="chk-label"><input type="checkbox" [(ngModel)]="typeForm.is_paid"> Paid Leave</label>
-      <label class="chk-label"><input type="checkbox" [(ngModel)]="typeForm.carry_forward"> Allow Carry Forward</label>
-      <label class="chk-label"><input type="checkbox" [(ngModel)]="typeForm.requires_document"> Requires Document</label>
+      <label class="chk-label"><input type="checkbox" [(ngModel)]="typeForm.is_paid"> {{ 'LEAVE.TYPES.FORM.PAID_LEAVE' | translate }}</label>
+      <label class="chk-label"><input type="checkbox" [(ngModel)]="typeForm.carry_forward"> {{ 'LEAVE.TYPES.FORM.ALLOW_CF' | translate }}</label>
+      <label class="chk-label"><input type="checkbox" [(ngModel)]="typeForm.requires_document"> {{ 'LEAVE.TYPES.FORM.REQUIRES_DOC' | translate }}</label>
     </div>
     <div class="field-group">
-      <label class="field-label">Description</label>
+      <label class="field-label">{{ 'COMMON.DESCRIPTION' | translate }}</label>
       <textarea class="field-textarea" rows="2" [(ngModel)]="typeForm.description"></textarea>
     </div>
     <div class="form-err" *ngIf="typeError"><mat-icon>error_outline</mat-icon> {{ typeError }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showTypeForm=false">Cancel</button>
+    <button class="btn-outline" (click)="showTypeForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="saveType()" [disabled]="typeSaving">
       <mat-icon>{{ typeSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ typeSaving ? 'Saving…' : 'Save Type' }}
+      {{ (typeSaving ? 'COMMON.SAVING' : 'LEAVE.TYPES.FORM.SAVE') | translate }}
     </button>
   </div>
 </div>
@@ -1226,29 +1250,29 @@
 <div class="modal-backdrop" *ngIf="showHolidayForm" (click)="closeHolidayForm()"></div>
 <div class="modal-panel" *ngIf="showHolidayForm">
   <div class="modal-hdr">
-    <h3><mat-icon>star</mat-icon> {{ holidayEditId ? 'Edit' : 'Add' }} Holiday</h3>
-    <button class="row-btn" (click)="closeHolidayForm()"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>star</mat-icon> {{ (holidayEditId ? 'LEAVE.HOLIDAYS.FORM.EDIT_TITLE' : 'LEAVE.HOLIDAYS.FORM.ADD_TITLE') | translate }}</h3>
+    <button class="row-btn" (click)="closeHolidayForm()" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="field-group">
-      <label class="field-label">Holiday Name <span class="req">*</span></label>
-      <input class="field-input" [(ngModel)]="holidayForm.name" placeholder="e.g. National Day">
+      <label class="field-label">{{ 'LEAVE.HOLIDAYS.FORM.NAME' | translate }} <span class="req">*</span></label>
+      <input class="field-input" [(ngModel)]="holidayForm.name" [placeholder]="'LEAVE.HOLIDAYS.FORM.NAME_PH' | translate">
     </div>
     <div class="field-group">
-      <label class="field-label">Start Date <span class="req">*</span></label>
-      <input class="field-input" type="date" [(ngModel)]="holidayForm.date">
+      <label class="field-label">{{ 'COMMON.START_DATE' | translate }} <span class="req">*</span></label>
+      <input class="field-input" type="date" dir="ltr" [(ngModel)]="holidayForm.date">
     </div>
     <div class="field-group">
-      <label class="field-label">End Date</label>
-      <input class="field-input" type="date" [(ngModel)]="holidayForm.end_date">
+      <label class="field-label">{{ 'COMMON.END_DATE' | translate }}</label>
+      <input class="field-input" type="date" dir="ltr" [(ngModel)]="holidayForm.end_date">
     </div>
-    <label class="chk-label"><input type="checkbox" [(ngModel)]="holidayForm.is_recurring"> Recurring annually</label>
+    <label class="chk-label"><input type="checkbox" [(ngModel)]="holidayForm.is_recurring"> {{ 'LEAVE.HOLIDAYS.FORM.RECURRING_ANNUALLY' | translate }}</label>
     <div class="form-err" *ngIf="holidayError"><mat-icon>error_outline</mat-icon> {{ holidayError }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="closeHolidayForm()">Cancel</button>
+    <button class="btn-outline" (click)="closeHolidayForm()">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="saveHoliday()" [disabled]="holidaySaving">
-      <mat-icon>save</mat-icon> Save Holiday
+      <mat-icon>save</mat-icon> {{ 'LEAVE.HOLIDAYS.FORM.SAVE' | translate }}
     </button>
   </div>
 </div>
@@ -1262,13 +1286,13 @@
         <mat-icon style="color:var(--success)">visibility</mat-icon>
       </div>
       <div>
-        <div class="drawer-name">Department Visibility</div>
+        <div class="drawer-name">{{ 'LEAVE.VISIBILITY.TITLE' | translate }}</div>
         <div class="drawer-sub" *ngIf="visibilityLeaveType">
-          {{ visibilityLeaveType.name }} &nbsp;·&nbsp; Choose departments that can apply
+          {{ visibilityLeaveType | locName }} &nbsp;·&nbsp; {{ 'LEAVE.VISIBILITY.SUB' | translate }}
         </div>
       </div>
     </div>
-    <button class="row-btn" (click)="showVisibilityPanel=false"><mat-icon>close</mat-icon></button>
+    <button class="row-btn" (click)="showVisibilityPanel=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
 
   <div class="drawer-body">
@@ -1279,25 +1303,24 @@
     <ng-container *ngIf="!visibilityLoading">
       <div class="limits-help">
         <mat-icon>info_outline</mat-icon>
-        <span>Departments set to <strong>Visible</strong> can choose this leave type while applying.
-          Departments set to <strong>Hidden</strong> will not see it in the apply form.</span>
+        <span [innerHTML]="'LEAVE.VISIBILITY.HELP' | translate"></span>
       </div>
 
       <div class="limit-rows">
         <div class="limit-row" *ngFor="let row of deptVisibility">
           <div class="limit-dept">
-            <div class="code-chip">{{ row.department_code }}</div>
+            <div class="code-chip" dir="ltr">{{ row.department_code }}</div>
             <div>
-              <div class="name-main">{{ row.department_name }}</div>
-              <div class="name-sub" *ngIf="row.is_visible" style="color:var(--success)">Visible during leave apply</div>
-              <div class="name-sub" *ngIf="!row.is_visible" style="color:var(--danger)">Hidden during leave apply</div>
+              <div class="name-main">{{ row | locName:'department_name' }}</div>
+              <div class="name-sub" *ngIf="row.is_visible" style="color:var(--success)">{{ 'LEAVE.VISIBILITY.VISIBLE_DURING' | translate }}</div>
+              <div class="name-sub" *ngIf="!row.is_visible" style="color:var(--danger)">{{ 'LEAVE.VISIBILITY.HIDDEN_DURING' | translate }}</div>
             </div>
           </div>
 
           <div class="limit-controls">
-            <div class="limit-toggle visibility-toggle" [class.is-limited]="row.is_visible" (click)="toggleDeptVisibility(row)">
+            <div class="limit-toggle visibility-toggle" role="switch" [attr.aria-checked]="row.is_visible" [class.is-limited]="row.is_visible" (click)="toggleDeptVisibility(row)">
               <div class="toggle-knob"></div>
-              <span class="toggle-label">{{ row.is_visible ? 'Visible' : 'Hidden' }}</span>
+              <span class="toggle-label">{{ (row.is_visible ? 'LEAVE.VISIBILITY.VISIBLE' : 'LEAVE.VISIBILITY.HIDDEN') | translate }}</span>
             </div>
           </div>
         </div>
@@ -1306,12 +1329,12 @@
       <div class="limits-summary">
         <div class="ls-item">
           <span class="ls-val" style="color:var(--success)">{{ visibleDepartmentCount() }}</span>
-          <span class="ls-lbl">Departments visible</span>
+          <span class="ls-lbl">{{ 'LEAVE.VISIBILITY.COUNT_VISIBLE' | translate }}</span>
         </div>
         <div class="ls-sep"></div>
         <div class="ls-item">
           <span class="ls-val" style="color:var(--danger)">{{ hiddenDepartmentCount() }}</span>
-          <span class="ls-lbl">Departments hidden</span>
+          <span class="ls-lbl">{{ 'LEAVE.VISIBILITY.COUNT_HIDDEN' | translate }}</span>
         </div>
       </div>
 
@@ -1325,13 +1348,13 @@
   </div>
 
   <div class="drawer-footer">
-    <button class="btn-outline" (click)="showVisibilityPanel=false">Close</button>
+    <button class="btn-outline" (click)="showVisibilityPanel=false">{{ 'COMMON.CLOSE' | translate }}</button>
     <div *ngIf="visibilityDirty" class="dirty-badge">
-      <mat-icon>edit</mat-icon> Unsaved changes
+      <mat-icon>edit</mat-icon> {{ 'LEAVE.UNSAVED_CHANGES' | translate }}
     </div>
     <button class="btn-primary" (click)="saveVisibility()" [disabled]="visibilitySaving || !visibilityDirty">
       <mat-icon>{{ visibilitySaving ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ visibilitySaving ? 'Saving...' : 'Save Visibility' }}
+      {{ (visibilitySaving ? 'COMMON.SAVING' : 'LEAVE.VISIBILITY.SAVE') | translate }}
     </button>
   </div>
 </div>
@@ -1348,13 +1371,13 @@
         <mat-icon style="color:var(--accent2)">tune</mat-icon>
       </div>
       <div>
-        <div class="drawer-name">Department Limits</div>
+        <div class="drawer-name">{{ 'LEAVE.LIMITS.TITLE' | translate }}</div>
         <div class="drawer-sub" *ngIf="limitsLeaveType">
-          {{ limitsLeaveType.name }} &nbsp;·&nbsp; Monthly hour caps per department
+          {{ limitsLeaveType | locName }} &nbsp;·&nbsp; {{ 'LEAVE.LIMITS.SUB' | translate }}
         </div>
       </div>
     </div>
-    <button class="row-btn" (click)="showLimitsPanel=false"><mat-icon>close</mat-icon></button>
+    <button class="row-btn" (click)="showLimitsPanel=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
 
   <div class="drawer-body">
@@ -1369,8 +1392,7 @@
       <!-- Legend / help text -->
       <div class="limits-help">
         <mat-icon>info_outline</mat-icon>
-        <span>Toggle a department to <strong>Limited</strong> and set its monthly cap.
-          Set to <strong>Unlimited</strong> to make that department an exception.</span>
+        <span [innerHTML]="'LEAVE.LIMITS.HELP' | translate"></span>
       </div>
 
       <!-- Department rows -->
@@ -1378,33 +1400,33 @@
         <div class="limit-row" *ngFor="let row of deptLimits">
 
           <div class="limit-dept">
-            <div class="code-chip">{{ row.department_code }}</div>
+            <div class="code-chip" dir="ltr">{{ row.department_code }}</div>
             <div>
-              <div class="name-main">{{ row.department_name }}</div>
+              <div class="name-main">{{ row | locName:'department_name' }}</div>
               <div class="name-sub" *ngIf="!row.is_limited" style="color:var(--accent2)">
-                No cap — unlimited hours
+                {{ 'LEAVE.LIMITS.NO_CAP' | translate }}
               </div>
               <div class="name-sub" *ngIf="row.is_limited" style="color:var(--warning)">
-                Capped at {{ row.monthly_hours_limit }}h / month
+                {{ 'LEAVE.LIMITS.CAPPED' | translate:{ hours: row.monthly_hours_limit } }}
               </div>
             </div>
           </div>
 
           <div class="limit-controls">
             <!-- Toggle switch -->
-            <div class="limit-toggle" [class.is-limited]="row.is_limited" (click)="toggleDeptLimit(row)">
+            <div class="limit-toggle" role="switch" [attr.aria-checked]="row.is_limited" [class.is-limited]="row.is_limited" (click)="toggleDeptLimit(row)">
               <div class="toggle-knob"></div>
-              <span class="toggle-label">{{ row.is_limited ? 'Limited' : 'Unlimited' }}</span>
+              <span class="toggle-label">{{ (row.is_limited ? 'LEAVE.LIMITS.LIMITED' : 'LEAVE.LIMITS.UNLIMITED') | translate }}</span>
             </div>
 
             <!-- Hours input (only when limited) -->
             <div class="limit-hours-wrap" *ngIf="row.is_limited">
-              <input class="limit-hours-input" type="number"
+              <input class="limit-hours-input" type="number" dir="ltr"
                 [(ngModel)]="row.monthly_hours_limit"
                 (ngModelChange)="onLimitHoursChange(row)"
                 min="0.5" max="200" step="0.5"
-                placeholder="Hours">
-              <span class="limit-hours-unit">h/mo</span>
+                [placeholder]="'COMMON.HOURS' | translate" [attr.aria-label]="'COMMON.HOURS' | translate">
+              <span class="limit-hours-unit">{{ 'LEAVE.LIMITS.UNIT' | translate }}</span>
             </div>
             <div class="limit-unlimited-badge" *ngIf="!row.is_limited">
               <mat-icon>all_inclusive</mat-icon>
@@ -1420,14 +1442,14 @@
           <span class="ls-val" style="color:var(--warning)">
             {{ deptLimits | limitedCount }}
           </span>
-          <span class="ls-lbl">Departments limited</span>
+          <span class="ls-lbl">{{ 'LEAVE.LIMITS.COUNT_LIMITED' | translate }}</span>
         </div>
         <div class="ls-sep"></div>
         <div class="ls-item">
           <span class="ls-val" style="color:var(--accent2)">
             {{ deptLimits.length - (deptLimits | limitedCount) }}
           </span>
-          <span class="ls-lbl">Departments unlimited</span>
+          <span class="ls-lbl">{{ 'LEAVE.LIMITS.COUNT_UNLIMITED' | translate }}</span>
         </div>
       </div>
 
@@ -1440,13 +1462,13 @@
   </div>
 
   <div class="drawer-footer">
-    <button class="btn-outline" (click)="showLimitsPanel=false">Close</button>
+    <button class="btn-outline" (click)="showLimitsPanel=false">{{ 'COMMON.CLOSE' | translate }}</button>
     <div *ngIf="limitsDirty" class="dirty-badge">
-      <mat-icon>edit</mat-icon> Unsaved changes
+      <mat-icon>edit</mat-icon> {{ 'LEAVE.UNSAVED_CHANGES' | translate }}
     </div>
     <button class="btn-primary" (click)="saveLimits()" [disabled]="limitsSaving || !limitsDirty">
       <mat-icon>{{ limitsSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ limitsSaving ? 'Saving…' : 'Save Limits' }}
+      {{ (limitsSaving ? 'COMMON.SAVING' : 'LEAVE.LIMITS.SAVE') | translate }}
     </button>
   </div>
 

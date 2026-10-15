@@ -1,0 +1,191 @@
+{
+  "CONTRACTS": {
+    "TITLE": "Contracts",
+    "SUBTITLE": "Employee contracts · Status tracking · PDF management",
+    "ACTIVE_REPORT": "Active Contract Report",
+    "NEW": "New Contract",
+    "EDIT": "Edit Contract",
+    "CREATE": "Create Contract",
+    "UPDATE": "Update Contract",
+    "TABS": {
+      "CONTRACTS": "Contracts",
+      "RENEWALS": "Renewals"
+    },
+    "STATS": {
+      "TOTAL": "Total",
+      "ACTIVE": "Active",
+      "DRAFT": "Draft",
+      "EXPIRING_SOON": "Expiring Soon",
+      "EXPIRED": "Expired",
+      "TERMINATED": "Terminated"
+    },
+    "FILTER": {
+      "SEARCH_PLACEHOLDER": "Search employee, reference, position…",
+      "ALL_STATUS": "All Status",
+      "ALL_TYPES": "All Types",
+      "EXPIRING_30": "Expiring in 30 days"
+    },
+    "TYPES": {
+      "full_time": "Full Time",
+      "part_time": "Part Time",
+      "contract": "Contract",
+      "intern": "Intern",
+      "probation": "Probation",
+      "fixed_term": "Fixed Term",
+      "unlimited": "Unlimited"
+    },
+    "COL": {
+      "POSITION": "Position",
+      "PERIOD": "Period",
+      "SALARY": "Salary"
+    },
+    "UNLIMITED": "Unlimited",
+    "EMPTY": "No contracts found",
+    "ACTION": {
+      "APPROVE": "Approve",
+      "TERMINATE": "Terminate"
+    },
+    "FORM": {
+      "EMPLOYEE": "Employee",
+      "SELECT_EMPLOYEE": "— Select employee —",
+      "TYPE": "Contract Type",
+      "POSITION": "Position / Title",
+      "POSITION_PLACEHOLDER": "e.g. Senior Engineer",
+      "DEPARTMENT": "Department",
+      "SELECT_DEPARTMENT": "— Select department —",
+      "START_DATE": "Start Date",
+      "END_DATE": "End Date",
+      "END_DATE_HINT": "(leave blank = unlimited)",
+      "SALARY": "Monthly Salary",
+      "CURRENCY": "Currency",
+      "INITIAL_STATUS": "Initial Status",
+      "ACTIVE_APPROVED": "Active (approved)",
+      "TERMS": "Contract Terms / Notes",
+      "TERMS_PLACEHOLDER": "Key terms, conditions, or notes about this contract…",
+      "DOCUMENT": "Contract Document (PDF, DOC, DOCX — max 10 MB)",
+      "REMOVE": "Remove",
+      "KEEP_DOCUMENT_HINT": "Leave empty to keep the current document. Uploading replaces it."
+    },
+    "CURRENCIES": {
+      "SAR": "SAR — Saudi Riyal",
+      "USD": "USD — US Dollar",
+      "AED": "AED — UAE Dirham",
+      "EUR": "EUR — Euro",
+      "GBP": "GBP — British Pound"
+    },
+    "DETAIL": {
+      "CONTRACT_DETAILS": "Contract Details",
+      "START": "Start",
+      "END": "End",
+      "APPROVED_BY": "Approved by",
+      "CREATED_BY": "Created by",
+      "TERMS_NOTES": "Terms & Notes",
+      "DOCUMENT": "Contract Document",
+      "DOCUMENT_ATTACHED": "Document attached",
+      "NO_DOCUMENT": "No document attached",
+      "UPLOADING": "Uploading…"
+    },
+    "MSG": {
+      "NO_PERMISSION": "You do not have permission to manage contracts.",
+      "FILE_TYPE": "Only PDF, DOC, or DOCX files are allowed.",
+      "FILE_SIZE": "File must be 10 MB or smaller.",
+      "SAVE_FAILED": "Save failed.",
+      "UPLOAD_AFTER_SAVE_FAILED": "Contract saved, but the document upload failed.",
+      "CREATED": "Contract created.",
+      "UPDATED": "Contract updated.",
+      "DOCUMENT_UPLOADED": "Document uploaded.",
+      "UPLOAD_FAILED": "Upload failed.",
+      "CONFIRM_APPROVE": "Approve contract {{ref}}? This will set it to Active.",
+      "APPROVED": "Contract approved.",
+      "APPROVE_FAILED": "Approve failed.",
+      "STATUS_UPDATED": "Status updated to {{status}}.",
+      "CONFIRM_DELETE": "Delete this contract? This cannot be undone."
+    },
+    "RENEWALS": {
+      "TITLE": "Contract Renewals",
+      "SUBTITLE": "3-level approval workflow · Manager → HR → CEO · Auto-generated 60 days before expiry",
+      "MANUAL": "Manual Renewal",
+      "STATS": {
+        "TOTAL": "Total",
+        "AWAITING_MANAGER": "Awaiting Manager",
+        "AWAITING_HR": "Awaiting HR",
+        "AWAITING_CEO": "Awaiting CEO",
+        "FULLY_APPROVED": "Fully Approved",
+        "REJECTED": "Rejected"
+      },
+      "STAGES": {
+        "MANAGER": "Manager",
+        "HR": "HR",
+        "CEO": "CEO"
+      },
+      "STAGE_LABEL": {
+        "pending": "Awaiting Manager Approval",
+        "manager_approved": "Awaiting HR Approval",
+        "hr_approved": "Awaiting CEO Approval",
+        "approved": "Fully Approved",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled"
+      },
+      "PIPELINE": "Approval Pipeline",
+      "PENDING_COUNT": "{{count}} pending",
+      "CREATE": {
+        "TITLE": "Create Manual Renewal Request",
+        "ACTIVE_CONTRACT": "Active Contract",
+        "SELECT_CONTRACT": "— Select contract —",
+        "EXPIRES_ON": "(expires {{date}})",
+        "NO_EXPIRY": "unlimited",
+        "PROPOSED_START": "Proposed Start",
+        "PROPOSED_END": "Proposed End",
+        "PROPOSED_SALARY": "Proposed Salary",
+        "NOTES_PLACEHOLDER": "Reason for renewal…",
+        "DOCUMENT": "Supporting Document (PDF, DOC, DOCX — max 10 MB)",
+        "SUBMIT_FOR_APPROVAL": "Submit for Approval"
+      },
+      "FILTER": {
+        "SEARCH_PLACEHOLDER": "Search employee name…",
+        "ALL_STATUS": "All Status"
+      },
+      "AUTO": "Auto",
+      "AUTO_TOOLTIP": "Auto-generated 60 days before expiry",
+      "COMMENTS": {
+        "TITLE": "Approver Comments",
+        "APPROVED": "Approved",
+        "NO_COMMENT": "No comment added.",
+        "REJECTED_AT": "Rejected at {{stage}}",
+        "REJECTED": "Rejected"
+      },
+      "TERMS": {
+        "EXPIRES": "Expires",
+        "PROPOSED_PERIOD": "Proposed Period",
+        "PROPOSED_SALARY": "Proposed Salary"
+      },
+      "NO_DOCUMENT": "No document",
+      "REJECTION_BANNER": "Rejected at {{stage}} stage by {{by}}: \"{{reason}}\"",
+      "NEW_CONTRACT_CREATED": "New contract created automatically",
+      "EMPTY": "No renewal requests found",
+      "EMPTY_HINT": "Requests are auto-generated 60 days before active contracts expire",
+      "DIALOG": {
+        "APPROVE_TITLE": "Approve Renewal — {{ref}}",
+        "REJECT_TITLE": "Reject Renewal — {{ref}}",
+        "STAGE_INFO_APPROVE": "You are approving at <strong>{{stage}}</strong> stage.",
+        "STAGE_INFO_REJECT": "You are rejecting at <strong>{{stage}}</strong> stage.",
+        "EXPIRES_ON": "(expires {{date}})",
+        "NOTES_OPTIONAL": "Notes (optional)",
+        "NOTES_PLACEHOLDER": "Any remarks for the next approver…",
+        "REJECTION_REASON": "Rejection Reason",
+        "REJECTION_PLACEHOLDER": "Please provide a reason for rejection…",
+        "PROCESSING": "Processing…",
+        "CONFIRM_APPROVAL": "Confirm Approval",
+        "CONFIRM_REJECTION": "Confirm Rejection"
+      },
+      "MSG": {
+        "APPROVAL_FAILED": "Approval failed.",
+        "REJECTION_FAILED": "Rejection failed.",
+        "ENTER_REASON": "Please enter a rejection reason.",
+        "CREATE_FAILED": "Create failed.",
+        "CREATED": "Renewal request created.",
+        "UPLOAD_AFTER_CREATE_FAILED": "Renewal created, but the document upload failed."
+      }
+    }
+  }
+}

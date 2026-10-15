@@ -274,3 +274,48 @@
     grid-column: span 1;
   }
 }
+
+/* ── Header: language switcher ─────────────────────────────────────── */
+.onboarding-header { flex-wrap: wrap; }
+.onboarding-heading { flex: 1; min-width: 0; }
+.onboarding-lang {
+  margin-inline-start: auto;
+  width: 168px;
+  flex-shrink: 0;
+
+  app-language-switcher { display: flex; width: 100%; }
+}
+
+.field select { padding-inline-end: 32px; }
+
+/* RTL: move the custom select arrow to the inline-end (left) side */
+:host-context([dir='rtl']) .field select {
+  background-position: 12px 18px, 6px 18px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .onboarding-shell { max-width: 100%; }
+}
+
+@media (max-width: 768px) {
+  .onboarding-header {
+    gap: 10px;
+    h1 { font-size: 21px; }
+  }
+
+  .onboarding-lang { width: 150px; }
+
+  .field input,
+  .field select { font-size: 16px; } /* avoids iOS zoom on focus */
+
+  .actions { justify-content: stretch; }
+  .submit-btn { width: 100%; min-width: 0; }
+}
+
+@media (max-width: 480px) {
+  .onboarding-header p { font-size: 13px; }
+  .onboarding-lang { order: -1; width: 100%; margin-inline-start: 0; }
+  .brand-mark { width: 40px; height: 40px; }
+  .notice, .form-message { align-items: flex-start; }
+}

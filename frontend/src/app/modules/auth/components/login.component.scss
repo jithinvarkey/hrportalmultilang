@@ -1,5 +1,8 @@
 .login-wrapper {
+  position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -56,7 +59,7 @@
 .full-width { width: 100%; }
 
 .forgot-link {
-  text-align: right;
+  text-align: end;
   margin: -8px 0 8px;
   a { color: #2E75B6; font-size: 13px; text-decoration: none; }
   a:hover { text-decoration: underline; }
@@ -157,4 +160,68 @@
   justify-content: space-between;
   align-items: center;
   margin-top: 6px;
+}
+
+/* ── Language switcher (public pages) ───────────────────────────────── */
+.auth-lang {
+  position: absolute;
+  top: 16px;
+  inset-inline-end: 16px;
+  z-index: 5;
+  width: 168px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 6px 18px rgba(8, 31, 45, .18);
+
+  app-language-switcher { display: flex; width: 100%; }
+}
+
+/* "Back to sign in" under forgot / reset forms */
+.login-card .login-form .forgot-link.center-link {
+  text-align: center;
+  margin-top: 12px;
+}
+
+.otp-intro strong.ltr { direction: ltr; unicode-bidi: isolate; }
+
+.otp-actions { gap: 8px; flex-wrap: wrap; }
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .login-wrapper {
+    padding: 72px 16px 24px;
+    align-items: flex-start;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 32px 22px 24px;
+    box-sizing: border-box;
+  }
+
+  .login-header {
+    margin-bottom: 24px;
+    h1 { font-size: 26px; }
+  }
+
+  .login-btn { min-height: 46px; }
+}
+
+@media (max-width: 480px) {
+  .auth-lang {
+    top: 12px;
+    inset-inline-end: 12px;
+    width: 150px;
+  }
+
+  .login-card {
+    margin: 0;
+    padding: 26px 16px 20px;
+  }
+
+  .login-header h1 { font-size: 22px; }
+
+  .otp-actions button,
+  .otp-actions a { min-height: 40px; }
 }

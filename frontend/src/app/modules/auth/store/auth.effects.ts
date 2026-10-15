@@ -15,7 +15,7 @@ export class AuthEffects {
     switchMap(({ credentials }) =>
       this.auth.login(credentials.email, credentials.password).pipe(
         map(res => loginSuccess({ user: res.user, token: res.token })),
-        catchError(err => of(loginFailure({ error: err.error?.message || 'Login failed' })))
+        catchError(err => of(loginFailure({ error: err.error?.message || 'AUTH.LOGIN.FAILED' /* translation key */ })))
       )
     )
   ));

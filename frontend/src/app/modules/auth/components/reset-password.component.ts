@@ -47,7 +47,7 @@ export class ResetPasswordComponent implements OnInit {
     );
 
     if (!this.token) {
-      this.errorMsg = 'This reset link is invalid or has expired. Please request a new one.';
+      this.errorMsg = 'AUTH.RESET.INVALID_LINK';
     }
   }
 
@@ -61,7 +61,7 @@ export class ResetPasswordComponent implements OnInit {
   /** Submit the new password with the token. */
   onSubmit(): void {
     if (!this.token) {
-      this.errorMsg = 'This reset link is invalid or has expired. Please request a new one.';
+      this.errorMsg = 'AUTH.RESET.INVALID_LINK';
       return;
     }
     if (this.form.invalid) {
@@ -85,7 +85,7 @@ export class ResetPasswordComponent implements OnInit {
         this.loading = false;
         this.errorMsg = err?.error?.message
           ?? err?.error?.errors?.email?.[0]
-          ?? 'Could not reset password. The link may have expired.';
+          ?? 'AUTH.RESET.FAILED';
       },
     });
   }

@@ -149,7 +149,7 @@ class AssetService
     public function delete(Asset $asset): void
     {
         if ($asset->status === 'assigned') {
-            throw new \RuntimeException('Cannot delete an asset that is currently assigned.');
+            throw new \RuntimeException(__('Cannot delete an asset that is currently assigned.'));
         }
 
         $this->deleteAttachment($asset);
@@ -172,7 +172,7 @@ class AssetService
     {
         if (!in_array($asset->status, ['available'], true)) {
             throw new \RuntimeException(
-                "Asset \"{$asset->name}\" is currently {$asset->status} and cannot be assigned."
+                __('Asset ":name" is currently :status and cannot be assigned.', ['name' => $asset->name, 'status' => \App\Support\Locale\StatusLabel::for($asset->status)])
             );
         }
 

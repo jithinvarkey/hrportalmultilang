@@ -13,6 +13,7 @@ class DesignationController extends Controller {
     public function store(Request $request) {
         $request->validate([
             'title'         => 'required|string|max:150',
+            'title_ar'      => 'nullable|string|max:150',
             'level'         => 'nullable|in:junior,mid,senior,lead,manager,director,executive,management,staff',
             'department_id' => 'nullable|exists:departments,id',
             'min_salary'    => 'nullable|numeric|min:0',
@@ -34,6 +35,7 @@ class DesignationController extends Controller {
         $d = Designation::findOrFail($id);
         $request->validate([
             'title'         => 'sometimes|required|string|max:150',
+            'title_ar'      => 'nullable|string|max:150',
             'level'         => 'nullable|in:junior,mid,senior,lead,manager,director,executive,management,staff',
             'department_id' => 'nullable|exists:departments,id',
             'min_salary'    => 'nullable|numeric|min:0',
@@ -50,6 +52,6 @@ class DesignationController extends Controller {
 
     public function destroy($id) {
         Designation::findOrFail($id)->delete();
-        return response()->json(['message' => 'Position deleted']);
+        return response()->json(['message' => __('Position deleted')]);
     }
 }

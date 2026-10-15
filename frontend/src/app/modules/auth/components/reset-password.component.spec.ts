@@ -4,6 +4,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { TranslateModule } from '@ngx-translate/core';
 
 import { ResetPasswordComponent } from './reset-password.component';
 
@@ -20,7 +21,7 @@ describe('ResetPasswordComponent', () => {
   function configure(token: string | null, email: string | null): void {
     TestBed.configureTestingModule({
       declarations: [ResetPasswordComponent],
-      imports: [HttpClientTestingModule, ReactiveFormsModule, RouterTestingModule],
+      imports: [HttpClientTestingModule, ReactiveFormsModule, RouterTestingModule, TranslateModule.forRoot()],
       providers: [
         {
           provide: ActivatedRoute,
@@ -44,7 +45,7 @@ describe('ResetPasswordComponent', () => {
 
   it('shows an error when the token is missing', () => {
     configure(null, 'jane@hrms.com');
-    expect(component.errorMsg).toContain('invalid or has expired');
+    expect(component.errorMsg).toBe('AUTH.RESET.INVALID_LINK');
   });
 
   it('flags mismatched passwords via the cross-field validator', () => {

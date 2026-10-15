@@ -3,21 +3,21 @@
   <!-- Header -->
   <div class="page-hdr">
     <div>
-      <h1 class="page-title">Organisation Chart</h1>
-      <p class="page-sub">{{ stats.total_employees || '...' }} active employees · {{ stats.inactive_employees || 0 }} inactive · {{ stats.total_departments || '...' }} departments</p>
+      <h1 class="page-title">{{ 'ORGCHART.TITLE' | translate }}</h1>
+      <p class="page-sub">{{ 'ORGCHART.SUBTITLE' | translate:{ active: stats.total_employees || '...', inactive: stats.inactive_employees || 0, departments: stats.total_departments || '...' } }}</p>
     </div>
     <div class="hdr-actions">
       <!-- Search -->
       <div class="search-wrap">
         <mat-icon class="search-ico">search</mat-icon>
-        <input class="search-input" placeholder="Search employee or department…"
+        <input class="search-input" [placeholder]="'ORGCHART.SEARCH_PLACEHOLDER' | translate" [attr.aria-label]="'COMMON.SEARCH' | translate"
           [(ngModel)]="searchQuery" (ngModelChange)="onSearch()">
-        <button class="clear-btn" *ngIf="searchQuery" (click)="clearSearch()">
+        <button class="clear-btn" *ngIf="searchQuery" (click)="clearSearch()" [attr.aria-label]="'COMMON.CLEAR' | translate">
           <mat-icon>close</mat-icon>
         </button>
         <div class="search-results" *ngIf="searchResults.length || searching">
           <div *ngIf="searching" class="sr-loading">
-            <mat-spinner diameter="14"></mat-spinner> Searching…
+            <mat-spinner diameter="14"></mat-spinner> {{ 'ORGCHART.SEARCHING' | translate }}
           </div>
           <div class="sr-item" *ngFor="let r of searchResults" (click)="jumpToDept(r.department_id)">
             <div class="emp-av" [style.background]="avatarColor(r.name)">{{ initials(r.name) }}</div>
@@ -26,25 +26,25 @@
               <div class="sr-meta">{{ r.designation }} · {{ r.department }}</div>
             </div>
           </div>
-          <div *ngIf="!searching && !searchResults.length" class="sr-empty">No results found</div>
+          <div *ngIf="!searching && !searchResults.length" class="sr-empty">{{ 'COMMON.NO_RESULTS' | translate }}</div>
         </div>
       </div>
 
       <!-- View toggle -->
-      <div class="view-toggle">
-        <button class="vtbtn" [class.active]="activeView==='grid'" matTooltip="Grid" (click)="activeView='grid'">
+      <div class="view-toggle" role="group">
+        <button class="vtbtn" [class.active]="activeView==='grid'" [matTooltip]="'ORGCHART.VIEW.GRID' | translate" [attr.aria-label]="'ORGCHART.VIEW.GRID' | translate" (click)="activeView='grid'">
           <mat-icon>grid_view</mat-icon>
         </button>
-        <button class="vtbtn" [class.active]="activeView==='tree'" matTooltip="Tree" (click)="activeView='tree'">
+        <button class="vtbtn" [class.active]="activeView==='tree'" [matTooltip]="'ORGCHART.VIEW.TREE' | translate" [attr.aria-label]="'ORGCHART.VIEW.TREE' | translate" (click)="activeView='tree'">
           <mat-icon>account_tree</mat-icon>
         </button>
-        <button class="vtbtn" [class.active]="activeView==='list'" matTooltip="List" (click)="activeView='list'">
+        <button class="vtbtn" [class.active]="activeView==='list'" [matTooltip]="'ORGCHART.VIEW.LIST' | translate" [attr.aria-label]="'ORGCHART.VIEW.LIST' | translate" (click)="activeView='list'">
           <mat-icon>view_list</mat-icon>
         </button>
       </div>
 
       <button class="btn-primary" *ngIf="canManage()" (click)="openDeptForm()">
-        <mat-icon>add</mat-icon> Add Department
+        <mat-icon>add</mat-icon> {{ 'ORGCHART.ADD_DEPARTMENT' | translate }}
       </button>
     </div>
   </div>
@@ -53,16 +53,16 @@
   <div class="dept-pills" *ngIf="!statsLoading">
     <div class="dept-pill" *ngFor="let d of totalByDept">
       <span class="dp-dot" [style.background]="deptColor(d.name)"></span>
-      <span class="dp-name">{{ d.name }}</span>
+      <span class="dp-name">{{ d | locName }}</span>
       <span class="dp-count" [style.color]="deptColor(d.name)">{{ activeCount(d) }}</span>
-      <span class="dp-muted" *ngIf="inactiveCount(d)">+{{ inactiveCount(d) }} inactive</span>
+      <span class="dp-muted" *ngIf="inactiveCount(d)">{{ 'ORGCHART.PLUS_INACTIVE' | translate:{ count: inactiveCount(d) } }}</span>
     </div>
   </div>
 
   <!-- Loading -->
   <div *ngIf="loading" class="loading-wrap">
     <mat-spinner diameter="28"></mat-spinner>
-    <span>Loading…</span>
+    <span>{{ 'COMMON.LOADING' | translate }}</span>
   </div>
 
   <!-- ═══════ GRID VIEW (default) ═══════ -->
@@ -80,10 +80,10 @@
               <mat-icon>{{ d.depth === 0 ? 'domain' : 'corporate_fare' }}</mat-icon>
             </div>
             <div class="dc-titles">
-              <div class="dc-name">{{ d.name }}</div>
-              <div class="dc-code">{{ d.code }}</div>
+              <div class="dc-name">{{ d | locName }}</div>
+              <div class="dc-code" dir="ltr">{{ d.code }}</div>
             </div>
-            <button class="icon-btn" *ngIf="canManage()" matTooltip="Edit"
+            <button class="icon-btn" *ngIf="canManage()" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate"
                     (click)="openDeptForm(d); $event.stopPropagation()">
               <mat-icon>edit</mat-icon>
             </button>
@@ -96,29 +96,29 @@
               <div class="mgr-name">{{ d.manager.name }}</div>
               <div class="mgr-role">{{ d.manager.designation }}</div>
             </div>
-            <span class="mgr-tag">Manager</span>
+            <span class="mgr-tag">{{ 'ORGCHART.MANAGER' | translate }}</span>
           </div>
           <div class="dc-no-mgr" *ngIf="!d.manager">
-            <mat-icon>person_off</mat-icon> No manager assigned
+            <mat-icon>person_off</mat-icon> {{ 'ORGCHART.NO_MANAGER' | translate }}
           </div>
 
           <!-- Stats -->
           <div class="dc-stats">
             <div class="dcs-item">
               <div class="dcs-val" [style.color]="deptColor(d.name)">{{ activeCount(d) }}</div>
-              <div class="dcs-lbl">Active</div>
+              <div class="dcs-lbl">{{ 'STATUS.active' | translate }}</div>
             </div>
             <div class="dcs-item">
               <div class="dcs-val inactive-val">{{ inactiveCount(d) }}</div>
-              <div class="dcs-lbl">Inactive</div>
+              <div class="dcs-lbl">{{ 'STATUS.inactive' | translate }}</div>
             </div>
             <div class="dcs-item" *ngIf="d.headcount_budget">
               <div class="dcs-val">{{ d.headcount_budget }}</div>
-              <div class="dcs-lbl">Budget</div>
+              <div class="dcs-lbl">{{ 'ORGCHART.BUDGET' | translate }}</div>
             </div>
             <div class="dcs-item" *ngIf="d.children?.length">
               <div class="dcs-val" style="color:var(--accent2)">{{ d.children.length }}</div>
-              <div class="dcs-lbl">Sub-depts</div>
+              <div class="dcs-lbl">{{ 'ORGCHART.SUB_DEPTS' | translate }}</div>
             </div>
           </div>
 
@@ -136,18 +136,20 @@
   <ng-container *ngIf="!loading && activeView==='tree'">
     <div class="tree-toolbar">
       <button class="tb-btn" (click)="expandAll()">
-        <mat-icon>unfold_more</mat-icon> Expand All
+        <mat-icon>unfold_more</mat-icon> {{ 'ORGCHART.EXPAND_ALL' | translate }}
       </button>
       <button class="tb-btn" (click)="collapseAll()">
-        <mat-icon>unfold_less</mat-icon> Collapse All
+        <mat-icon>unfold_less</mat-icon> {{ 'ORGCHART.COLLAPSE_ALL' | translate }}
       </button>
     </div>
 
     <div class="tree-wrap">
-      <ng-container *ngFor="let dept of chart">
-        <ng-container *ngTemplateOutlet="treeNode; context: { $implicit: dept, level: 0 }">
+      <div class="tree-inner">
+        <ng-container *ngFor="let dept of chart">
+          <ng-container *ngTemplateOutlet="treeNode; context: { $implicit: dept, level: 0 }">
+          </ng-container>
         </ng-container>
-      </ng-container>
+      </div>
     </div>
   </ng-container>
 
@@ -155,9 +157,9 @@
   <ng-container *ngIf="!loading && activeView==='list'">
     <div class="list-card">
       <div class="list-row list-header">
-        <div class="lr-dept">Department</div>
-        <div class="lr-manager">Manager</div>
-        <div class="lr-count">Staff</div>
+        <div class="lr-dept">{{ 'COMMON.DEPARTMENT' | translate }}</div>
+        <div class="lr-manager">{{ 'ORGCHART.MANAGER' | translate }}</div>
+        <div class="lr-count">{{ 'ORGCHART.STAFF' | translate }}</div>
         <div class="lr-actions"></div>
       </div>
       <div class="list-row list-data-row" *ngFor="let d of flatDepts" (click)="openDept(d.id)">
@@ -167,8 +169,8 @@
             <mat-icon>{{ d.depth === 0 ? 'domain' : 'corporate_fare' }}</mat-icon>
           </div>
           <div>
-            <div class="lr-name">{{ d.name }}</div>
-            <div class="lr-code">{{ d.code }}</div>
+            <div class="lr-name">{{ d | locName }}</div>
+            <div class="lr-code" dir="ltr">{{ d.code }}</div>
           </div>
         </div>
         <div class="lr-manager">
@@ -180,14 +182,14 @@
         </div>
         <div class="lr-count">
           <span class="count-val" [style.color]="deptColor(d.name)">{{ activeCount(d) }}</span>
-          <span class="count-inactive" *ngIf="inactiveCount(d)">+{{ inactiveCount(d) }} inactive</span>
+          <span class="count-inactive" *ngIf="inactiveCount(d)">{{ 'ORGCHART.PLUS_INACTIVE' | translate:{ count: inactiveCount(d) } }}</span>
           <span *ngIf="d.headcount_budget" class="count-budget">/ {{ d.headcount_budget }}</span>
         </div>
         <div class="lr-actions" (click)="$event.stopPropagation()">
-          <button class="icon-btn" matTooltip="View" (click)="openDept(d.id)">
+          <button class="icon-btn" [matTooltip]="'COMMON.VIEW' | translate" [attr.aria-label]="'COMMON.VIEW' | translate" (click)="openDept(d.id)">
             <mat-icon>open_in_new</mat-icon>
           </button>
-          <button class="icon-btn" *ngIf="canManage()" matTooltip="Edit" (click)="openDeptForm(d)">
+          <button class="icon-btn" *ngIf="canManage()" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate" (click)="openDeptForm(d)">
             <mat-icon>edit</mat-icon>
           </button>
         </div>
@@ -201,22 +203,24 @@
      TREE NODE TEMPLATE — clean indented tree
 ═══════════════════════════════════════════ -->
 <ng-template #treeNode let-dept let-level="level">
-  <div class="tree-node" [style.padding-left.px]="level * 36">
+  <div class="tree-node" [style.padding-inline-start.px]="level * 36">
 
     <!-- Connector line (only for non-root) -->
     <div class="tree-line" *ngIf="level > 0"></div>
 
     <div class="tree-card" [class.tree-root-card]="level === 0" (click)="openDept(dept.id)">
 
-      <!-- Left colour bar -->
+      <!-- Leading colour bar -->
       <div class="tc-bar" [style.background]="deptColor(dept.name)"></div>
 
       <div class="tc-body">
         <div class="tc-left">
           <!-- Toggle -->
           <button class="tc-toggle" *ngIf="dept.children?.length"
+                  [attr.aria-label]="(isCollapsed(dept.id) ? 'ORGCHART.EXPAND' : 'ORGCHART.COLLAPSE') | translate"
+                  [attr.aria-expanded]="!isCollapsed(dept.id)"
                   (click)="toggle(dept.id); $event.stopPropagation()">
-            <mat-icon>{{ isCollapsed(dept.id) ? 'chevron_right' : 'expand_more' }}</mat-icon>
+            <mat-icon [class.flip-rtl]="isCollapsed(dept.id)">{{ isCollapsed(dept.id) ? 'chevron_right' : 'expand_more' }}</mat-icon>
           </button>
           <div class="tc-spacer" *ngIf="!dept.children?.length"></div>
 
@@ -227,8 +231,8 @@
 
           <!-- Name -->
           <div class="tc-info">
-            <div class="tc-name">{{ dept.name }}</div>
-            <div class="tc-code">{{ dept.code }}</div>
+            <div class="tc-name">{{ dept | locName }}</div>
+            <div class="tc-code" dir="ltr">{{ dept.code }}</div>
           </div>
         </div>
 
@@ -243,12 +247,12 @@
 
           <!-- Count badge -->
           <div class="tc-badge" [style.background]="deptColor(dept.name)+'18'" [style.color]="deptColor(dept.name)">
-            {{ activeCount(dept) }} active<span *ngIf="inactiveCount(dept)"> · {{ inactiveCount(dept) }} inactive</span>
+            {{ 'ORGCHART.COUNT_ACTIVE' | translate:{ count: activeCount(dept) } }}<span *ngIf="inactiveCount(dept)"> · {{ 'ORGCHART.COUNT_INACTIVE' | translate:{ count: inactiveCount(dept) } }}</span>
           </div>
 
           <!-- Edit -->
           <button class="icon-btn" *ngIf="canManage()"
-                  matTooltip="Edit" (click)="openDeptForm(dept); $event.stopPropagation()">
+                  [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate" (click)="openDeptForm(dept); $event.stopPropagation()">
             <mat-icon>edit</mat-icon>
           </button>
         </div>
@@ -270,7 +274,7 @@
      DEPARTMENT DETAIL DRAWER
 ═══════════════════════════════════════════ -->
 <div class="drawer-backdrop" *ngIf="showDeptPanel" (click)="showDeptPanel=false"></div>
-<div class="detail-drawer" [class.open]="showDeptPanel">
+<div class="detail-drawer" [class.open]="showDeptPanel" role="dialog" [attr.aria-hidden]="!showDeptPanel">
 
   <div class="dw-hdr" *ngIf="!deptLoading && selectedDept">
     <div class="dw-hdr-left">
@@ -279,17 +283,17 @@
         <mat-icon>corporate_fare</mat-icon>
       </div>
       <div>
-        <div class="dw-dept-name">{{ selectedDept.name }}</div>
-        <div class="dw-dept-sub">{{ selectedDept.code }}
-          <span *ngIf="selectedDept.parent"> · {{ selectedDept.parent.name }}</span>
+        <div class="dw-dept-name">{{ selectedDept | locName }}</div>
+        <div class="dw-dept-sub"><bdi>{{ selectedDept.code }}</bdi>
+          <span *ngIf="selectedDept.parent"> · {{ selectedDept.parent | locName }}</span>
         </div>
       </div>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
-      <button class="icon-btn" *ngIf="canManage()" matTooltip="Edit" (click)="openDeptForm(selectedDept)">
+      <button class="icon-btn" *ngIf="canManage()" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate" (click)="openDeptForm(selectedDept)">
         <mat-icon>edit</mat-icon>
       </button>
-      <button class="icon-btn" (click)="showDeptPanel=false"><mat-icon>close</mat-icon></button>
+      <button class="icon-btn" (click)="showDeptPanel=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
     </div>
   </div>
 
@@ -305,26 +309,26 @@
         <div class="kpi-val" [style.color]="deptColor(selectedDept.name)">
           {{ activeCount(selectedDept) }}
         </div>
-        <div class="kpi-lbl">Active</div>
+        <div class="kpi-lbl">{{ 'STATUS.active' | translate }}</div>
       </div>
       <div class="dw-kpi">
         <div class="kpi-val inactive-val">{{ inactiveCount(selectedDept) }}</div>
-        <div class="kpi-lbl">Inactive</div>
+        <div class="kpi-lbl">{{ 'STATUS.inactive' | translate }}</div>
       </div>
       <div class="dw-kpi" *ngIf="selectedDept.headcount_budget">
         <div class="kpi-val">{{ selectedDept.headcount_budget }}</div>
-        <div class="kpi-lbl">Headcount Budget</div>
+        <div class="kpi-lbl">{{ 'ORGCHART.HEADCOUNT_BUDGET' | translate }}</div>
       </div>
       <div class="dw-kpi" *ngIf="selectedDept.children?.length">
         <div class="kpi-val" style="color:var(--accent2)">{{ selectedDept.children.length }}</div>
-        <div class="kpi-lbl">Sub-Departments</div>
+        <div class="kpi-lbl">{{ 'ORGCHART.SUB_DEPARTMENTS' | translate }}</div>
       </div>
     </div>
 
     <!-- Utilisation -->
     <div class="util-block" *ngIf="selectedDept.headcount_budget">
       <div class="util-lbl">
-        <span>Headcount Utilisation</span>
+        <span>{{ 'ORGCHART.HEADCOUNT_UTILISATION' | translate }}</span>
         <span [style.color]="headcountColor(selectedDept)">{{ headcountPct(selectedDept) }}%</span>
       </div>
       <div class="util-track">
@@ -335,77 +339,77 @@
 
     <!-- Description -->
     <div class="dw-section" *ngIf="selectedDept.description">
-      <div class="dw-section-title">About</div>
+      <div class="dw-section-title">{{ 'ORGCHART.ABOUT' | translate }}</div>
       <div class="dw-section-body">{{ selectedDept.description }}</div>
     </div>
 
     <!-- Manager -->
     <div class="dw-section">
-      <div class="dw-section-title">Manager</div>
+      <div class="dw-section-title">{{ 'ORGCHART.MANAGER' | translate }}</div>
       <div class="mgr-card" *ngIf="selectedDept.manager">
         <div class="emp-av lg" [style.background]="avatarColor(selectedDept.manager.first_name+' '+selectedDept.manager.last_name)">
           {{ initials(selectedDept.manager.first_name+' '+selectedDept.manager.last_name) }}
         </div>
         <div>
-          <div class="mc-name">{{ selectedDept.manager.first_name }} {{ selectedDept.manager.last_name }}</div>
-          <div class="mc-role">{{ selectedDept.manager.designation?.title }}</div>
+          <div class="mc-name">{{ personName(selectedDept.manager) }}</div>
+          <div class="mc-role">{{ selectedDept.manager.designation | locName:'title' }}</div>
         </div>
-        <span class="mgr-tag" style="margin-left:auto">Manager</span>
+        <span class="mgr-tag" style="margin-inline-start:auto">{{ 'ORGCHART.MANAGER' | translate }}</span>
       </div>
       <div class="no-data" *ngIf="!selectedDept.manager">
-        <mat-icon>person_off</mat-icon> No manager assigned
+        <mat-icon>person_off</mat-icon> {{ 'ORGCHART.NO_MANAGER' | translate }}
       </div>
     </div>
 
     <!-- Sub-departments -->
     <div class="dw-section" *ngIf="selectedDept.children?.length">
-      <div class="dw-section-title">Sub-Departments ({{ selectedDept.children.length }})</div>
+      <div class="dw-section-title">{{ 'ORGCHART.SUB_DEPARTMENTS' | translate }} ({{ selectedDept.children.length }})</div>
       <div class="sub-list">
         <div class="sub-item" *ngFor="let c of selectedDept.children" (click)="openDept(c.id)">
           <div class="si-icon" [style.background]="deptColor(c.name)+'18'" [style.color]="deptColor(c.name)">
             <mat-icon>corporate_fare</mat-icon>
           </div>
           <div class="si-info">
-            <div class="si-name">{{ c.name }}</div>
-            <div class="si-count">{{ activeCount(c) }} active · {{ inactiveCount(c) }} inactive</div>
+            <div class="si-name">{{ c | locName }}</div>
+            <div class="si-count">{{ 'ORGCHART.COUNT_ACTIVE' | translate:{ count: activeCount(c) } }} · {{ 'ORGCHART.COUNT_INACTIVE' | translate:{ count: inactiveCount(c) } }}</div>
           </div>
-          <mat-icon style="font-size:16px;color:var(--text3)">chevron_right</mat-icon>
+          <mat-icon class="flip-rtl" style="font-size:16px;color:var(--text3)">chevron_right</mat-icon>
         </div>
       </div>
     </div>
 
     <!-- Employees -->
     <div class="dw-section">
-      <div class="dw-section-title">Active Team ({{ activeEmployees(selectedDept).length }})</div>
+      <div class="dw-section-title">{{ 'ORGCHART.ACTIVE_TEAM' | translate }} ({{ activeEmployees(selectedDept).length }})</div>
       <div class="team-list" *ngIf="activeEmployees(selectedDept).length">
         <div class="team-item" *ngFor="let e of activeEmployees(selectedDept)">
           <div class="emp-av" [style.background]="avatarColor(e.first_name)">
             {{ initials(e.first_name+' '+e.last_name) }}
           </div>
           <div class="ti-info">
-            <div class="ti-name">{{ e.first_name }} {{ e.last_name }}</div>
-            <div class="ti-role">{{ e.designation?.title }}</div>
+            <div class="ti-name">{{ personName(e) }}</div>
+            <div class="ti-role">{{ e.designation | locName:'title' }}</div>
           </div>
-          <span class="mgr-tag" *ngIf="e.id===selectedDept.manager_id">Manager</span>
+          <span class="mgr-tag" *ngIf="e.id===selectedDept.manager_id">{{ 'ORGCHART.MANAGER' | translate }}</span>
         </div>
       </div>
       <div class="no-data" *ngIf="!activeEmployees(selectedDept).length">
-        No active employees in this department
+        {{ 'ORGCHART.NO_ACTIVE_EMPLOYEES' | translate }}
       </div>
     </div>
 
     <div class="dw-section" *ngIf="inactiveEmployees(selectedDept).length">
-      <div class="dw-section-title">Inactive Team ({{ inactiveEmployees(selectedDept).length }})</div>
+      <div class="dw-section-title">{{ 'ORGCHART.INACTIVE_TEAM' | translate }} ({{ inactiveEmployees(selectedDept).length }})</div>
       <div class="team-list">
         <div class="team-item inactive-employee" *ngFor="let e of inactiveEmployees(selectedDept)">
           <div class="emp-av" [style.background]="avatarColor(e.first_name)">
             {{ initials(e.first_name+' '+e.last_name) }}
           </div>
           <div class="ti-info">
-            <div class="ti-name">{{ e.first_name }} {{ e.last_name }}</div>
-            <div class="ti-role">{{ e.designation?.title }}</div>
+            <div class="ti-name">{{ personName(e) }}</div>
+            <div class="ti-role">{{ e.designation | locName:'title' }}</div>
           </div>
-          <span class="status-tag">{{ e.status || 'inactive' }}</span>
+          <span class="status-tag">{{ (e.status || 'inactive') | statusLabel }}</span>
         </div>
       </div>
     </div>
@@ -413,7 +417,7 @@
   </div>
 
   <div class="dw-footer" *ngIf="!deptLoading && selectedDept">
-    <button class="btn-outline" (click)="showDeptPanel=false">Close</button>
+    <button class="btn-outline" (click)="showDeptPanel=false">{{ 'COMMON.CLOSE' | translate }}</button>
   </div>
 </div>
 
@@ -421,67 +425,73 @@
      DEPARTMENT FORM MODAL
 ═══════════════════════════════════════════ -->
 <div class="modal-backdrop" *ngIf="showDeptForm" (click)="showDeptForm=false"></div>
-<div class="modal-panel" *ngIf="showDeptForm">
+<div class="modal-panel" *ngIf="showDeptForm" role="dialog" aria-modal="true">
   <div class="modal-hdr">
-    <h3><mat-icon>corporate_fare</mat-icon> {{ deptEditId ? 'Edit Department' : 'New Department' }}</h3>
-    <button class="icon-btn" (click)="showDeptForm=false"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>corporate_fare</mat-icon> {{ (deptEditId ? 'ORGCHART.FORM.EDIT_DEPARTMENT' : 'ORGCHART.FORM.NEW_DEPARTMENT') | translate }}</h3>
+    <button class="icon-btn" (click)="showDeptForm=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Name <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="deptForm.name" placeholder="e.g. Engineering">
+        <label class="field-label">{{ 'ORGCHART.FORM.NAME_EN' | translate }} <span class="req">*</span></label>
+        <input class="field-input" [(ngModel)]="deptForm.name" dir="ltr" [placeholder]="'ORGCHART.FORM.NAME_PLACEHOLDER' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Code <span class="req">*</span></label>
-        <input class="field-input" [(ngModel)]="deptForm.code" placeholder="e.g. ENG">
+        <label class="field-label">{{ 'ORGCHART.FORM.NAME_AR' | translate }} <span class="opt">({{ 'COMMON.OPTIONAL' | translate }})</span></label>
+        <input class="field-input" [(ngModel)]="deptForm.name_ar" dir="rtl" lang="ar" placeholder="مثال: الهندسة">
       </div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Parent Department</label>
-        <select class="field-select-full" [(ngModel)]="deptForm.parent_id">
-          <option value="">— Top Level —</option>
-          <option *ngFor="let d of allDepts" [value]="d.id" [disabled]="d.id===deptEditId">{{ d.name }}</option>
-        </select>
+        <label class="field-label">{{ 'COMMON.CODE' | translate }} <span class="req">*</span></label>
+        <input class="field-input" [(ngModel)]="deptForm.code" dir="ltr" [placeholder]="'ORGCHART.FORM.CODE_PLACEHOLDER' | translate">
       </div>
       <div class="field-group">
-        <label class="field-label">Department Manager</label>
+        <label class="field-label">{{ 'ORGCHART.FORM.PARENT_DEPARTMENT' | translate }}</label>
+        <select class="field-select-full" [(ngModel)]="deptForm.parent_id">
+          <option value="">{{ 'ORGCHART.FORM.TOP_LEVEL' | translate }}</option>
+          <option *ngFor="let d of allDepts" [value]="d.id" [disabled]="d.id===deptEditId">{{ d | locName }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">{{ 'ORGCHART.FORM.DEPARTMENT_MANAGER' | translate }}</label>
         <select class="field-select-full" [(ngModel)]="deptForm.manager_id">
-          <option value="">— None —</option>
+          <option value="">{{ 'ORGCHART.FORM.NONE_OPTION' | translate }}</option>
           <option *ngFor="let e of allEmployees" [value]="e.id">
             {{ e.first_name }} {{ e.last_name }} ({{ e.employee_code }})
           </option>
         </select>
       </div>
+      <div class="field-group">
+        <label class="field-label">{{ 'ORGCHART.HEADCOUNT_BUDGET' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" [(ngModel)]="deptForm.headcount_budget" min="0">
+      </div>
     </div>
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Headcount Budget</label>
-        <input class="field-input" type="number" [(ngModel)]="deptForm.headcount_budget" min="0">
-      </div>
-      <div class="field-group">
-        <label class="field-label">Status</label>
+        <label class="field-label">{{ 'COMMON.STATUS' | translate }}</label>
         <select class="field-select-full" [(ngModel)]="deptForm.is_active">
-          <option [ngValue]="true">Active</option>
-          <option [ngValue]="false">Inactive</option>
+          <option [ngValue]="true">{{ 'STATUS.active' | translate }}</option>
+          <option [ngValue]="false">{{ 'STATUS.inactive' | translate }}</option>
         </select>
       </div>
     </div>
     <div class="field-group">
-      <label class="field-label">Description</label>
+      <label class="field-label">{{ 'COMMON.DESCRIPTION' | translate }}</label>
       <textarea class="field-textarea" rows="3" [(ngModel)]="deptForm.description"
-                placeholder="Brief description of this department…"></textarea>
+                [placeholder]="'ORGCHART.FORM.DESCRIPTION_PLACEHOLDER' | translate"></textarea>
     </div>
     <div class="form-err" *ngIf="deptFormError">
       <mat-icon>error_outline</mat-icon> {{ deptFormError }}
     </div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="showDeptForm=false">Cancel</button>
+    <button class="btn-outline" (click)="showDeptForm=false">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="saveDept()" [disabled]="deptSaving">
       <mat-icon>{{ deptSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ deptSaving ? 'Saving…' : 'Save Department' }}
+      {{ (deptSaving ? 'COMMON.SAVING' : 'ORGCHART.FORM.SAVE_DEPARTMENT') | translate }}
     </button>
   </div>
 </div>

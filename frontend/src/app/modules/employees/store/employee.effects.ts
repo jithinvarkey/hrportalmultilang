@@ -15,6 +15,7 @@ import { ToastrService } from 'ngx-toastr';
 import { of } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { EmployeeService } from '../../../core/services/employee.service';
+import { LanguageService } from '../../../core/services/language.service';
 import * as EmployeeActions from './employee.actions';
 
 /**
@@ -31,6 +32,7 @@ export class EmployeeEffects {
     private readonly employeeService: EmployeeService,
     private readonly toastr: ToastrService,
     private readonly router: Router,
+    private readonly lang: LanguageService,
   ) {}
 
   /**
@@ -45,7 +47,7 @@ export class EmployeeEffects {
           map((data) => EmployeeActions.loadEmployeesSuccess({ data })),
           catchError((err) =>
             of(EmployeeActions.loadEmployeesFailure({
-              error: err?.error?.message ?? 'Failed to load employees.',
+              error: err?.error?.message ?? this.lang.t('EMPLOYEES.MSG.LOAD_FAILED'),
             }))
           ),
         )
@@ -65,7 +67,7 @@ export class EmployeeEffects {
           map((employee) => EmployeeActions.loadEmployeeSuccess({ employee })),
           catchError((err) =>
             of(EmployeeActions.loadEmployeeFailure({
-              error: err?.error?.message ?? 'Employee not found.',
+              error: err?.error?.message ?? this.lang.t('EMPLOYEES.DETAIL.NOT_FOUND'),
             }))
           ),
         )
@@ -85,7 +87,7 @@ export class EmployeeEffects {
           map((res) => EmployeeActions.createEmployeeSuccess({ employee: res.employee })),
           catchError((err) =>
             of(EmployeeActions.createEmployeeFailure({
-              error: err?.error?.message ?? 'Failed to create employee.',
+              error: err?.error?.message ?? this.lang.t('EMPLOYEES.MSG.CREATE_FAILED'),
             }))
           ),
         )
@@ -100,7 +102,7 @@ export class EmployeeEffects {
     this.actions$.pipe(
       ofType(EmployeeActions.createEmployeeSuccess),
       tap(({ employee }) => {
-        this.toastr.success('Employee created successfully.');
+        this.toastr.success(this.lang.t('EMPLOYEES.MSG.CREATED'));
         this.router.navigate(['/employees', employee.id]);
       }),
     ),
@@ -111,7 +113,7 @@ export class EmployeeEffects {
   createEmployeeFailure$ = createEffect(() =>
     this.actions$.pipe(
       ofType(EmployeeActions.createEmployeeFailure),
-      tap(({ error }) => this.toastr.error(error, 'Create Failed')),
+      tap(({ error }) => this.toastr.error(error, this.lang.t('EMPLOYEES.MSG.CREATE_FAILED_TITLE'))),
     ),
     { dispatch: false }
   );
@@ -128,7 +130,7 @@ export class EmployeeEffects {
           map((employee) => EmployeeActions.updateEmployeeSuccess({ employee })),
           catchError((err) =>
             of(EmployeeActions.updateEmployeeFailure({
-              error: err?.error?.message ?? 'Failed to update employee.',
+              error: err?.error?.message ?? this.lang.t('EMPLOYEES.MSG.UPDATE_FAILED'),
             }))
           ),
         )
@@ -140,7 +142,7 @@ export class EmployeeEffects {
   updateEmployeeSuccess$ = createEffect(() =>
     this.actions$.pipe(
       ofType(EmployeeActions.updateEmployeeSuccess),
-      tap(() => this.toastr.success('Employee updated successfully.')),
+      tap(() => this.toastr.success(this.lang.t('EMPLOYEES.MSG.UPDATED'))),
     ),
     { dispatch: false }
   );
@@ -149,7 +151,7 @@ export class EmployeeEffects {
   updateEmployeeFailure$ = createEffect(() =>
     this.actions$.pipe(
       ofType(EmployeeActions.updateEmployeeFailure),
-      tap(({ error }) => this.toastr.error(error, 'Update Failed')),
+      tap(({ error }) => this.toastr.error(error, this.lang.t('EMPLOYEES.MSG.UPDATE_FAILED_TITLE'))),
     ),
     { dispatch: false }
   );
@@ -166,7 +168,7 @@ export class EmployeeEffects {
           map(() => EmployeeActions.deleteEmployeeSuccess({ id })),
           catchError((err) =>
             of(EmployeeActions.deleteEmployeeFailure({
-              error: err?.error?.message ?? 'Failed to terminate employee.',
+              error: err?.error?.message ?? this.lang.t('EMPLOYEES.MSG.TERMINATE_FAILED'),
             }))
           ),
         )
@@ -179,7 +181,7 @@ export class EmployeeEffects {
     this.actions$.pipe(
       ofType(EmployeeActions.deleteEmployeeSuccess),
       tap(() => {
-        this.toastr.success('Employee terminated successfully.');
+        this.toastr.success(this.lang.t('EMPLOYEES.MSG.TERMINATED'));
         this.router.navigate(['/employees']);
       }),
     ),
@@ -190,7 +192,7 @@ export class EmployeeEffects {
   deleteEmployeeFailure$ = createEffect(() =>
     this.actions$.pipe(
       ofType(EmployeeActions.deleteEmployeeFailure),
-      tap(({ error }) => this.toastr.error(error, 'Termination Failed')),
+      tap(({ error }) => this.toastr.error(error, this.lang.t('EMPLOYEES.MSG.TERMINATE_FAILED_TITLE'))),
     ),
     { dispatch: false }
   );

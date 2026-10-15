@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../../../environments/environment';
+import { LanguageService } from '../../../core/services/language.service';
 
 type DocumentField = {
   field: string;
@@ -25,6 +26,7 @@ export class NewHireOnboardingComponent implements OnInit {
   files: Record<string, File | null> = {};
   loading = true;
   saving = false;
+  /** API messages, translation keys, or text already translated in code; the template pipes them through translate. */
   error = '';
   success = '';
 
@@ -32,7 +34,14 @@ export class NewHireOnboardingComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly http: HttpClient,
     private readonly fb: FormBuilder,
+    private readonly lang: LanguageService,
   ) {}
+
+  /** Employee name in the active language (falls back to the English full name). */
+  get displayName(): string {
+    const e = this.employee || {};
+    return (this.lang.isRtl() && e.arabic_name) ? e.arabic_name : e.full_name;
+  }
 
   ngOnInit(): void {
     this.token = this.route.snapshot.paramMap.get('token') || '';
@@ -66,7 +75,7 @@ export class NewHireOnboardingComponent implements OnInit {
         this.loading = false;
       },
       error: err => {
-        this.error = err?.error?.message || 'This onboarding link is invalid or expired.';
+        this.error = err?.error?.message || 'AUTH.ONBOARDING.INVALID_LINK';
         this.loading = false;
       }
     });
@@ -78,7 +87,7 @@ export class NewHireOnboardingComponent implements OnInit {
   }
 
   fileName(field: string): string {
-    return this.files[field]?.name || 'No file selected';
+    return this.files[field]?.name || '';
   }
 
   normalizeBankAccount(): void {
@@ -100,13 +109,13 @@ export class NewHireOnboardingComponent implements OnInit {
     this.success = '';
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.error = 'Please complete the required fields.';
+      this.error = 'AUTH.ONBOARDING.COMPLETE_REQUIRED';
       return;
     }
 
     const missingDocuments = this.missingRequiredDocuments();
     if (missingDocuments.length) {
-      this.error = `Please upload: ${missingDocuments.join(', ')}.`;
+      this.error = this.lang.t('AUTH.ONBOARDING.UPLOAD_MISSING', { docs: missingDocuments.join(this.lang.isRtl() ? '، ' : ', ') });
       return;
     }
 
@@ -121,11 +130,11 @@ export class NewHireOnboardingComponent implements OnInit {
     this.saving = true;
     this.http.post<any>(`${environment.apiUrl}/public/onboarding/${this.token}`, payload).subscribe({
       next: res => {
-        this.success = res?.message || 'Onboarding details submitted successfully.';
+        this.success = res?.message || 'AUTH.ONBOARDING.SUBMITTED';
         this.saving = false;
       },
       error: err => {
-        this.error = err?.error?.message || 'Unable to submit onboarding details.';
+        this.error = err?.error?.message || 'AUTH.ONBOARDING.SUBMIT_FAILED';
         this.saving = false;
       }
     });

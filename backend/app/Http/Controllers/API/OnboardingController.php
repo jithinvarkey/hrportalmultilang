@@ -99,7 +99,7 @@ class OnboardingController extends Controller
             'completed_date' => now(),
         ]);
 
-        return response()->json(['message' => 'Task completed']);
+        return response()->json(['message' => __('Task completed')]);
     }
 
     /**
@@ -112,6 +112,6 @@ class OnboardingController extends Controller
     {
         OnboardingTask::findOrFail($taskId)->delete();
 
-        return response()->json(['message' => 'Task deleted']);
+        return response()->json(['message' => __('Task deleted')]);
     }
 }
