@@ -11,9 +11,9 @@
     {
       "name": "backend",
       "runtimeExecutable": "E:/Xampp_new/php/php.exe",
-      "runtimeArgs": ["artisan", "serve", "--port", "8086"],
+      "runtimeArgs": ["artisan", "serve", "--port", "8090"],
       "cwd": "backend",
-      "port": 8086
+      "port": 8090
     }
   ]
 }

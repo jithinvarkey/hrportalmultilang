@@ -850,7 +850,7 @@
       </div>
 
       <div class="ticket-policy-grid">
-        <div class="policy-group">
+        <div class="policy-group reminder-schedule">
           <strong>{{ 'ADMIN.SETTINGS.REMINDER.SCHEDULE' | translate }}</strong>
           <label>{{ 'ADMIN.SETTINGS.SMS.ENABLED' | translate }}
             <select [(ngModel)]="monthlyLeaveReminderSettings.enabled">
@@ -864,13 +864,22 @@
           <span>{{ 'ADMIN.SETTINGS.REMINDER.DAY_HINT' | translate }}</span>
         </div>
         <div class="policy-group">
-          <strong>{{ 'ADMIN.SETTINGS.REMINDER.CONTENT' | translate }}</strong>
-          <label>{{ 'ADMIN.SETTINGS.REMINDER.SUBJECT' | translate }} <input dir="auto" [(ngModel)]="monthlyLeaveReminderSettings.subject"></label>
+          <strong>{{ 'ADMIN.SETTINGS.REMINDER.CONTENT_EN' | translate }}</strong>
+          <label>{{ 'ADMIN.SETTINGS.REMINDER.SUBJECT' | translate }} <input dir="ltr" lang="en" [(ngModel)]="monthlyLeaveReminderSettings.subject"></label>
           <label>{{ 'ADMIN.SETTINGS.REMINDER.BODY' | translate }}
-            <textarea rows="5" dir="auto" [(ngModel)]="monthlyLeaveReminderSettings.body"></textarea>
+            <textarea rows="5" dir="ltr" lang="en" [(ngModel)]="monthlyLeaveReminderSettings.body"></textarea>
           </label>
           <span>{{ 'ADMIN.SETTINGS.REMINDER.TAGS' | translate }} <bdi dir="ltr">{{ '{{first_name}}' }}, {{ '{{employee_name}}' }}, {{ '{{month_name}}' }}, {{ '{{year}}' }}</bdi></span>
         </div>
+        <div class="policy-group">
+          <strong>{{ 'ADMIN.SETTINGS.REMINDER.CONTENT_AR' | translate }}</strong>
+          <label>{{ 'ADMIN.SETTINGS.REMINDER.SUBJECT' | translate }} <input dir="rtl" lang="ar" [(ngModel)]="monthlyLeaveReminderSettings.subject_ar"></label>
+          <label>{{ 'ADMIN.SETTINGS.REMINDER.BODY' | translate }}
+            <textarea rows="5" dir="rtl" lang="ar" [(ngModel)]="monthlyLeaveReminderSettings.body_ar"></textarea>
+          </label>
+          <span>{{ 'ADMIN.SETTINGS.REMINDER.TAGS' | translate }} <bdi dir="ltr">{{ '{{first_name}}' }}, {{ '{{employee_name}}' }}, {{ '{{month_name}}' }}, {{ '{{year}}' }}</bdi></span>
+        </div>
+        <p class="reminder-lang-note">{{ 'ADMIN.SETTINGS.REMINDER.LANG_NOTE' | translate }}</p>
       </div>
 
       <div class="settings-feedback success" *ngIf="leaveReminderMessage"><mat-icon>check_circle</mat-icon>{{ leaveReminderMessage }}</div>

@@ -291,7 +291,10 @@
         "SUBJECT": "Subject",
         "BODY": "Body",
         "TAGS": "Available tags:",
-        "SAVE": "Save Leave Reminder"
+        "SAVE": "Save Leave Reminder",
+        "CONTENT_EN": "Email content — English",
+        "CONTENT_AR": "Email content — Arabic",
+        "LANG_NOTE": "Each employee receives the template in their communication language (set on My Profile or by HR). English is used when none is set."
       },
       "CARRY": {
         "TITLE": "Annual Leave Carryforward",

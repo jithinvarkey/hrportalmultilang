@@ -503,3 +503,8 @@ td.mat-column-actions, th.mat-column-actions { white-space: nowrap; width: 1%; }
 td.mat-column-actions > .row-btn { display: inline-flex; vertical-align: middle; }
 td.mat-column-actions > .row-btn + .row-btn { margin-inline-start: 4px; }
 
+/* Monthly leave reminder: schedule on the side, English and Arabic templates stacked */
+.reminder-schedule { grid-row: span 2; }
+.reminder-lang-note { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--text3); }
+@media (max-width: 650px) { .reminder-schedule { grid-row: auto; } }
+

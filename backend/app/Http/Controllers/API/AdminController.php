@@ -151,6 +151,8 @@ class AdminController extends Controller
             'day' => 'required|integer|min:1|max:31',
             'subject' => 'required|string|max:150',
             'body' => 'required|string|max:2000',
+            'subject_ar' => 'nullable|string|max:150',
+            'body_ar' => 'nullable|string|max:2000',
         ]);
 
         return response()->json([

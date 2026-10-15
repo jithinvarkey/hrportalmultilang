@@ -127,6 +127,9 @@ export class AdminComponent implements OnInit {
     day: 25,
     subject: 'Reminder: Submit current month leave entries',
     body: 'Dear {{first_name}},\n\nPlease make sure all leave requests for {{month_name}} {{year}} are submitted in HRMS before payroll processing. Any missing or unsubmitted leave entries may be deducted from salary as per company policy.\n\nRegards,\nHuman Resources',
+    /** Arabic template, sent to employees whose communication language is Arabic (loaded from the server). */
+    subject_ar: '',
+    body_ar: '',
   };
   unifonicSettings = {
     enabled: false,
