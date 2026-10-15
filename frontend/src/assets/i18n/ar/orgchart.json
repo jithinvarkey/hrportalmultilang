@@ -1,0 +1,48 @@
+{
+  "ORGCHART": {
+    "ABOUT": "نبذة",
+    "ACTIVE_TEAM": "الفريق النشط",
+    "ADD_DEPARTMENT": "إضافة إدارة",
+    "BUDGET": "المعتمد",
+    "COLLAPSE": "طي",
+    "COLLAPSE_ALL": "طي الكل",
+    "COUNT_ACTIVE": "{{count}} نشط",
+    "COUNT_INACTIVE": "{{count}} غير نشط",
+    "EXPAND": "توسيع",
+    "EXPAND_ALL": "توسيع الكل",
+    "FORM": {
+      "CODE_PLACEHOLDER": "مثال: ENG",
+      "DEPARTMENT_MANAGER": "مدير الإدارة",
+      "DESCRIPTION_PLACEHOLDER": "وصف مختصر لهذه الإدارة…",
+      "EDIT_DEPARTMENT": "تعديل الإدارة",
+      "ERR_REQUIRED": "الاسم والرمز مطلوبان.",
+      "NAME_AR": "الاسم (بالعربية)",
+      "NAME_EN": "الاسم (بالإنجليزية)",
+      "NAME_PLACEHOLDER": "مثال: Engineering",
+      "NEW_DEPARTMENT": "إدارة جديدة",
+      "NONE_OPTION": "— لا يوجد —",
+      "PARENT_DEPARTMENT": "الإدارة الرئيسية",
+      "SAVE_DEPARTMENT": "حفظ الإدارة",
+      "TOP_LEVEL": "— المستوى الأعلى —"
+    },
+    "HEADCOUNT_BUDGET": "عدد الوظائف المعتمدة",
+    "HEADCOUNT_UTILISATION": "نسبة إشغال الوظائف",
+    "INACTIVE_TEAM": "الفريق غير النشط",
+    "MANAGER": "المدير",
+    "NO_ACTIVE_EMPLOYEES": "لا يوجد موظفون نشطون في هذه الإدارة",
+    "NO_MANAGER": "لم يتم تعيين مدير",
+    "PLUS_INACTIVE": "+{{count}} غير نشط",
+    "SEARCHING": "جارٍ البحث…",
+    "SEARCH_PLACEHOLDER": "ابحث عن موظف أو إدارة…",
+    "STAFF": "الموظفون",
+    "SUBTITLE": "{{active}} موظف نشط · {{inactive}} غير نشط · {{departments}} إدارة",
+    "SUB_DEPARTMENTS": "الإدارات الفرعية",
+    "SUB_DEPTS": "إدارات فرعية",
+    "TITLE": "الهيكل التنظيمي",
+    "VIEW": {
+      "GRID": "شبكة",
+      "LIST": "قائمة",
+      "TREE": "شجرة"
+    }
+  }
+}

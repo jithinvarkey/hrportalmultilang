@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class RecruitmentApplicationMail extends Mailable
+class RecruitmentApplicationMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
@@ -27,7 +27,7 @@ class RecruitmentApplicationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Recruitment Application Mail',
+            subject: __('mail_recruitment.application_subject'),
         );
     }
 

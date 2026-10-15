@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Mail\NewHireItNotificationMail;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Support\Locale\LocalizedMail;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class NewHireNotificationService
 {
@@ -40,7 +40,7 @@ class NewHireNotificationService
         }
 
         try {
-            Mail::to($recipients)->send(new NewHireItNotificationMail($employee));
+            LocalizedMail::send($recipients, [], fn () => new NewHireItNotificationMail($employee));
 
             Log::info('New hire IT notification sent.', [
                 'employee_id' => $employee->id,

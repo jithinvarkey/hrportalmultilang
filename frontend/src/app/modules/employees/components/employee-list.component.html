@@ -3,13 +3,13 @@
   <!-- Header -->
   <div class="page-hdr">
     <div>
-      <h1 class="page-title">Employees</h1>
-      <p class="page-sub">Manage your workforce · <span *ngIf="pagination$ | async as pg" style="color:var(--accent)">{{ pg.total ?? 0 }} total</span></p>
+      <h1 class="page-title">{{ 'EMPLOYEES.TITLE' | translate }}</h1>
+      <p class="page-sub">{{ 'EMPLOYEES.LIST.SUBTITLE' | translate }} · <span *ngIf="pagination$ | async as pg" style="color:var(--accent)">{{ 'EMPLOYEES.LIST.TOTAL_COUNT' | translate:{ count: pg.total ?? 0 } }}</span></p>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn-outline" (click)="clearFilters()"><mat-icon>filter_list_off</mat-icon> Clear</button>
-      <button class="btn-outline" *ngIf="isHR" (click)="downloadEmployeeDetailsReport()"><mat-icon>download</mat-icon> Employee Report</button>
-      <button class="btn-primary" *ngIf="isHR"  (click)="addEmployee()"><mat-icon>person_add_alt_1</mat-icon> Add Employee</button>
+    <div class="hdr-actions">
+      <button class="btn-outline" (click)="clearFilters()"><mat-icon>filter_list_off</mat-icon> {{ 'COMMON.CLEAR' | translate }}</button>
+      <button class="btn-outline" *ngIf="isHR" (click)="downloadEmployeeDetailsReport()"><mat-icon>download</mat-icon> {{ 'EMPLOYEES.LIST.EMPLOYEE_REPORT' | translate }}</button>
+      <button class="btn-primary" *ngIf="isHR"  (click)="addEmployee()"><mat-icon>person_add_alt_1</mat-icon> {{ 'EMPLOYEES.LIST.ADD_EMPLOYEE' | translate }}</button>
     </div>
   </div>
 
@@ -39,7 +39,7 @@
       </div>
       <div class="tile-body">
         <div class="tile-val">{{ t.value }}</div>
-        <div class="tile-lbl">{{ t.label }}</div>
+        <div class="tile-lbl">{{ t.label | translate }}</div>
       </div>
     </button>
 
@@ -49,35 +49,35 @@
   <div class="filter-bar">
     <div class="search-wrap">
       <mat-icon class="search-icon">search</mat-icon>
-      <input class="search-input" placeholder="Search name, email or ID…" [formControl]="searchControl">
+      <input class="search-input" [placeholder]="'EMPLOYEES.LIST.SEARCH_PLACEHOLDER' | translate" [formControl]="searchControl">
     </div>
 
     <select *ngIf="canFilterEmployees" class="filter-select" [formControl]="statusFilter" (change)="loadEmployees()">
-      <option value="">All Statuses</option>
-      <option value="active">Active</option>
-      <option value="probation">Probation</option>
-      <option value="inactive">Inactive</option>
-      <option value="on_leave">On Leave</option>
-      <option value="resigned">Resigned</option>
-      <option value="terminated">Terminated</option>
+      <option value="">{{ 'EMPLOYEES.LIST.ALL_STATUSES' | translate }}</option>
+      <option value="active">{{ 'active' | statusLabel }}</option>
+      <option value="probation">{{ 'probation' | statusLabel }}</option>
+      <option value="inactive">{{ 'inactive' | statusLabel }}</option>
+      <option value="on_leave">{{ 'on_leave' | statusLabel }}</option>
+      <option value="resigned">{{ 'resigned' | statusLabel }}</option>
+      <option value="terminated">{{ 'terminated' | statusLabel }}</option>
     </select>
 
     <select *ngIf="canFilterEmployees" class="filter-select" [formControl]="deptFilter" (change)="loadEmployees()">
-      <option value="">All Departments</option>
-      <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+      <option value="">{{ 'EMPLOYEES.LIST.ALL_DEPARTMENTS' | translate }}</option>
+      <option *ngFor="let d of departments" [value]="d.id">{{ d | locName }}</option>
     </select>
 
     <select *ngIf="canFilterEmployees" class="filter-select" [formControl]="unitFilter" (change)="loadEmployees()">
-      <option value="">All Units</option>
-      <option *ngFor="let u of units" [value]="u.id">{{ u.name }}</option>
+      <option value="">{{ 'EMPLOYEES.LIST.ALL_UNITS' | translate }}</option>
+      <option *ngFor="let u of units" [value]="u.id">{{ u | locName }}</option>
     </select>
 
     <select *ngIf="canFilterEmployees" class="filter-select" [formControl]="typeFilter" (change)="loadEmployees()">
-      <option value="">All Types</option>
-      <option value="full_time">Full Time</option>
-      <option value="part_time">Part Time</option>
-      <option value="contract">Contract</option>
-      <option value="intern">Intern</option>
+      <option value="">{{ 'EMPLOYEES.LIST.ALL_TYPES' | translate }}</option>
+      <option value="full_time">{{ 'EMPLOYEES.EMPLOYMENT_TYPE.full_time' | translate }}</option>
+      <option value="part_time">{{ 'EMPLOYEES.EMPLOYMENT_TYPE.part_time' | translate }}</option>
+      <option value="contract">{{ 'EMPLOYEES.EMPLOYMENT_TYPE.contract' | translate }}</option>
+      <option value="intern">{{ 'EMPLOYEES.EMPLOYMENT_TYPE.intern' | translate }}</option>
     </select>
   </div>
 
@@ -85,12 +85,12 @@
   <div class="data-card">
     <div class="loading-bar" *ngIf="loading$ | async"></div>
 
-    <table mat-table [dataSource]="(employees$ | async) || []">
+    <table mat-table class="emp-table" [dataSource]="(employees$ | async) || []">
 
       <!-- Avatar -->
       <ng-container matColumnDef="avatar">
         <th mat-header-cell *matHeaderCellDef></th>
-        <td mat-cell *matCellDef="let e">
+        <td mat-cell *matCellDef="let e" class="cell-avatar">
           <div class="av" [style.background]="avatarColor(e.full_name || e.first_name)">
             <img *ngIf="e.avatar_url" [src]="e.avatar_url" [alt]="e.full_name" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
             <span *ngIf="!e.avatar_url">{{ initial(e.full_name || e.first_name) }}</span>
@@ -100,84 +100,84 @@
 
       <!-- Code -->
       <ng-container matColumnDef="employee_code">
-        <th mat-header-cell *matHeaderCellDef>ID</th>
-        <td mat-cell *matCellDef="let e"><span class="mono">{{ e.employee_code }}</span></td>
+        <th mat-header-cell *matHeaderCellDef>{{ 'EMPLOYEES.EMPLOYEE_ID' | translate }}</th>
+        <td mat-cell *matCellDef="let e" class="cell-code"><span class="mono" dir="ltr">{{ e.employee_code }}</span></td>
       </ng-container>
 
       <!-- Name -->
       <ng-container matColumnDef="full_name">
-        <th mat-header-cell *matHeaderCellDef>Employee</th>
-        <td mat-cell *matCellDef="let e">
+        <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.EMPLOYEE' | translate }}</th>
+        <td mat-cell *matCellDef="let e" class="cell-name">
           <div class="name-cell">
-            <span class="name-main">{{ e.full_name }}</span>
-            <span class="name-sub">{{ e.email }}</span>
+            <span class="name-main">{{ displayName(e) }}</span>
+            <span class="name-sub ltr">{{ e.email }}</span>
           </div>
         </td>
       </ng-container>
 
       <!-- Department -->
       <ng-container matColumnDef="department">
-        <th mat-header-cell *matHeaderCellDef>Department</th>
-        <td mat-cell *matCellDef="let e">
+        <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.DEPARTMENT' | translate }}</th>
+        <td mat-cell *matCellDef="let e" class="cell-dept">
           <div class="td-stack">
-            <span>{{ e.department?.name || '—' }}</span>
-            <span class="td-sub">{{ e.designation?.title || '' }}</span>
+            <span>{{ (e.department | locName) || '—' }}</span>
+            <span class="td-sub">{{ e.designation | locName:'title' }}</span>
           </div>
         </td>
       </ng-container>
 
       <ng-container matColumnDef="unit">
-        <th mat-header-cell *matHeaderCellDef>Unit</th>
-        <td mat-cell *matCellDef="let e">{{ e.unit?.name || '—' }}</td>
+        <th mat-header-cell *matHeaderCellDef>{{ 'EMPLOYEES.UNIT' | translate }}</th>
+        <td mat-cell *matCellDef="let e" class="cell-unit" [attr.data-label]="'EMPLOYEES.UNIT' | translate">{{ (e.unit | locName) || '—' }}</td>
       </ng-container>
 
       <!-- Nationality -->
       <ng-container matColumnDef="nationality">
-        <th mat-header-cell *matHeaderCellDef>Nationality</th>
-        <td mat-cell *matCellDef="let e">{{ e.nationality || '—' }}</td>
+        <th mat-header-cell *matHeaderCellDef>{{ 'EMPLOYEES.NATIONALITY' | translate }}</th>
+        <td mat-cell *matCellDef="let e" class="cell-nat" [attr.data-label]="'EMPLOYEES.NATIONALITY' | translate">{{ e.nationality || '—' }}</td>
       </ng-container>
 
       <!-- Type -->
       <ng-container matColumnDef="employment_type">
-        <th mat-header-cell *matHeaderCellDef>Type</th>
-        <td mat-cell *matCellDef="let e">
-          <span class="type-tag">{{ (e.employment_type || '').replace('_', ' ') | titlecase }}</span>
+        <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.TYPE' | translate }}</th>
+        <td mat-cell *matCellDef="let e" class="cell-type">
+          <span class="type-tag">{{ employmentTypeLabel(e.employment_type) }}</span>
         </td>
       </ng-container>
 
       <!-- Status -->
       <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Status</th>
-        <td mat-cell *matCellDef="let e">
-          <span class="status-badge" [class]="statusClass(e.status)">{{ (e.status || '').replace('_', ' ') | titlecase }}</span>
+        <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.STATUS' | translate }}</th>
+        <td mat-cell *matCellDef="let e" class="cell-status">
+          <span class="status-badge" [class]="statusClass(e.status)">{{ e.status | statusLabel }}</span>
         </td>
       </ng-container>
 
       <!-- Actions -->
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef></th>
-        <td mat-cell *matCellDef="let e">
+        <td mat-cell *matCellDef="let e" class="cell-actions">
           <div class="row-actions">
-            <button class="row-btn" (click)="viewEmployee(e.id)" matTooltip="View Profile">
+            <button class="row-btn" (click)="viewEmployee(e.id)" [matTooltip]="'EMPLOYEES.LIST.VIEW_PROFILE' | translate" [attr.aria-label]="'EMPLOYEES.LIST.VIEW_PROFILE' | translate">
               <mat-icon>visibility</mat-icon>
             </button>
-            <button class="row-btn" *ngIf="isHR" (click)="editEmployee(e.id)" matTooltip="Edit">
+            <button class="row-btn" *ngIf="isHR" (click)="editEmployee(e.id)" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate">
               <mat-icon>edit</mat-icon>
             </button>
             <!-- Quick status toggle: inactive ↔ active, terminated stays as-is -->
             <button class="row-btn"
                     *ngIf="isHR && (e.status === 'active' || e.status === 'probation' || e.status === 'on_leave')"
-                    matTooltip="Set Inactive"
+                    [matTooltip]="'EMPLOYEES.LIST.SET_INACTIVE' | translate" [attr.aria-label]="'EMPLOYEES.LIST.SET_INACTIVE' | translate"
                     (click)="quickStatus(e, 'inactive', $event)" >
               <mat-icon>pause_circle_outline</mat-icon>
             </button>
             <button class="row-btn success"
                     *ngIf="isHR && e.status === 'inactive'"
-                    matTooltip="Set Active"
+                    [matTooltip]="'EMPLOYEES.LIST.SET_ACTIVE' | translate" [attr.aria-label]="'EMPLOYEES.LIST.SET_ACTIVE' | translate"
                     (click)="quickStatus(e, 'active', $event)">
               <mat-icon>play_circle_outline</mat-icon>
             </button>
-            <button class="row-btn danger" (click)="terminate(e.id)" matTooltip="Terminate" *ngIf="isHR && e.status !== 'terminated'">
+            <button class="row-btn danger" (click)="terminate(e.id)" [matTooltip]="'EMPLOYEES.LIST.TERMINATE' | translate" [attr.aria-label]="'EMPLOYEES.LIST.TERMINATE' | translate" *ngIf="isHR && e.status !== 'terminated'">
               <mat-icon>person_remove</mat-icon>
             </button>
           </div>
@@ -190,10 +190,10 @@
       <tr class="mat-row" *matNoDataRow>
         <td class="mat-cell empty-td" [attr.colspan]="displayedColumns.length">
           <ng-container *ngIf="loading$ | async">
-            <mat-spinner diameter="28"></mat-spinner> Loading…
+            <mat-spinner diameter="28"></mat-spinner> {{ 'COMMON.LOADING' | translate }}
           </ng-container>
           <ng-container *ngIf="!(loading$ | async)">
-            <mat-icon>search_off</mat-icon> No employees found
+            <mat-icon>search_off</mat-icon> {{ 'EMPLOYEES.LIST.NO_EMPLOYEES' | translate }}
           </ng-container>
         </td>
       </tr>
@@ -202,15 +202,15 @@
     <!-- Pagination -->
     <div class="pagination-bar" *ngIf="pagination$ | async as pg">
       <span class="pg-info">
-        Showing {{ pg.from ?? 0 }}–{{ pg.to ?? 0 }} of {{ pg.total ?? 0 }}
+        {{ 'COMMON.SHOWING' | translate:{ from: pg.from ?? 0, to: pg.to ?? 0, total: pg.total ?? 0 } }}
       </span>
       <div class="pg-btns">
         <button class="pg-btn" [disabled]="pg.currentPage <= 1" (click)="loadEmployees(pg.currentPage - 1)">
-          <mat-icon>chevron_left</mat-icon>
+          <mat-icon class="flip-rtl">chevron_left</mat-icon>
         </button>
-        <span class="pg-curr">{{ pg.currentPage }} / {{ pg.lastPage }}</span>
+        <span class="pg-curr" dir="ltr">{{ pg.currentPage }} / {{ pg.lastPage }}</span>
         <button class="pg-btn" [disabled]="pg.currentPage >= pg.lastPage" (click)="loadEmployees(pg.currentPage + 1)">
-          <mat-icon>chevron_right</mat-icon>
+          <mat-icon class="flip-rtl">chevron_right</mat-icon>
         </button>
       </div>
     </div>

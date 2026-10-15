@@ -1,5 +1,8 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { TranslateService } from '@ngx-translate/core';
+import { Subscription } from 'rxjs';
+import { LanguageService } from '../../../core/services/language.service';
 
 /**
  * BioTime / ZKTeco biometric device management.
@@ -15,7 +18,7 @@ import { HttpClient } from '@angular/common/http';
   styleUrls:       ['./biotime.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BioTimeComponent implements OnInit {
+export class BioTimeComponent implements OnInit, OnDestroy {
 
   private readonly api = '/api/v1/biotime/devices';
 
@@ -56,11 +59,22 @@ syncForm = {
 
 
 
-  constructor(private readonly http: HttpClient, private readonly cdr: ChangeDetectorRef) {}
+  private langSub?: Subscription;
+
+  constructor(
+    private readonly http: HttpClient,
+    private readonly cdr: ChangeDetectorRef,
+    private readonly lang: LanguageService,
+    private readonly translate: TranslateService,
+  ) {}
 
   ngOnInit(): void {
     this.loadDevices();
+    // OnPush: re-render translated labels when the language is switched
+    this.langSub = this.translate.onLangChange.subscribe(() => this.cdr.markForCheck());
   }
+
+  ngOnDestroy(): void { this.langSub?.unsubscribe(); }
 
   /** A fresh device form with sensible ZKTeco/BioTime defaults. */
   private blankForm(): any {
@@ -109,12 +123,12 @@ syncForm = {
 
   saveDevice(): void {
     if (!this.form.name?.trim() || !this.form.ip_address?.trim() || !this.form.username?.trim()) {
-      this.formError = 'Name, IP address, and username are required.';
+      this.formError = this.lang.t('ATTENDANCE.BIOTIME.MSG.REQUIRED_FIELDS');
       this.cdr.markForCheck();
       return;
     }
     if (!this.editId && !this.form.password) {
-      this.formError = 'Password is required for a new device.';
+      this.formError = this.lang.t('ATTENDANCE.BIOTIME.MSG.PASSWORD_REQUIRED');
       this.cdr.markForCheck();
       return;
     }
@@ -122,8 +136,7 @@ syncForm = {
     if (this.form.ip_address?.includes('http://') ||
     this.form.ip_address?.includes('https://')) {
 
-  this.formError =
-    'Please enter only IP Address or Host. Do not enter the full URL.';
+  this.formError = this.lang.t('ATTENDANCE.BIOTIME.MSG.IP_ONLY');
   return;
 }
 
@@ -142,22 +155,22 @@ syncForm = {
       next: () => {
         this.submitting = false;
         this.showForm = false;
-        this.toast(this.editId ? 'Device updated.' : 'Device added.');
+        this.toast(this.lang.t(this.editId ? 'ATTENDANCE.BIOTIME.MSG.UPDATED' : 'ATTENDANCE.BIOTIME.MSG.ADDED'));
         this.loadDevices();
       },
       error: err => {
         this.submitting = false;
-        this.formError = this.firstError(err) || 'Failed to save device.';
+        this.formError = this.firstError(err) || this.lang.t('ATTENDANCE.BIOTIME.MSG.SAVE_FAILED');
         this.cdr.markForCheck();
       },
     });
   }
 
   deleteDevice(device: any): void {
-    if (!confirm(`Delete device "${device.name}"? Its punch logs will be removed too.`)) return;
+    if (!confirm(this.lang.t('ATTENDANCE.BIOTIME.MSG.CONFIRM_DELETE', { name: device.name }))) return;
     this.http.delete(`${this.api}/${device.id}`).subscribe({
-      next: () => { this.toast('Device deleted.'); this.loadDevices(); },
-      error: err => { this.toast(this.firstError(err) || 'Delete failed.'); },
+      next: () => { this.toast(this.lang.t('ATTENDANCE.BIOTIME.MSG.DELETED')); this.loadDevices(); },
+      error: err => { this.toast(this.firstError(err) || this.lang.t('ATTENDANCE.BIOTIME.MSG.DELETE_FAILED')); },
     });
   }
 
@@ -171,12 +184,12 @@ syncForm = {
     this.http.post<any>(`${this.api}/${device.id}/test`, {}).subscribe({
       next: r => {
         this.testing[device.id] = false;
-        this.testResult[device.id] = { ok: !!r?.ok, message: r?.message || (r?.ok ? 'Connected.' : 'Failed.') };
+        this.testResult[device.id] = { ok: !!r?.ok, message: r?.message || this.lang.t(r?.ok ? 'ATTENDANCE.BIOTIME.MSG.CONNECTED' : 'ATTENDANCE.BIOTIME.MSG.FAILED') };
         this.cdr.markForCheck();
       },
       error: err => {
         this.testing[device.id] = false;
-        this.testResult[device.id] = { ok: false, message: this.firstError(err) || 'Connection failed.' };
+        this.testResult[device.id] = { ok: false, message: this.firstError(err) || this.lang.t('ATTENDANCE.BIOTIME.MSG.CONNECTION_FAILED') };
         this.cdr.markForCheck();
       },
     });
@@ -227,14 +240,14 @@ syncForm = {
       this.showSyncModal = false;
 
       const skipped = Number(r?.skipped_duplicates ?? 0);
-      const parts = [
-        `Fetched ${Number(r?.fetched ?? 0)}`,
-        `new ${Number(r?.new_raw ?? r?.new ?? 0)}`,
-        `processed ${Number(r?.processed ?? 0)}`,
-      ];
-      if (skipped > 0) parts.push(`skipped duplicates ${skipped}`);
+      let summary = this.lang.t('ATTENDANCE.BIOTIME.MSG.SYNC_DONE', {
+        fetched: Number(r?.fetched ?? 0),
+        new: Number(r?.new_raw ?? r?.new ?? 0),
+        processed: Number(r?.processed ?? 0),
+      });
+      if (skipped > 0) summary += this.lang.t('ATTENDANCE.BIOTIME.MSG.SYNC_SKIPPED', { n: skipped });
 
-      this.toast(r?.message || `Sync completed: ${parts.join(', ')}.`);
+      this.toast(r?.message || `${summary}.`);
 
       this.loadDevices();
       this.cdr.markForCheck();
@@ -245,7 +258,7 @@ syncForm = {
 
       this.toast(
         this.firstError(err) ||
-        'Sync failed.'
+        this.lang.t('ATTENDANCE.BIOTIME.MSG.SYNC_FAILED')
       );
 
       this.cdr.markForCheck();

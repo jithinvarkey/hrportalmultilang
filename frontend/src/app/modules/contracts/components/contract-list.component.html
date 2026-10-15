@@ -3,25 +3,25 @@
   <!-- ── Header ──────────────────────────────────────────────────────── -->
   <div class="page-hdr">
     <div>
-      <h1 class="page-title"><mat-icon>description</mat-icon> Contracts</h1>
-      <p class="page-sub">Employee contracts · Status tracking · PDF management</p>
+      <h1 class="page-title"><mat-icon>description</mat-icon> {{ 'CONTRACTS.TITLE' | translate }}</h1>
+      <p class="page-sub">{{ 'CONTRACTS.SUBTITLE' | translate }}</p>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn-outline" (click)="clearFilters()"><mat-icon>filter_list_off</mat-icon> Clear</button>
+    <div class="hdr-actions">
+      <button class="btn-outline" (click)="clearFilters()"><mat-icon>filter_list_off</mat-icon> {{ 'COMMON.CLEAR' | translate }}</button>
       <button class="btn-outline" *ngIf="isHR" (click)="downloadActiveEmployeeContractsReport()">
-        <mat-icon>download</mat-icon> Active Contract Report
+        <mat-icon>download</mat-icon> {{ 'CONTRACTS.ACTIVE_REPORT' | translate }}
       </button>
-      <button class="btn-primary" *ngIf="isHR" (click)="openForm()"><mat-icon>add</mat-icon> New Contract</button>
+      <button class="btn-primary" *ngIf="isHR" (click)="openForm()"><mat-icon>add</mat-icon> {{ 'CONTRACTS.NEW' | translate }}</button>
     </div>
   </div>
 
   <!-- ── Module tabs ────────────────────────────────────────────────── -->
   <div class="mod-tabs">
     <a class="mod-tab active" routerLink="/contracts" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
-      <mat-icon>description</mat-icon> Contracts
+      <mat-icon>description</mat-icon> {{ 'CONTRACTS.TABS.CONTRACTS' | translate }}
     </a>
     <a class="mod-tab" routerLink="/contracts/renewals" routerLinkActive="active">
-      <mat-icon>autorenew</mat-icon> Renewals
+      <mat-icon>autorenew</mat-icon> {{ 'CONTRACTS.TABS.RENEWALS' | translate }}
       <span class="tab-badge renewals-badge" *ngIf="pendingRenewals > 0">{{ pendingRenewals }}</span>
     </a>
   </div>
@@ -49,7 +49,7 @@
       <div class="tile-icon-wrap"><mat-icon>{{ t.icon }}</mat-icon></div>
       <div class="tile-body">
         <div class="tile-val">{{ t.value }}</div>
-        <div class="tile-lbl">{{ t.label }}</div>
+        <div class="tile-lbl">{{ t.labelKey | translate }}</div>
       </div>
     </button>
   </div>
@@ -58,19 +58,19 @@
   <div class="filter-bar">
     <div class="search-wrap">
       <mat-icon class="search-icon">search</mat-icon>
-      <input class="search-input" placeholder="Search employee, reference, position…" [formControl]="searchControl">
+      <input class="search-input" [placeholder]="'CONTRACTS.FILTER.SEARCH_PLACEHOLDER' | translate" [formControl]="searchControl">
     </div>
     <select class="filter-select" [(ngModel)]="statusFilter" (change)="loadContracts(1)">
-      <option value="all">All Status</option>
-      <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+      <option value="all">{{ 'CONTRACTS.FILTER.ALL_STATUS' | translate }}</option>
+      <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.value | statusLabel }}</option>
     </select>
     <select class="filter-select" [(ngModel)]="typeFilter" (change)="loadContracts(1)">
-      <option value="">All Types</option>
-      <option *ngFor="let t of contractTypes" [value]="t.value">{{ t.label }}</option>
+      <option value="">{{ 'CONTRACTS.FILTER.ALL_TYPES' | translate }}</option>
+      <option *ngFor="let t of contractTypes" [value]="t.value">{{ t.labelKey | translate }}</option>
     </select>
     <label class="expiry-toggle">
       <input type="checkbox" [(ngModel)]="expiringFilter" (change)="loadContracts(1)">
-      <mat-icon>schedule</mat-icon> Expiring in 30 days
+      <mat-icon>schedule</mat-icon> {{ 'CONTRACTS.FILTER.EXPIRING_30' | translate }}
     </label>
   </div>
 
@@ -78,11 +78,12 @@
   <div class="data-card">
     <div class="loading-bar" *ngIf="loading"></div>
 
+    <div class="table-scroll">
     <table mat-table [dataSource]="contracts">
 
       <!-- Employee -->
       <ng-container matColumnDef="employee">
-        <th mat-header-cell *matHeaderCellDef>Employee</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.EMPLOYEE' | translate }}</th>
         <td mat-cell *matCellDef="let c">
           <div class="emp-cell">
             <div class="av" [style.background]="avatarColor(c.employee?.full_name)">
@@ -98,13 +99,13 @@
 
       <!-- Reference -->
       <ng-container matColumnDef="reference">
-        <th mat-header-cell *matHeaderCellDef>Reference</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.REFERENCE' | translate }}</th>
         <td mat-cell *matCellDef="let c"><span class="ref-chip">{{ c.reference }}</span></td>
       </ng-container>
 
       <!-- Type -->
       <ng-container matColumnDef="type">
-        <th mat-header-cell *matHeaderCellDef>Type</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.TYPE' | translate }}</th>
         <td mat-cell *matCellDef="let c">
           <span class="type-tag">{{ typeLabel(c.type) }}</span>
         </td>
@@ -112,36 +113,36 @@
 
       <!-- Position -->
       <ng-container matColumnDef="position">
-        <th mat-header-cell *matHeaderCellDef>Position</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'CONTRACTS.COL.POSITION' | translate }}</th>
         <td mat-cell *matCellDef="let c" class="td-muted">{{ c.position || '—' }}</td>
       </ng-container>
 
       <!-- Dates -->
       <ng-container matColumnDef="dates">
-        <th mat-header-cell *matHeaderCellDef>Period</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'CONTRACTS.COL.PERIOD' | translate }}</th>
         <td mat-cell *matCellDef="let c">
           <div class="date-range">
             <span>{{ formatDate(c.start_date) }}</span>
-            <mat-icon class="date-arrow">arrow_forward</mat-icon>
-            <span [class.expiry-warn]="c.is_expired">{{ c.end_date ? formatDate(c.end_date) : 'Unlimited' }}</span>
+            <mat-icon class="date-arrow flip-rtl">arrow_forward</mat-icon>
+            <span [class.expiry-warn]="c.is_expired">{{ c.end_date ? formatDate(c.end_date) : ('CONTRACTS.UNLIMITED' | translate) }}</span>
           </div>
         </td>
       </ng-container>
 
       <!-- Salary -->
       <ng-container matColumnDef="salary">
-        <th mat-header-cell *matHeaderCellDef>Salary</th>
-        <td mat-cell *matCellDef="let c" class="td-muted">{{ formatSalary(c.salary, c.currency) }}</td>
+        <th mat-header-cell *matHeaderCellDef>{{ 'CONTRACTS.COL.SALARY' | translate }}</th>
+        <td mat-cell *matCellDef="let c" class="td-muted"><span class="ltr">{{ formatSalary(c.salary, c.currency) }}</span></td>
       </ng-container>
 
       <!-- Status -->
       <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'COMMON.STATUS' | translate }}</th>
         <td mat-cell *matCellDef="let c">
           <span class="status-badge" [class]="statusClass(c.status)">
-            {{ c.status | titlecase }}
+            {{ c.status | statusLabel }}
           </span>
-          <span class="expiry-chip" *ngIf="c.is_expired">Expired</span>
+          <span class="expiry-chip" *ngIf="c.is_expired">{{ 'expired' | statusLabel }}</span>
         </td>
       </ng-container>
 
@@ -150,18 +151,18 @@
         <th mat-header-cell *matHeaderCellDef></th>
         <td mat-cell *matCellDef="let c">
           <div class="row-actions">
-            <button class="row-btn" matTooltip="View" (click)="viewDetail(c); $event.stopPropagation()">
+            <button class="row-btn" [matTooltip]="'COMMON.VIEW' | translate" [attr.aria-label]="'COMMON.VIEW' | translate" (click)="viewDetail(c); $event.stopPropagation()">
               <mat-icon>open_in_new</mat-icon>
             </button>
-            <button class="row-btn" matTooltip="Edit" *ngIf="isHR" (click)="openForm(c); $event.stopPropagation()">
+            <button class="row-btn" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate" *ngIf="isHR" (click)="openForm(c); $event.stopPropagation()">
               <mat-icon>edit</mat-icon>
             </button>
-            <button class="row-btn success" matTooltip="Approve"
+            <button class="row-btn success" [matTooltip]="'CONTRACTS.ACTION.APPROVE' | translate" [attr.aria-label]="'CONTRACTS.ACTION.APPROVE' | translate"
                     *ngIf="isHR && c.status === 'draft'"
                     (click)="approve(c); $event.stopPropagation()">
               <mat-icon>check_circle</mat-icon>
             </button>
-            <button class="row-btn danger" matTooltip="Delete"
+            <button class="row-btn danger" [matTooltip]="'COMMON.DELETE' | translate" [attr.aria-label]="'COMMON.DELETE' | translate"
                     *ngIf="isHR"
                     (click)="deleteContract(c.id); $event.stopPropagation()">
               <mat-icon>delete_outline</mat-icon>
@@ -175,24 +176,25 @@
 
       <tr class="mat-row" *matNoDataRow>
         <td class="mat-cell empty-state-td" colspan="8">
-          <ng-container *ngIf="loading"><mat-spinner diameter="28"></mat-spinner> Loading…</ng-container>
+          <ng-container *ngIf="loading"><mat-spinner diameter="28"></mat-spinner> {{ 'COMMON.LOADING' | translate }}</ng-container>
           <ng-container *ngIf="!loading">
-            <mat-icon>description</mat-icon> No contracts found
+            <mat-icon>description</mat-icon> {{ 'CONTRACTS.EMPTY' | translate }}
           </ng-container>
         </td>
       </tr>
     </table>
+    </div>
 
     <!-- Pagination -->
     <div class="pagination-bar" *ngIf="pagination?.last_page > 1">
-      <span class="pg-info">{{ pagination?.from }}–{{ pagination?.to }} of {{ pagination?.total }}</span>
+      <span class="pg-info">{{ 'COMMON.SHOWING' | translate:{ from: pagination?.from, to: pagination?.to, total: pagination?.total } }}</span>
       <div class="pg-btns">
         <button class="pg-btn" [disabled]="currentPage <= 1" (click)="loadContracts(currentPage - 1)">
-          <mat-icon>chevron_left</mat-icon>
+          <mat-icon class="flip-rtl">chevron_left</mat-icon>
         </button>
         <button *ngFor="let p of pages" class="pg-btn" [class.active]="p === currentPage" (click)="loadContracts(p)">{{ p }}</button>
         <button class="pg-btn" [disabled]="currentPage >= pagination?.last_page" (click)="loadContracts(currentPage + 1)">
-          <mat-icon>chevron_right</mat-icon>
+          <mat-icon class="flip-rtl">chevron_right</mat-icon>
         </button>
       </div>
     </div>
@@ -208,27 +210,27 @@
   <div class="modal-hdr">
     <h3>
       <mat-icon>{{ editId ? 'edit' : 'add_circle' }}</mat-icon>
-      {{ editId ? 'Edit Contract' : 'New Contract' }}
+      {{ (editId ? 'CONTRACTS.EDIT' : 'CONTRACTS.NEW') | translate }}
     </h3>
-    <button class="row-btn" (click)="closeForm()"><mat-icon>close</mat-icon></button>
+    <button class="row-btn" (click)="closeForm()" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
 
     <!-- Row 1: Employee + Type -->
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Employee <span class="req">*</span></label>
+        <label class="field-label">{{ 'CONTRACTS.FORM.EMPLOYEE' | translate }} <span class="req">*</span></label>
         <select class="field-select-full" formControlName="employee_id">
-          <option value="">— Select employee —</option>
+          <option value="">{{ 'CONTRACTS.FORM.SELECT_EMPLOYEE' | translate }}</option>
           <option *ngFor="let e of employees" [value]="e.id">
             {{ e.first_name }} {{ e.last_name }} ({{ e.employee_code }})
           </option>
         </select>
       </div>
       <div class="field-group">
-        <label class="field-label">Contract Type <span class="req">*</span></label>
+        <label class="field-label">{{ 'CONTRACTS.FORM.TYPE' | translate }} <span class="req">*</span></label>
         <select class="field-select-full" formControlName="type">
-          <option *ngFor="let t of contractTypes" [value]="t.value">{{ t.label }}</option>
+          <option *ngFor="let t of contractTypes" [value]="t.value">{{ t.labelKey | translate }}</option>
         </select>
       </div>
     </div>
@@ -236,14 +238,14 @@
     <!-- Row 2: Position + Department -->
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Position / Title</label>
-        <input class="field-input" placeholder="e.g. Senior Engineer" formControlName="position">
+        <label class="field-label">{{ 'CONTRACTS.FORM.POSITION' | translate }}</label>
+        <input class="field-input" [placeholder]="'CONTRACTS.FORM.POSITION_PLACEHOLDER' | translate" formControlName="position">
       </div>
       <div class="field-group">
-        <label class="field-label">Department</label>
+        <label class="field-label">{{ 'CONTRACTS.FORM.DEPARTMENT' | translate }}</label>
         <select class="field-select-full" formControlName="department_id">
-          <option value="">— Select department —</option>
-          <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+          <option value="">{{ 'CONTRACTS.FORM.SELECT_DEPARTMENT' | translate }}</option>
+          <option *ngFor="let d of departments" [value]="d.id">{{ d | locName }}</option>
         </select>
       </div>
     </div>
@@ -251,71 +253,71 @@
     <!-- Row 3: Dates -->
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Start Date <span class="req">*</span></label>
-        <input class="field-input" type="date" formControlName="start_date">
+        <label class="field-label">{{ 'CONTRACTS.FORM.START_DATE' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="date" dir="ltr" formControlName="start_date">
       </div>
       <div class="field-group">
-        <label class="field-label">End Date <span class="field-hint-inline">(leave blank = unlimited)</span></label>
-        <input class="field-input" type="date" formControlName="end_date">
+        <label class="field-label">{{ 'CONTRACTS.FORM.END_DATE' | translate }} <span class="field-hint-inline">{{ 'CONTRACTS.FORM.END_DATE_HINT' | translate }}</span></label>
+        <input class="field-input" type="date" dir="ltr" formControlName="end_date">
       </div>
     </div>
 
     <!-- Row 4: Salary + Currency -->
     <div class="two-col">
       <div class="field-group">
-        <label class="field-label">Monthly Salary</label>
-        <input class="field-input" type="number" placeholder="0.00" formControlName="salary">
+        <label class="field-label">{{ 'CONTRACTS.FORM.SALARY' | translate }}</label>
+        <input class="field-input" type="number" dir="ltr" placeholder="0.00" formControlName="salary">
       </div>
       <div class="field-group">
-        <label class="field-label">Currency</label>
+        <label class="field-label">{{ 'CONTRACTS.FORM.CURRENCY' | translate }}</label>
         <select class="field-select-full" formControlName="currency">
-          <option value="SAR">SAR — Saudi Riyal</option>
-          <option value="USD">USD — US Dollar</option>
-          <option value="AED">AED — UAE Dirham</option>
-          <option value="EUR">EUR — Euro</option>
-          <option value="GBP">GBP — British Pound</option>
+          <option value="SAR">{{ 'CONTRACTS.CURRENCIES.SAR' | translate }}</option>
+          <option value="USD">{{ 'CONTRACTS.CURRENCIES.USD' | translate }}</option>
+          <option value="AED">{{ 'CONTRACTS.CURRENCIES.AED' | translate }}</option>
+          <option value="EUR">{{ 'CONTRACTS.CURRENCIES.EUR' | translate }}</option>
+          <option value="GBP">{{ 'CONTRACTS.CURRENCIES.GBP' | translate }}</option>
         </select>
       </div>
     </div>
 
     <!-- Row 5: Status -->
     <div class="field-group">
-      <label class="field-label">Initial Status</label>
+      <label class="field-label">{{ 'CONTRACTS.FORM.INITIAL_STATUS' | translate }}</label>
       <select class="field-select-full" formControlName="status" style="max-width:220px">
-        <option value="draft">Draft</option>
-        <option value="active">Active (approved)</option>
+        <option value="draft">{{ 'draft' | statusLabel }}</option>
+        <option value="active">{{ 'CONTRACTS.FORM.ACTIVE_APPROVED' | translate }}</option>
       </select>
     </div>
 
     <!-- Row 6: Terms -->
     <div class="field-group">
-      <label class="field-label">Contract Terms / Notes</label>
+      <label class="field-label">{{ 'CONTRACTS.FORM.TERMS' | translate }}</label>
       <textarea class="field-textarea" rows="4"
-        placeholder="Key terms, conditions, or notes about this contract…"
+        [placeholder]="'CONTRACTS.FORM.TERMS_PLACEHOLDER' | translate"
         formControlName="terms"></textarea>
     </div>
 
     <!-- Row 7: Document upload -->
     <div class="field-group">
-      <label class="field-label">Contract Document (PDF, DOC, DOCX — max 10 MB)</label>
+      <label class="field-label">{{ 'CONTRACTS.FORM.DOCUMENT' | translate }}</label>
       <input type="file" accept=".pdf,.doc,.docx" (change)="onFileSelected($event)">
       <div class="field-hint" *ngIf="selectedFile">
         <mat-icon style="font-size:15px;width:15px;height:15px;vertical-align:middle">description</mat-icon>
         {{ selectedFile.name }}
-        <button type="button" class="link-btn" (click)="clearSelectedFile()">Remove</button>
+        <button type="button" class="link-btn" (click)="clearSelectedFile()">{{ 'CONTRACTS.FORM.REMOVE' | translate }}</button>
       </div>
       <div class="field-hint" *ngIf="editId && !selectedFile">
-        Leave empty to keep the current document. Uploading replaces it.
+        {{ 'CONTRACTS.FORM.KEEP_DOCUMENT_HINT' | translate }}
       </div>
     </div>
 
     <div class="form-err" *ngIf="formError"><mat-icon>error_outline</mat-icon> {{ formError }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="closeForm()">Cancel</button>
+    <button class="btn-outline" (click)="closeForm()">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn-primary" (click)="saveContract()" [disabled]="submitting">
       <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ submitting ? 'Saving…' : (editId ? 'Update Contract' : 'Create Contract') }}
+      {{ (submitting ? 'COMMON.SAVING' : (editId ? 'CONTRACTS.UPDATE' : 'CONTRACTS.CREATE')) | translate }}
     </button>
   </div>
 </div>
@@ -336,7 +338,7 @@
           <div class="drawer-sub">{{ c.reference }} · {{ typeLabel(c.type) }}</div>
         </div>
       </div>
-      <button class="row-btn" (click)="showDetail=false"><mat-icon>close</mat-icon></button>
+      <button class="row-btn" (click)="showDetail=false" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
     </div>
 
     <div class="drawer-body">
@@ -344,41 +346,41 @@
       <!-- Status + quick actions -->
       <div class="ds-status-row">
         <span class="status-badge" [class]="statusClass(c.status)" style="font-size:13px;padding:5px 14px">
-          {{ c.status | titlecase }}
+          {{ c.status | statusLabel }}
         </span>
         <button class="btn-sm success" *ngIf="isHR && c.status==='draft'" (click)="approve(c)">
-          <mat-icon>check_circle</mat-icon> Approve
+          <mat-icon>check_circle</mat-icon> {{ 'CONTRACTS.ACTION.APPROVE' | translate }}
         </button>
         <button class="btn-sm warn" *ngIf="isHR && c.status==='active'" (click)="changeStatus(c,'terminated')">
-          <mat-icon>cancel</mat-icon> Terminate
+          <mat-icon>cancel</mat-icon> {{ 'CONTRACTS.ACTION.TERMINATE' | translate }}
         </button>
         <button class="btn-outline btn-sm" *ngIf="isHR" (click)="openForm(c); showDetail=false">
-          <mat-icon>edit</mat-icon> Edit
+          <mat-icon>edit</mat-icon> {{ 'COMMON.EDIT' | translate }}
         </button>
       </div>
 
       <!-- Key details -->
       <div class="detail-section">
-        <div class="ds-title">Contract Details</div>
+        <div class="ds-title">{{ 'CONTRACTS.DETAIL.CONTRACT_DETAILS' | translate }}</div>
         <div class="info-grid">
-          <div class="ig-item"><span class="ig-lbl">Type</span><span class="ig-val">{{ typeLabel(c.type) }}</span></div>
-          <div class="ig-item"><span class="ig-lbl">Position</span><span class="ig-val">{{ c.position || '—' }}</span></div>
-          <div class="ig-item"><span class="ig-lbl">Department</span><span class="ig-val">{{ c.department?.name || '—' }}</span></div>
-          <div class="ig-item"><span class="ig-lbl">Salary</span><span class="ig-val">{{ formatSalary(c.salary, c.currency) }}</span></div>
-          <div class="ig-item"><span class="ig-lbl">Start</span><span class="ig-val">{{ formatDate(c.start_date) }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">{{ 'COMMON.TYPE' | translate }}</span><span class="ig-val">{{ typeLabel(c.type) }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">{{ 'CONTRACTS.COL.POSITION' | translate }}</span><span class="ig-val">{{ c.position || '—' }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">{{ 'COMMON.DEPARTMENT' | translate }}</span><span class="ig-val">{{ (c.department | locName) || '—' }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">{{ 'CONTRACTS.COL.SALARY' | translate }}</span><span class="ig-val ltr">{{ formatSalary(c.salary, c.currency) }}</span></div>
+          <div class="ig-item"><span class="ig-lbl">{{ 'CONTRACTS.DETAIL.START' | translate }}</span><span class="ig-val">{{ formatDate(c.start_date) }}</span></div>
           <div class="ig-item">
-            <span class="ig-lbl">End</span>
+            <span class="ig-lbl">{{ 'CONTRACTS.DETAIL.END' | translate }}</span>
             <span class="ig-val" [class.expiry-warn]="c.is_expired">
-              {{ c.end_date ? formatDate(c.end_date) : 'Unlimited' }}
-              <span *ngIf="c.is_expired" class="expiry-chip">Expired</span>
+              {{ c.end_date ? formatDate(c.end_date) : ('CONTRACTS.UNLIMITED' | translate) }}
+              <span *ngIf="c.is_expired" class="expiry-chip">{{ 'expired' | statusLabel }}</span>
             </span>
           </div>
           <div class="ig-item" *ngIf="c.approved_by">
-            <span class="ig-lbl">Approved by</span>
+            <span class="ig-lbl">{{ 'CONTRACTS.DETAIL.APPROVED_BY' | translate }}</span>
             <span class="ig-val">{{ c.approved_by?.name }}</span>
           </div>
           <div class="ig-item" *ngIf="c.created_by">
-            <span class="ig-lbl">Created by</span>
+            <span class="ig-lbl">{{ 'CONTRACTS.DETAIL.CREATED_BY' | translate }}</span>
             <span class="ig-val">{{ c.created_by?.name }}</span>
           </div>
         </div>
@@ -386,26 +388,26 @@
 
       <!-- Terms -->
       <div class="detail-section" *ngIf="c.terms">
-        <div class="ds-title">Terms &amp; Notes</div>
+        <div class="ds-title">{{ 'CONTRACTS.DETAIL.TERMS_NOTES' | translate }}</div>
         <div class="terms-body">{{ c.terms }}</div>
       </div>
 
       <!-- Document -->
       <div class="detail-section">
-        <div class="ds-title">Contract Document</div>
+        <div class="ds-title">{{ 'CONTRACTS.DETAIL.DOCUMENT' | translate }}</div>
         <div *ngIf="c.has_document" class="doc-row">
           <mat-icon>description</mat-icon>
-          <span>Document attached</span>
+          <span>{{ 'CONTRACTS.DETAIL.DOCUMENT_ATTACHED' | translate }}</span>
           <button class="btn-outline sm" (click)="downloadDocument(c)">
-            <mat-icon>download</mat-icon> Download
+            <mat-icon>download</mat-icon> {{ 'COMMON.DOWNLOAD' | translate }}
           </button>
         </div>
         <div *ngIf="!c.has_document" class="doc-row muted">
           <mat-icon>upload_file</mat-icon>
-          <span>No document attached</span>
+          <span>{{ 'CONTRACTS.DETAIL.NO_DOCUMENT' | translate }}</span>
           <label class="btn-outline sm upload-label" *ngIf="isHR">
             <mat-icon>{{ uploadingDocId === c.id ? 'hourglass_empty' : 'upload' }}</mat-icon>
-            {{ uploadingDocId === c.id ? 'Uploading…' : 'Upload' }}
+            {{ (uploadingDocId === c.id ? 'CONTRACTS.DETAIL.UPLOADING' : 'COMMON.UPLOAD') | translate }}
             <input type="file" accept=".pdf,.doc,.docx" hidden
               (change)="onRowFileSelected($event, c)" [disabled]="uploadingDocId === c.id">
           </label>
@@ -415,9 +417,9 @@
     </div>
 
     <div class="drawer-footer">
-      <button class="btn-outline" (click)="showDetail=false">Close</button>
+      <button class="btn-outline" (click)="showDetail=false">{{ 'COMMON.CLOSE' | translate }}</button>
       <button class="btn-primary" *ngIf="isHR" (click)="openForm(c); showDetail=false">
-        <mat-icon>edit</mat-icon> Edit Contract
+        <mat-icon>edit</mat-icon> {{ 'CONTRACTS.EDIT' | translate }}
       </button>
     </div>
   </ng-container>

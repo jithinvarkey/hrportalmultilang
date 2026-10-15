@@ -1,0 +1,191 @@
+{
+  "CONTRACTS": {
+    "TITLE": "العقود",
+    "SUBTITLE": "عقود الموظفين · متابعة الحالة · إدارة المستندات",
+    "ACTIVE_REPORT": "تقرير العقود السارية",
+    "NEW": "عقد جديد",
+    "EDIT": "تعديل العقد",
+    "CREATE": "إنشاء العقد",
+    "UPDATE": "تحديث العقد",
+    "TABS": {
+      "CONTRACTS": "العقود",
+      "RENEWALS": "تجديد العقود"
+    },
+    "STATS": {
+      "TOTAL": "الإجمالي",
+      "ACTIVE": "ساري",
+      "DRAFT": "مسودة",
+      "EXPIRING_SOON": "ينتهي قريبًا",
+      "EXPIRED": "منتهي",
+      "TERMINATED": "منهى"
+    },
+    "FILTER": {
+      "SEARCH_PLACEHOLDER": "ابحث بالموظف أو المرجع أو المسمى الوظيفي…",
+      "ALL_STATUS": "جميع الحالات",
+      "ALL_TYPES": "جميع الأنواع",
+      "EXPIRING_30": "ينتهي خلال 30 يومًا"
+    },
+    "TYPES": {
+      "full_time": "دوام كامل",
+      "part_time": "دوام جزئي",
+      "contract": "عقد مؤقت",
+      "intern": "متدرب",
+      "probation": "فترة التجربة",
+      "fixed_term": "عقد محدد المدة",
+      "unlimited": "عقد غير محدد المدة"
+    },
+    "COL": {
+      "POSITION": "المسمى الوظيفي",
+      "PERIOD": "مدة العقد",
+      "SALARY": "الراتب"
+    },
+    "UNLIMITED": "غير محدد المدة",
+    "EMPTY": "لا توجد عقود",
+    "ACTION": {
+      "APPROVE": "اعتماد",
+      "TERMINATE": "إنهاء العقد"
+    },
+    "FORM": {
+      "EMPLOYEE": "الموظف",
+      "SELECT_EMPLOYEE": "— اختر الموظف —",
+      "TYPE": "نوع العقد",
+      "POSITION": "المسمى الوظيفي",
+      "POSITION_PLACEHOLDER": "مثال: مهندس أول",
+      "DEPARTMENT": "الإدارة",
+      "SELECT_DEPARTMENT": "— اختر الإدارة —",
+      "START_DATE": "تاريخ بداية العقد",
+      "END_DATE": "تاريخ نهاية العقد",
+      "END_DATE_HINT": "(اتركه فارغًا للعقد غير محدد المدة)",
+      "SALARY": "الراتب الشهري",
+      "CURRENCY": "العملة",
+      "INITIAL_STATUS": "الحالة المبدئية",
+      "ACTIVE_APPROVED": "ساري (معتمد)",
+      "TERMS": "بنود العقد / ملاحظات",
+      "TERMS_PLACEHOLDER": "أهم البنود أو الشروط أو الملاحظات الخاصة بهذا العقد…",
+      "DOCUMENT": "مستند العقد (PDF أو DOC أو DOCX — بحد أقصى 10 ميجابايت)",
+      "REMOVE": "إزالة",
+      "KEEP_DOCUMENT_HINT": "اتركه فارغًا للإبقاء على المستند الحالي. رفع ملف جديد سيستبدله."
+    },
+    "CURRENCIES": {
+      "SAR": "SAR — ريال سعودي",
+      "USD": "USD — دولار أمريكي",
+      "AED": "AED — درهم إماراتي",
+      "EUR": "EUR — يورو",
+      "GBP": "GBP — جنيه إسترليني"
+    },
+    "DETAIL": {
+      "CONTRACT_DETAILS": "تفاصيل العقد",
+      "START": "البداية",
+      "END": "النهاية",
+      "APPROVED_BY": "اعتمده",
+      "CREATED_BY": "أنشأه",
+      "TERMS_NOTES": "البنود والملاحظات",
+      "DOCUMENT": "مستند العقد",
+      "DOCUMENT_ATTACHED": "يوجد مستند مرفق",
+      "NO_DOCUMENT": "لا يوجد مستند مرفق",
+      "UPLOADING": "جارٍ الرفع…"
+    },
+    "MSG": {
+      "NO_PERMISSION": "ليست لديك صلاحية إدارة العقود.",
+      "FILE_TYPE": "يُسمح فقط بملفات PDF أو DOC أو DOCX.",
+      "FILE_SIZE": "يجب ألا يتجاوز حجم الملف 10 ميجابايت.",
+      "SAVE_FAILED": "تعذّر الحفظ.",
+      "UPLOAD_AFTER_SAVE_FAILED": "تم حفظ العقد، لكن تعذّر رفع المستند.",
+      "CREATED": "تم إنشاء العقد.",
+      "UPDATED": "تم تحديث العقد.",
+      "DOCUMENT_UPLOADED": "تم رفع المستند.",
+      "UPLOAD_FAILED": "تعذّر الرفع.",
+      "CONFIRM_APPROVE": "هل تريد اعتماد العقد {{ref}}؟ ستصبح حالته «ساري».",
+      "APPROVED": "تم اعتماد العقد.",
+      "APPROVE_FAILED": "تعذّر الاعتماد.",
+      "STATUS_UPDATED": "تم تحديث الحالة إلى «{{status}}».",
+      "CONFIRM_DELETE": "هل تريد حذف هذا العقد؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "RENEWALS": {
+      "TITLE": "تجديد العقود",
+      "SUBTITLE": "اعتماد على 3 مستويات · المدير ← الموارد البشرية ← الرئيس التنفيذي · يُنشأ تلقائيًا قبل انتهاء العقد بـ 60 يومًا",
+      "MANUAL": "تجديد يدوي",
+      "STATS": {
+        "TOTAL": "الإجمالي",
+        "AWAITING_MANAGER": "بانتظار المدير",
+        "AWAITING_HR": "بانتظار الموارد البشرية",
+        "AWAITING_CEO": "بانتظار الرئيس التنفيذي",
+        "FULLY_APPROVED": "معتمد نهائيًا",
+        "REJECTED": "مرفوض"
+      },
+      "STAGES": {
+        "MANAGER": "المدير",
+        "HR": "الموارد البشرية",
+        "CEO": "الرئيس التنفيذي"
+      },
+      "STAGE_LABEL": {
+        "pending": "بانتظار اعتماد المدير",
+        "manager_approved": "بانتظار اعتماد الموارد البشرية",
+        "hr_approved": "بانتظار اعتماد الرئيس التنفيذي",
+        "approved": "معتمد نهائيًا",
+        "rejected": "مرفوض",
+        "cancelled": "ملغى"
+      },
+      "PIPELINE": "مسار الاعتماد",
+      "PENDING_COUNT": "{{count}} قيد الانتظار",
+      "CREATE": {
+        "TITLE": "إنشاء طلب تجديد عقد يدوي",
+        "ACTIVE_CONTRACT": "العقد الساري",
+        "SELECT_CONTRACT": "— اختر العقد —",
+        "EXPIRES_ON": "(ينتهي في {{date}})",
+        "NO_EXPIRY": "غير محدد المدة",
+        "PROPOSED_START": "تاريخ البداية المقترح",
+        "PROPOSED_END": "تاريخ النهاية المقترح",
+        "PROPOSED_SALARY": "الراتب المقترح",
+        "NOTES_PLACEHOLDER": "سبب التجديد…",
+        "DOCUMENT": "مستند داعم (PDF أو DOC أو DOCX — بحد أقصى 10 ميجابايت)",
+        "SUBMIT_FOR_APPROVAL": "إرسال للاعتماد"
+      },
+      "FILTER": {
+        "SEARCH_PLACEHOLDER": "ابحث باسم الموظف…",
+        "ALL_STATUS": "جميع الحالات"
+      },
+      "AUTO": "تلقائي",
+      "AUTO_TOOLTIP": "أُنشئ تلقائيًا قبل انتهاء العقد بـ 60 يومًا",
+      "COMMENTS": {
+        "TITLE": "ملاحظات المعتمدين",
+        "APPROVED": "معتمد",
+        "NO_COMMENT": "لا توجد ملاحظات.",
+        "REJECTED_AT": "رُفض في مرحلة {{stage}}",
+        "REJECTED": "مرفوض"
+      },
+      "TERMS": {
+        "EXPIRES": "تاريخ الانتهاء",
+        "PROPOSED_PERIOD": "المدة المقترحة",
+        "PROPOSED_SALARY": "الراتب المقترح"
+      },
+      "NO_DOCUMENT": "لا يوجد مستند",
+      "REJECTION_BANNER": "رُفض في مرحلة {{stage}} من قِبل {{by}}: «{{reason}}»",
+      "NEW_CONTRACT_CREATED": "تم إنشاء العقد الجديد تلقائيًا",
+      "EMPTY": "لا توجد طلبات تجديد",
+      "EMPTY_HINT": "تُنشأ الطلبات تلقائيًا قبل انتهاء العقود السارية بـ 60 يومًا",
+      "DIALOG": {
+        "APPROVE_TITLE": "اعتماد تجديد العقد — {{ref}}",
+        "REJECT_TITLE": "رفض تجديد العقد — {{ref}}",
+        "STAGE_INFO_APPROVE": "أنت تعتمد الطلب في مرحلة <strong>{{stage}}</strong>.",
+        "STAGE_INFO_REJECT": "أنت ترفض الطلب في مرحلة <strong>{{stage}}</strong>.",
+        "EXPIRES_ON": "(ينتهي في {{date}})",
+        "NOTES_OPTIONAL": "ملاحظات (اختياري)",
+        "NOTES_PLACEHOLDER": "أي ملاحظات للمعتمد التالي…",
+        "REJECTION_REASON": "سبب الرفض",
+        "REJECTION_PLACEHOLDER": "يرجى توضيح سبب الرفض…",
+        "PROCESSING": "جارٍ المعالجة…",
+        "CONFIRM_APPROVAL": "تأكيد الاعتماد",
+        "CONFIRM_REJECTION": "تأكيد الرفض"
+      },
+      "MSG": {
+        "APPROVAL_FAILED": "تعذّر الاعتماد.",
+        "REJECTION_FAILED": "تعذّر الرفض.",
+        "ENTER_REASON": "يرجى إدخال سبب الرفض.",
+        "CREATE_FAILED": "تعذّر الإنشاء.",
+        "CREATED": "تم إنشاء طلب التجديد.",
+        "UPLOAD_AFTER_CREATE_FAILED": "تم إنشاء طلب التجديد، لكن تعذّر رفع المستند."
+      }
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import { TranslateModule } from '@ngx-translate/core';
+import { I18N_PIPES } from '../../../shared/pipes/i18n.pipes';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +22,7 @@ describe('BioTimeComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       declarations: [BioTimeComponent],
-      imports: [HttpClientTestingModule, FormsModule],
+      imports: [HttpClientTestingModule, FormsModule, TranslateModule.forRoot(), ...I18N_PIPES],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
@@ -97,7 +99,8 @@ describe('BioTimeComponent', () => {
 
   it('syncs a device and reloads', () => {
     initWith([{ id: 2, name: 'Main', is_active: true }]);
-    component.syncDevice({ id: 2 });
+    component.syncDeviceObj = { id: 2 };
+    component.syncDevice();
     const req = httpMock.expectOne(`${API}/2/sync`);
     expect(req.request.method).toBe('POST');
     req.flush({ message: 'Sync complete.', imported: 12 });

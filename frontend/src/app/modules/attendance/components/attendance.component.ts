@@ -8,6 +8,7 @@ import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { LanguageService } from '../../../core/services/language.service';
 
 export interface AttendanceLog {
   id:            number;
@@ -86,21 +87,18 @@ export class AttendanceComponent implements OnInit, OnDestroy {
   manualForm!:   FormGroup;
   editForm!:     FormGroup;
 
+  // Labels come from STATUS.<value> via the statusLabel pipe
   readonly statusOptions = [
-    { value: 'present',  label: 'Present',  color: '#10b981' },
-    { value: 'late',     label: 'Late',     color: '#f59e0b' },
-    { value: 'absent',   label: 'Absent',   color: '#ef4444' },
-    { value: 'half_day', label: 'Half Day', color: '#fb923c' },
-    { value: 'on_leave', label: 'On Leave', color: '#6366f1' },
-    { value: 'holiday',  label: 'Holiday',  color: '#8b949e' },
+    { value: 'present',  color: '#10b981' },
+    { value: 'late',     color: '#f59e0b' },
+    { value: 'absent',   color: '#ef4444' },
+    { value: 'half_day', color: '#fb923c' },
+    { value: 'on_leave', color: '#6366f1' },
+    { value: 'holiday',  color: '#8b949e' },
   ];
 
-  readonly weekDays = [
-    { value: 0, label: 'Sun' }, { value: 1, label: 'Mon' },
-    { value: 2, label: 'Tue' }, { value: 3, label: 'Wed' },
-    { value: 4, label: 'Thu' }, { value: 5, label: 'Fri' },
-    { value: 6, label: 'Sat' },
-  ];
+  // 0 = Sunday … 6 = Saturday; names rendered with locDate:'EEEE' so they follow the language
+  readonly weekDays = [0, 1, 2, 3, 4, 5, 6].map(value => ({ value }));
 
   private readonly api      = '/api/v1/attendance';
   private readonly destroy$ = new Subject<void>();
@@ -112,6 +110,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     private readonly cdr:   ChangeDetectorRef,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
+    private readonly lang:  LanguageService,
   ) {}
 
   ngOnInit(): void {
@@ -204,13 +203,13 @@ this.isAdmin = this.auth.isAdminRole();
     this.http.post<any>(`${this.api}/checkin`, {}).pipe(takeUntil(this.destroy$)).subscribe({
       next: (r) => {
         this.todayLog   = r.log;
-        this.successMsg = `Checked in at ${r.log?.check_in}`;
+        this.successMsg = this.lang.t('ATTENDANCE.MSG.CHECKED_IN', { time: r.log?.check_in });
         this.checkingIn = false;
         this.loadReport(); this.cdr.markForCheck();
       },
       error: (err) => {
         if (err?.error?.log) this.todayLog = err.error.log;
-        this.errorMsg   = err?.error?.message ?? 'Check-in failed.';
+        this.errorMsg   = err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKIN_FAILED');
         this.checkingIn = false; this.cdr.markForCheck();
       },
     });
@@ -221,13 +220,13 @@ this.isAdmin = this.auth.isAdminRole();
     this.http.post<any>(`${this.api}/checkout`, {}).pipe(takeUntil(this.destroy$)).subscribe({
       next: (r) => {
         this.todayLog    = r.log;
-        this.successMsg  = `Checked out at ${r.log?.check_out} · ${this.fmt(r.log?.total_minutes)}`;
+        this.successMsg  = this.lang.t('ATTENDANCE.MSG.CHECKED_OUT', { time: r.log?.check_out, duration: this.fmt(r.log?.total_minutes) });
         this.checkingOut = false;
         this.loadReport(); this.cdr.markForCheck();
       },
       error: (err) => {
         if (err?.error?.log) this.todayLog = err.error.log;
-        this.errorMsg    = err?.error?.message ?? 'Check-out failed.';
+        this.errorMsg    = err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKOUT_FAILED');
         this.checkingOut = false; this.cdr.markForCheck();
       },
     });
@@ -400,12 +399,12 @@ this.isAdmin = this.auth.isAdminRole();
           if (idx > -1) this.reportRows[idx] = { ...this.reportRows[idx], ...r.log };
           this.editingRow = null;
           this.savingEdit = false;
-          this.successMsg = 'Record updated.';
+          this.successMsg = this.lang.t('ATTENDANCE.MSG.RECORD_UPDATED');
           setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3000);
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.errorMsg   = err?.error?.message ?? this.firstValidationError(err) ?? 'Update failed.';
+          this.errorMsg   = err?.error?.message ?? this.firstValidationError(err) ?? this.lang.t('ATTENDANCE.MSG.UPDATE_FAILED');
           this.savingEdit = false; this.cdr.markForCheck();
         },
       });
@@ -421,13 +420,13 @@ this.isAdmin = this.auth.isAdminRole();
         next: () => {
           this.showManualEntry = false;
           this.savingManual    = false;
-          this.successMsg      = 'Manual entry saved.';
+          this.successMsg      = this.lang.t('ATTENDANCE.MSG.MANUAL_SAVED');
           this.loadReport();
           setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3000);
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.errorMsg    = err?.error?.message ?? 'Manual entry failed.';
+          this.errorMsg    = err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.MANUAL_FAILED');
           this.savingManual = false; this.cdr.markForCheck();
         },
       });
@@ -482,7 +481,20 @@ this.isAdmin = this.auth.isAdminRole();
   fmt(mins: number | null | undefined): string {
     if (!mins) return '—';
     const h = Math.floor(mins / 60), m = mins % 60;
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    return h > 0 ? this.lang.t('ATTENDANCE.FMT.HM', { h, m }) : this.lang.t('ATTENDANCE.FMT.M', { m });
+  }
+
+  /** Display label for a record source code (biometric / manual / system). */
+  sourceLabel(source: string | null | undefined): string {
+    if (!source) return '—';
+    const key = `ATTENDANCE.SOURCES.${source}`;
+    const label = this.lang.t(key);
+    return label !== key ? label : source;
+  }
+
+  /** A date that falls on the given weekday (0 = Sunday), used to render localized day names. */
+  weekdayDate(day: number): Date {
+    return new Date(2023, 0, 1 + day); // 1 Jan 2023 was a Sunday
   }
 
   statusColor(status: string): string {

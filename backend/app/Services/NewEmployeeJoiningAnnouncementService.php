@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Mail\NewEmployeeJoinedMail;
 use App\Models\Employee;
 use App\Services\Communications\NotificationService;
+use App\Support\Locale\RecipientLocale;
+use App\Support\Locale\SupportedLocales;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -60,13 +62,18 @@ class NewEmployeeJoiningAnnouncementService
                         ->unique()
                         ->values();
 
-                    if ($recipientEmails->isNotEmpty()) {
-                        $primaryEmail = $recipientEmails->shift();
-                        $mail = Mail::to($primaryEmail);
-                        if ($recipientEmails->isNotEmpty()) {
-                            $mail->bcc($recipientEmails->all());
+                    // One BCC message per language, so each colleague reads the announcement in their own language.
+                    $byLocale = $recipientEmails->groupBy(
+                        fn ($email) => RecipientLocale::forEmail($email) ?? SupportedLocales::DEFAULT
+                    );
+                    foreach ($byLocale as $locale => $emails) {
+                        $emails = $emails->values();
+                        $primaryEmail = $emails->shift();
+                        $mail = Mail::to($primaryEmail)->locale($locale);
+                        if ($emails->isNotEmpty()) {
+                            $mail->bcc($emails->all());
                         }
-                        $mail->send(new NewEmployeeJoinedMail($newEmployee, 'Colleagues'));
+                        $mail->send(new NewEmployeeJoinedMail($newEmployee));
                     }
 
                     $locked->forceFill(['joining_announcement_sent_at' => now()])->save();

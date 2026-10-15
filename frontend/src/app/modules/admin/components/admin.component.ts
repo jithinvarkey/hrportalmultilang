@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 
 @Component({
   standalone: false,
@@ -53,49 +54,55 @@ export class AdminComponent implements OnInit {
   userColumns  = ['user','role','employee','otp','actions'];
   roleColumns  = ['role','users','description','actions'];
 
+  /** `label` holds a translation key, rendered with the translate pipe. */
   tabs = [
-    { id:'overview',     label:'Overview',     icon:'dashboard'          },
-    { id:'users',        label:'Users',        icon:'people'             },
-    { id:'login-history', label:'Login History', icon:'manage_search'     },
-    { id:'roles',        label:'Roles',        icon:'security'           },
-    { id:'permissions',  label:'Permissions',  icon:'lock'               },
-    { id:'units',        label:'Units',        icon:'business'           },
-    { id:'departments',  label:'Departments',  icon:'corporate_fare'     },
-    { id:'designations', label:'Job Positions', icon:'badge'             },
-    { id:'migration',    label:'Data Migration', icon:'upload_file'       },
-    { id:'settings',     label:'Settings',     icon:'settings'           },
+    { id:'overview',     label:'ADMIN.TABS.OVERVIEW',      icon:'dashboard'          },
+    { id:'users',        label:'ADMIN.TABS.USERS',         icon:'people'             },
+    { id:'login-history', label:'ADMIN.TABS.LOGIN_HISTORY', icon:'manage_search'     },
+    { id:'roles',        label:'ADMIN.TABS.ROLES',         icon:'security'           },
+    { id:'permissions',  label:'ADMIN.TABS.PERMISSIONS',   icon:'lock'               },
+    { id:'units',        label:'ADMIN.TABS.UNITS',         icon:'business'           },
+    { id:'departments',  label:'ADMIN.TABS.DEPARTMENTS',   icon:'corporate_fare'     },
+    { id:'designations', label:'ADMIN.TABS.DESIGNATIONS',  icon:'badge'              },
+    { id:'migration',    label:'ADMIN.TABS.MIGRATION',     icon:'upload_file'        },
+    { id:'settings',     label:'ADMIN.TABS.SETTINGS',      icon:'settings'           },
   ];
 
+  /** Labels below are translation keys (ADMIN.MIGRATION.*), rendered with the translate pipe. */
   migrationCategories = [
-    { id: '', label: 'All Categories' },
-    { id: 1, label: 'IT and Cyber Security' },
-    { id: 2, label: 'HR' },
-    { id: 3, label: 'Cyber security' },
-    { id: 4, label: 'Circulars' },
-    { id: 5, label: 'Quality and Development' },
-    { id: 6, label: 'Sales and Marketing' },
-    { id: 7, label: 'Technical' },
-    { id: 8, label: 'Finance' },
-    { id: 9, label: 'Operation' },
-    { id: 10, label: 'Compliance' },
-    { id: 11, label: 'Shahin' },
-    { id: 12, label: 'Business Services' },
-    { id: 13, label: 'Operation Enrollment' },
-    { id: 14, label: 'Operation Medical approval' },
-    { id: 15, label: 'Executive Management' },
-    { id: 16, label: 'Violations and Penalties' },
+    { id: '', label: 'ADMIN.MIGRATION.CATEGORIES.ALL' },
+    { id: 1, label: 'ADMIN.MIGRATION.CATEGORIES.C1' },
+    { id: 2, label: 'ADMIN.MIGRATION.CATEGORIES.C2' },
+    { id: 3, label: 'ADMIN.MIGRATION.CATEGORIES.C3' },
+    { id: 4, label: 'ADMIN.MIGRATION.CATEGORIES.C4' },
+    { id: 5, label: 'ADMIN.MIGRATION.CATEGORIES.C5' },
+    { id: 6, label: 'ADMIN.MIGRATION.CATEGORIES.C6' },
+    { id: 7, label: 'ADMIN.MIGRATION.CATEGORIES.C7' },
+    { id: 8, label: 'ADMIN.MIGRATION.CATEGORIES.C8' },
+    { id: 9, label: 'ADMIN.MIGRATION.CATEGORIES.C9' },
+    { id: 10, label: 'ADMIN.MIGRATION.CATEGORIES.C10' },
+    { id: 11, label: 'ADMIN.MIGRATION.CATEGORIES.C11' },
+    { id: 12, label: 'ADMIN.MIGRATION.CATEGORIES.C12' },
+    { id: 13, label: 'ADMIN.MIGRATION.CATEGORIES.C13' },
+    { id: 14, label: 'ADMIN.MIGRATION.CATEGORIES.C14' },
+    { id: 15, label: 'ADMIN.MIGRATION.CATEGORIES.C15' },
+    { id: 16, label: 'ADMIN.MIGRATION.CATEGORIES.C16' },
   ];
   migrationScopes = [
-    { id: 'all', label: 'All Modules' },
-    { id: 'departments', label: 'Departments' },
-    { id: 'job_positions', label: 'Job Positions' },
-    { id: 'employees', label: 'Employees' },
-    { id: 'employee_managers', label: 'Employee Managers' },
-    { id: 'leave_records', label: 'Leave Records' },
-    { id: 'loan_records', label: 'Loan Records' },
-    { id: 'documents', label: 'Policies & Documents' },
+    { id: 'all', label: 'ADMIN.MIGRATION.SCOPES.all' },
+    { id: 'departments', label: 'ADMIN.MIGRATION.SCOPES.departments' },
+    { id: 'job_positions', label: 'ADMIN.MIGRATION.SCOPES.job_positions' },
+    { id: 'employees', label: 'ADMIN.MIGRATION.SCOPES.employees' },
+    { id: 'employee_managers', label: 'ADMIN.MIGRATION.SCOPES.employee_managers' },
+    { id: 'leave_records', label: 'ADMIN.MIGRATION.SCOPES.leave_records' },
+    { id: 'loan_records', label: 'ADMIN.MIGRATION.SCOPES.loan_records' },
+    { id: 'documents', label: 'ADMIN.MIGRATION.SCOPES.documents' },
   ];
-  migrationOrder = ['Departments', 'Job Positions', 'Employees', 'Employee Managers', 'Leave Records', 'Loan Records', 'Documents'];
+  migrationOrder = [
+    'ADMIN.MIGRATION.STEPS.DEPARTMENTS', 'ADMIN.MIGRATION.STEPS.JOB_POSITIONS', 'ADMIN.MIGRATION.STEPS.EMPLOYEES',
+    'ADMIN.MIGRATION.STEPS.EMPLOYEE_MANAGERS', 'ADMIN.MIGRATION.STEPS.LEAVE_RECORDS', 'ADMIN.MIGRATION.STEPS.LOAN_RECORDS',
+    'ADMIN.MIGRATION.STEPS.DOCUMENTS',
+  ];
   migrationScope = 'all';
   migrationCategoryId: number | '' = '';
   migrationSourceFolder = '';
@@ -154,57 +161,58 @@ export class AdminComponent implements OnInit {
 
   // ── Departments ───────────────────────────────────────────────────────
   units: any[] = [];
-  unitColumns = ['name','code','legacy','counts','status','actions'];
+  unitColumns = ['name','name_ar','code','legacy','counts','status','actions'];
   showUnitForm = false;
-  unitForm: any = { name:'', code:'', legacy_unitid:'', description:'', is_active:true };
+  unitForm: any = { name:'', name_ar:'', code:'', legacy_unitid:'', description:'', is_active:true };
   unitEditId: number | null = null;
   unitError = '';
 
   departments: any[]   = [];
-  deptColumns          = ['name','code','manager','parent','headcount','status','actions'];
+  deptColumns          = ['name','name_ar','code','manager','parent','headcount','status','actions'];
   showDeptForm         = false;
-  deptForm: any        = { name:'', code:'', description:'', parent_id:'', manager_id:'', headcount_budget:'', is_active:true };
+  deptForm: any        = { name:'', name_ar:'', code:'', description:'', parent_id:'', manager_id:'', headcount_budget:'', is_active:true };
   deptEditId: number | null = null;
   deptError            = '';
 
   // ── Designations ──────────────────────────────────────────────────────
   designations: any[]  = [];
-  desigColumns         = ['title','level','department','salary','status','actions'];
+  desigColumns         = ['title','title_ar','level','department','salary','status','actions'];
   showDesigForm        = false;
-  desigForm: any       = { title:'', level:'', department_id:'', min_salary:'', max_salary:'', is_active:true };
+  desigForm: any       = { title:'', title_ar:'', level:'', department_id:'', min_salary:'', max_salary:'', is_active:true };
   desigEditId: number | null = null;
   desigError           = '';
 
   /** Designation seniority levels — mirrors backend validation enum. */
   desigLevels = ['junior','mid','senior','lead','manager','director','executive','management','staff'];
 
+  /** Colour/icon per role. Display names come from ROLES.<role> in common.json (see roleLabel). */
   roleInfo: any = {
-    super_admin:        { label:'Super Admin',        color:'#ef4444', icon:'shield'             },
-    ceo:                { label:'CEO',                color:'#7c3aed', icon:'business_center'    },
-    hr_manager:         { label:'HR Manager',         color:'#6366f1', icon:'manage_accounts'    },
-    hr_staff:           { label:'HR Staff',           color:'#8b5cf6', icon:'badge'              },
-    finance_manager:    { label:'Finance Manager',    color:'#10b981', icon:'account_balance'    },
-    department_manager: { label:'Dept. Manager',      color:'#f59e0b', icon:'supervisor_account' },
-    employee:           { label:'Employee',           color:'#3b82f6', icon:'person'             },
+    super_admin:        { color:'#ef4444', icon:'shield'             },
+    ceo:                { color:'#7c3aed', icon:'business_center'    },
+    hr_manager:         { color:'#6366f1', icon:'manage_accounts'    },
+    hr_staff:           { color:'#8b5cf6', icon:'badge'              },
+    finance_manager:    { color:'#10b981', icon:'account_balance'    },
+    department_manager: { color:'#f59e0b', icon:'supervisor_account' },
+    employee:           { color:'#3b82f6', icon:'person'             },
   };
 
   permModules = [
-    { key:'dashboard',    label:'Dashboard',    icon:'dashboard'          },
-    { key:'employees',    label:'Employees',    icon:'people'             },
-    { key:'payroll',      label:'Payroll',      icon:'payments'           },
-    { key:'leave',        label:'Leave',        icon:'event_available'    },
-    { key:'loans',        label:'Loans',        icon:'account_balance'    },
-    { key:'separations',  label:'Separations',  icon:'exit_to_app'        },
-    { key:'requests',     label:'Requests',     icon:'inbox'              },
-    { key:'recruitment',  label:'Recruitment',  icon:'work'               },
-    { key:'performance',  label:'Performance',  icon:'leaderboard'        },
-    { key:'attendance',   label:'Attendance',   icon:'fingerprint'         },
-    { key:'contracts',    label:'Contracts',    icon:'description'         },
-    { key:'orgchart',     label:'Org Chart',    icon:'account_tree'        },
-    { key:'admin',        label:'Admin',        icon:'admin_panel_settings'},
+    { key:'dashboard',    label:'ADMIN.MODULES.dashboard',    icon:'dashboard'          },
+    { key:'employees',    label:'ADMIN.MODULES.employees',    icon:'people'             },
+    { key:'payroll',      label:'ADMIN.MODULES.payroll',      icon:'payments'           },
+    { key:'leave',        label:'ADMIN.MODULES.leave',        icon:'event_available'    },
+    { key:'loans',        label:'ADMIN.MODULES.loans',        icon:'account_balance'    },
+    { key:'separations',  label:'ADMIN.MODULES.separations',  icon:'exit_to_app'        },
+    { key:'requests',     label:'ADMIN.MODULES.requests',     icon:'inbox'              },
+    { key:'recruitment',  label:'ADMIN.MODULES.recruitment',  icon:'work'               },
+    { key:'performance',  label:'ADMIN.MODULES.performance',  icon:'leaderboard'        },
+    { key:'attendance',   label:'ADMIN.MODULES.attendance',   icon:'fingerprint'         },
+    { key:'contracts',    label:'ADMIN.MODULES.contracts',    icon:'description'         },
+    { key:'orgchart',     label:'ADMIN.MODULES.orgchart',     icon:'account_tree'        },
+    { key:'admin',        label:'ADMIN.MODULES.admin',        icon:'admin_panel_settings'},
   ];
 
-  constructor(private http: HttpClient, public auth: AuthService) {}
+  constructor(private http: HttpClient, public auth: AuthService, private lang: LanguageService) {}
 
   ngOnInit() {
     this.refreshAdminData();
@@ -255,7 +263,7 @@ export class AdminComponent implements OnInit {
         this.loading = false;
       },
       error: err => {
-        this.adminError = this.adminErrorMessage(err, 'login history');
+        this.adminError = this.adminErrorMessage(err, 'login_history');
         this.loading = false;
       }
     });
@@ -316,11 +324,11 @@ export class AdminComponent implements OnInit {
 
   runMigration(dryRun: boolean) {
     if (!this.migrationFile) {
-      this.migrationError = 'Please choose a CSV or Excel file.';
+      this.migrationError = this.lang.t('ADMIN.MSG.CHOOSE_MIGRATION_FILE');
       return;
     }
     if (this.migrationScope === 'documents' && !this.migrationSourceFolder.trim()) {
-      this.migrationError = 'Please enter the source document folder.';
+      this.migrationError = this.lang.t('ADMIN.MSG.ENTER_SOURCE_FOLDER');
       return;
     }
     const payload = new FormData();
@@ -337,7 +345,7 @@ export class AdminComponent implements OnInit {
     this.http.post<any>('/api/v1/admin/legacy-migration/import', payload).subscribe({
       next: r => {
         this.migrationSummary = r.summary;
-        this.migrationMessage = r.message || (dryRun ? 'Migration file validated.' : 'Migration completed.');
+        this.migrationMessage = r.message || this.lang.t(dryRun ? 'ADMIN.MSG.MIGRATION_VALIDATED' : 'ADMIN.MSG.MIGRATION_COMPLETED');
         this.migrationRunning = false;
         if (!dryRun) {
           this.loadDepartments();
@@ -349,11 +357,11 @@ export class AdminComponent implements OnInit {
       error: err => {
         this.migrationSummary = err?.error?.summary || null;
         this.migrationError = err?.status === 502
-          ? 'Server timed out while importing. The file may still be too large for the live web timeout; try Validate Only first, split the CSV into smaller files, or increase the server proxy/PHP timeout.'
+          ? this.lang.t('ADMIN.MSG.MIGRATION_TIMEOUT')
           : this.firstError(err)
           || err?.error?.message
           || err?.message
-          || 'Migration failed. Please check the file and try again.';
+          || this.lang.t('ADMIN.MSG.MIGRATION_FAILED');
         this.migrationRunning = false;
       }
     });
@@ -377,12 +385,12 @@ export class AdminComponent implements OnInit {
             maximum: type.carry_forward ? Number(type.max_carry_forward ?? 10) : 0,
           };
         } else {
-          this.carryForwardError = 'Create an Annual Leave type in Leave Management before setting this rule.';
+          this.carryForwardError = this.lang.t('ADMIN.MSG.NO_ANNUAL_TYPE');
         }
         this.carryForwardLoading = false;
       },
       error: err => {
-        this.carryForwardError = this.firstError(err) || 'Failed to load carryforward settings.';
+        this.carryForwardError = this.firstError(err) || this.lang.t('ADMIN.MSG.CARRY_LOAD_FAILED');
         this.carryForwardLoading = false;
       }
     });
@@ -395,7 +403,7 @@ export class AdminComponent implements OnInit {
     const maximum = this.carryForwardSettings.maximum;
     if (!this.carryForwardSettings.all &&
         (maximum == null || !Number.isInteger(maximum) || maximum < 0 || maximum > 65535)) {
-      this.carryForwardError = 'Enter a whole number from 0 to 65535.';
+      this.carryForwardError = this.lang.t('ADMIN.MSG.CARRY_INVALID');
       return;
     }
     this.carryForwardSaving = true;
@@ -407,11 +415,11 @@ export class AdminComponent implements OnInit {
       next: r => {
         this.carryForwardSettings.all = !!r.type.carry_forward_all;
         this.carryForwardSettings.maximum = Number(r.type.max_carry_forward);
-        this.carryForwardMessage = 'Annual leave carryforward rule saved.';
+        this.carryForwardMessage = this.lang.t('ADMIN.MSG.CARRY_SAVED');
         this.carryForwardSaving = false;
       },
       error: err => {
-        this.carryForwardError = this.firstError(err) || 'Failed to save carryforward settings.';
+        this.carryForwardError = this.firstError(err) || this.lang.t('ADMIN.MSG.CARRY_SAVE_FAILED');
         this.carryForwardSaving = false;
       }
     });
@@ -426,7 +434,7 @@ export class AdminComponent implements OnInit {
         this.settingsLoading = false;
       },
       error: err => {
-        this.loanSettingsError = this.firstError(err) || 'Failed to load loan settings.';
+        this.loanSettingsError = this.firstError(err) || this.lang.t('ADMIN.MSG.LOAN_LOAD_FAILED');
         this.settingsLoading = false;
       }
     });
@@ -443,7 +451,7 @@ export class AdminComponent implements OnInit {
         this.settingsSaving = false;
       },
       error: err => {
-        this.loanSettingsError = this.firstError(err) || 'Failed to save loan settings.';
+        this.loanSettingsError = this.firstError(err) || this.lang.t('ADMIN.MSG.LOAN_SAVE_FAILED');
         this.settingsSaving = false;
       }
     });
@@ -452,7 +460,7 @@ export class AdminComponent implements OnInit {
   loadHdfTemplate() {
     this.http.get<any>('/api/v1/admin/settings/hdf-template').subscribe({
       next: r => this.hdfTemplate = r?.template || { exists: false, name: null, size: null },
-      error: err => this.hdfError = this.firstError(err) || 'Failed to load HDF template settings.'
+      error: err => this.hdfError = this.firstError(err) || this.lang.t('ADMIN.MSG.HDF_LOAD_FAILED')
     });
   }
 
@@ -465,7 +473,7 @@ export class AdminComponent implements OnInit {
 
   uploadHdfTemplate() {
     if (!this.hdfFile) {
-      this.hdfError = 'Please choose an HDF file.';
+      this.hdfError = this.lang.t('ADMIN.MSG.HDF_CHOOSE');
       return;
     }
 
@@ -482,7 +490,7 @@ export class AdminComponent implements OnInit {
         this.hdfMessage = r.message;
       },
       error: err => {
-        this.hdfError = this.firstError(err) || 'Failed to upload the HDF template.';
+        this.hdfError = this.firstError(err) || this.lang.t('ADMIN.MSG.HDF_UPLOAD_FAILED');
         this.hdfUploading = false;
       }
     });
@@ -491,7 +499,7 @@ export class AdminComponent implements OnInit {
   loadAnnualTicketSettings() {
     this.http.get<any>('/api/v1/admin/settings/annual-tickets').subscribe({
       next: r => this.annualTicketSettings = r.settings,
-      error: err => this.ticketSettingsError = this.firstError(err) || 'Failed to load annual ticket settings.'
+      error: err => this.ticketSettingsError = this.firstError(err) || this.lang.t('ADMIN.MSG.TICKET_LOAD_FAILED')
     });
   }
 
@@ -499,14 +507,14 @@ export class AdminComponent implements OnInit {
     this.ticketSettingsSaving = true; this.ticketSettingsMessage = ''; this.ticketSettingsError = '';
     this.http.put<any>('/api/v1/admin/settings/annual-tickets', this.annualTicketSettings).subscribe({
       next: r => { this.annualTicketSettings = r.settings; this.ticketSettingsMessage = r.message; this.ticketSettingsSaving = false; },
-      error: err => { this.ticketSettingsError = this.firstError(err) || 'Failed to save annual ticket settings.'; this.ticketSettingsSaving = false; }
+      error: err => { this.ticketSettingsError = this.firstError(err) || this.lang.t('ADMIN.MSG.TICKET_SAVE_FAILED'); this.ticketSettingsSaving = false; }
     });
   }
 
   loadMonthlyLeaveReminderSettings() {
     this.http.get<any>('/api/v1/admin/settings/monthly-leave-reminder').subscribe({
       next: r => this.monthlyLeaveReminderSettings = { ...this.monthlyLeaveReminderSettings, ...r.settings },
-      error: err => this.leaveReminderError = this.firstError(err) || 'Failed to load monthly leave reminder settings.'
+      error: err => this.leaveReminderError = this.firstError(err) || this.lang.t('ADMIN.MSG.REMINDER_LOAD_FAILED')
     });
   }
 
@@ -519,7 +527,7 @@ export class AdminComponent implements OnInit {
         this.leaveReminderSaving = false;
       },
       error: err => {
-        this.leaveReminderError = this.firstError(err) || 'Failed to save monthly leave reminder settings.';
+        this.leaveReminderError = this.firstError(err) || this.lang.t('ADMIN.MSG.REMINDER_SAVE_FAILED');
         this.leaveReminderSaving = false;
       }
     });
@@ -528,7 +536,7 @@ export class AdminComponent implements OnInit {
   loadUnifonicSettings() {
     this.http.get<any>('/api/v1/admin/settings/unifonic').subscribe({
       next: r => this.unifonicSettings = { ...this.unifonicSettings, ...r.settings },
-      error: err => this.unifonicError = this.firstError(err) || 'Failed to load Unifonic settings.'
+      error: err => this.unifonicError = this.firstError(err) || this.lang.t('ADMIN.MSG.SMS_LOAD_FAILED')
     });
   }
 
@@ -541,7 +549,7 @@ export class AdminComponent implements OnInit {
         this.unifonicSaving = false;
       },
       error: err => {
-        this.unifonicError = this.firstError(err) || 'Failed to save Unifonic settings.';
+        this.unifonicError = this.firstError(err) || this.lang.t('ADMIN.MSG.SMS_SAVE_FAILED');
         this.unifonicSaving = false;
       }
     });
@@ -550,7 +558,7 @@ export class AdminComponent implements OnInit {
   loadEmailSettings() {
     this.http.get<any>('/api/v1/admin/settings/email').subscribe({
       next: r => this.emailSettings = { ...this.emailSettings, ...r.settings },
-      error: err => this.emailSettingsError = this.firstError(err) || 'Failed to load email settings.'
+      error: err => this.emailSettingsError = this.firstError(err) || this.lang.t('ADMIN.MSG.EMAIL_LOAD_FAILED')
     });
   }
 
@@ -563,7 +571,7 @@ export class AdminComponent implements OnInit {
         this.emailSettingsSaving = false;
       },
       error: err => {
-        this.emailSettingsError = this.firstError(err) || 'Failed to save email settings.';
+        this.emailSettingsError = this.firstError(err) || this.lang.t('ADMIN.MSG.EMAIL_SAVE_FAILED');
         this.emailSettingsSaving = false;
       }
     });
@@ -596,7 +604,7 @@ export class AdminComponent implements OnInit {
   }
 
   saveUser() {
-    if (!this.userForm.name || !this.userForm.email) { this.formError = 'Name and email required.'; return; }
+    if (!this.userForm.name || !this.userForm.email) { this.formError = this.lang.t('ADMIN.MSG.NAME_EMAIL_REQUIRED'); return; }
     this.submitting = true; this.formError = '';
     const req = this.userEditId
       ? this.http.put<any>(`/api/v1/admin/users/${this.userEditId}`, this.userForm)
@@ -610,7 +618,7 @@ export class AdminComponent implements OnInit {
         this.submitting = false; this.showUserForm = false;
         this.loadUsers(this.currentPage); this.loadOverview();
       },
-      error: err => { this.submitting = false; this.formError = err?.error?.message || 'Failed.'; }
+      error: err => { this.submitting = false; this.formError = err?.error?.message || this.lang.t('ADMIN.MSG.FAILED'); }
     });
   }
 
@@ -627,7 +635,7 @@ export class AdminComponent implements OnInit {
         this.settingsMessage = r.message;
         this.loadUsers(this.currentPage);
       },
-      error: err => this.adminError = this.firstError(err) || 'Failed to update OTP exemption.'
+      error: err => this.adminError = this.firstError(err) || this.lang.t('ADMIN.MSG.OTP_UPDATE_FAILED')
     });
   }
 
@@ -691,11 +699,14 @@ export class AdminComponent implements OnInit {
   }
 
   loginEventLabel(event: string): string {
+    const key = `ADMIN.LOGIN.EVENTS.${event}`;
+    const label = event ? this.lang.t(key) : '';
+    if (label && label !== key) return label;
     return (event || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
   loginActor(activity: any): string {
-    return activity?.user?.name || activity?.login_identifier || 'Unknown user';
+    return activity?.user?.name || activity?.login_identifier || this.lang.t('ADMIN.LOGIN.UNKNOWN_USER');
   }
 
   loginEmployee(activity: any): string {
@@ -705,7 +716,23 @@ export class AdminComponent implements OnInit {
   }
 
   roleData(roleName: string): any {
-    return this.roleInfo[roleName] || { label: roleName, color: '#8b949e', icon: 'person' };
+    return this.roleInfo[roleName] || { color: '#8b949e', icon: 'person' };
+  }
+
+  /** Translated role name (ROLES.<role>); custom roles fall back to the given fallback or the raw name. */
+  roleLabel(roleName: string, fallback?: string): string {
+    if (!roleName) return fallback || '';
+    const key = `ROLES.${roleName}`;
+    const label = this.lang.t(key);
+    return label && label !== key ? label : (fallback || roleName);
+  }
+
+  /** Translated designation level (ADMIN.LEVELS.<level>), falling back to the raw code. */
+  levelLabel(level: string): string {
+    if (!level) return '';
+    const key = `ADMIN.LEVELS.${level}`;
+    const label = this.lang.t(key);
+    return label && label !== key ? label : level;
   }
 
   /** Safely extract the role name string from either a string or a Spatie role object. */
@@ -751,6 +778,7 @@ export class AdminComponent implements OnInit {
       this.unitEditId = unit.id;
       this.unitForm = {
         name: unit.name,
+        name_ar: unit.name_ar || '',
         code: unit.code,
         legacy_unitid: unit.legacy_unitid || '',
         description: unit.description || '',
@@ -758,18 +786,19 @@ export class AdminComponent implements OnInit {
       };
     } else {
       this.unitEditId = null;
-      this.unitForm = { name:'', code:'', legacy_unitid:'', description:'', is_active:true };
+      this.unitForm = { name:'', name_ar:'', code:'', legacy_unitid:'', description:'', is_active:true };
     }
     this.unitError = ''; this.showUnitForm = true;
   }
 
   saveUnit() {
     if (!this.unitForm.name?.trim() || !this.unitForm.code?.trim()) {
-      this.unitError = 'Name and code are required.'; return;
+      this.unitError = this.lang.t('ADMIN.MSG.NAME_CODE_REQUIRED'); return;
     }
     this.submitting = true; this.unitError = '';
     const payload = {
       name: this.unitForm.name.trim(),
+      name_ar: this.unitForm.name_ar?.trim() || null,
       code: this.unitForm.code.trim(),
       legacy_unitid: this.unitForm.legacy_unitid?.trim() || null,
       description: this.unitForm.description?.trim() || null,
@@ -780,15 +809,15 @@ export class AdminComponent implements OnInit {
       : this.http.post<any>('/api/v1/units', payload);
     req.subscribe({
       next: () => { this.submitting = false; this.showUnitForm = false; this.loadUnits(); },
-      error: err => { this.submitting = false; this.unitError = this.firstError(err) || 'Failed to save unit.'; }
+      error: err => { this.submitting = false; this.unitError = this.firstError(err) || this.lang.t('ADMIN.MSG.UNIT_SAVE_FAILED'); }
     });
   }
 
   deleteUnit(unit: any) {
-    if (!confirm(`Delete unit "${unit.name}"?`)) return;
+    if (!confirm(this.lang.t('ADMIN.MSG.UNIT_CONFIRM_DELETE', { name: unit.name }))) return;
     this.http.delete(`/api/v1/units/${unit.id}`).subscribe({
       next: () => this.loadUnits(),
-      error: err => alert(this.firstError(err) || 'Failed to delete unit.')
+      error: err => alert(this.firstError(err) || this.lang.t('ADMIN.MSG.UNIT_DELETE_FAILED'))
     });
   }
 
@@ -806,13 +835,13 @@ export class AdminComponent implements OnInit {
     if (dept) {
       this.deptEditId = dept.id;
       this.deptForm = {
-        name: dept.name, code: dept.code, description: dept.description || '',
+        name: dept.name, name_ar: dept.name_ar || '', code: dept.code, description: dept.description || '',
         parent_id: dept.parent_id || '', manager_id: dept.manager_id || '',
         headcount_budget: dept.headcount_budget ?? '', is_active: dept.is_active ?? true,
       };
     } else {
       this.deptEditId = null;
-      this.deptForm = { name:'', code:'', description:'', parent_id:'', manager_id:'', headcount_budget:'', is_active:true };
+      this.deptForm = { name:'', name_ar:'', code:'', description:'', parent_id:'', manager_id:'', headcount_budget:'', is_active:true };
     }
     this.deptError = ''; this.showDeptForm = true;
   }
@@ -820,11 +849,12 @@ export class AdminComponent implements OnInit {
   /** Persist a department (create or update). */
   saveDept() {
     if (!this.deptForm.name?.trim() || !this.deptForm.code?.trim()) {
-      this.deptError = 'Name and code are required.'; return;
+      this.deptError = this.lang.t('ADMIN.MSG.NAME_CODE_REQUIRED'); return;
     }
     this.submitting = true; this.deptError = '';
     const payload: any = {
       name: this.deptForm.name.trim(),
+      name_ar: this.deptForm.name_ar?.trim() || null,
       code: this.deptForm.code.trim(),
       description: this.deptForm.description?.trim() || null,
       parent_id: this.deptForm.parent_id || null,
@@ -837,16 +867,16 @@ export class AdminComponent implements OnInit {
       : this.http.post<any>('/api/v1/departments', payload);
     req.subscribe({
       next: () => { this.submitting = false; this.showDeptForm = false; this.loadDepartments(); },
-      error: err => { this.submitting = false; this.deptError = this.firstError(err) || 'Failed to save department.'; }
+      error: err => { this.submitting = false; this.deptError = this.firstError(err) || this.lang.t('ADMIN.MSG.DEPT_SAVE_FAILED'); }
     });
   }
 
   /** Soft-delete a department after confirmation. */
   deleteDept(dept: any) {
-    if (!confirm(`Delete department "${dept.name}"? This cannot be undone from the UI.`)) return;
+    if (!confirm(this.lang.t('ADMIN.MSG.DEPT_CONFIRM_DELETE', { name: dept.name }))) return;
     this.http.delete(`/api/v1/departments/${dept.id}`).subscribe({
       next: () => this.loadDepartments(),
-      error: err => alert(this.firstError(err) || 'Failed to delete department.')
+      error: err => alert(this.firstError(err) || this.lang.t('ADMIN.MSG.DEPT_DELETE_FAILED'))
     });
   }
 
@@ -865,29 +895,30 @@ export class AdminComponent implements OnInit {
     if (desig) {
       this.desigEditId = desig.id;
       this.desigForm = {
-        title: desig.title, level: desig.level || '',
+        title: desig.title, title_ar: desig.title_ar || '', level: desig.level || '',
         department_id: desig.department_id || '',
         min_salary: desig.min_salary ?? '', max_salary: desig.max_salary ?? '',
         is_active: desig.is_active ?? true,
       };
     } else {
       this.desigEditId = null;
-      this.desigForm = { title:'', level:'', department_id:'', min_salary:'', max_salary:'', is_active:true };
+      this.desigForm = { title:'', title_ar:'', level:'', department_id:'', min_salary:'', max_salary:'', is_active:true };
     }
     this.desigError = ''; this.showDesigForm = true;
   }
 
   /** Persist a designation (create or update). */
   saveDesig() {
-    if (!this.desigForm.title?.trim()) { this.desigError = 'Title is required.'; return; }
+    if (!this.desigForm.title?.trim()) { this.desigError = this.lang.t('ADMIN.MSG.TITLE_REQUIRED'); return; }
     const min = this.desigForm.min_salary === '' ? null : Number(this.desigForm.min_salary);
     const max = this.desigForm.max_salary === '' ? null : Number(this.desigForm.max_salary);
     if (min !== null && max !== null && max < min) {
-      this.desigError = 'Max salary must be greater than or equal to min salary.'; return;
+      this.desigError = this.lang.t('ADMIN.MSG.SALARY_RANGE_INVALID'); return;
     }
     this.submitting = true; this.desigError = '';
     const payload: any = {
       title: this.desigForm.title.trim(),
+      title_ar: this.desigForm.title_ar?.trim() || null,
       level: this.desigForm.level || null,
       department_id: this.desigForm.department_id || null,
       min_salary: min, max_salary: max,
@@ -898,16 +929,16 @@ export class AdminComponent implements OnInit {
       : this.http.post<any>('/api/v1/designations', payload);
     req.subscribe({
       next: () => { this.submitting = false; this.showDesigForm = false; this.loadDesignations(); },
-      error: err => { this.submitting = false; this.desigError = this.firstError(err) || 'Failed to save designation.'; }
+      error: err => { this.submitting = false; this.desigError = this.firstError(err) || this.lang.t('ADMIN.MSG.DESIG_SAVE_FAILED'); }
     });
   }
 
   /** Delete a designation after confirmation. */
   deleteDesig(desig: any) {
-    if (!confirm(`Delete designation "${desig.title}"?`)) return;
+    if (!confirm(this.lang.t('ADMIN.MSG.DESIG_CONFIRM_DELETE', { name: desig.title }))) return;
     this.http.delete(`/api/v1/designations/${desig.id}`).subscribe({
       next: () => this.loadDesignations(),
-      error: err => alert(this.firstError(err) || 'Failed to delete designation.')
+      error: err => alert(this.firstError(err) || this.lang.t('ADMIN.MSG.DESIG_DELETE_FAILED'))
     });
   }
 
@@ -934,10 +965,12 @@ export class AdminComponent implements OnInit {
   }
 
   private adminErrorMessage(err: any, section: string): string {
-    if (err?.status === 401) return 'Admin data could not load because your session is not authenticated. Please log in again.';
-    if (err?.status === 403) return 'Admin data could not load because this user does not have admin permission.';
-    const detail = err?.error?.message || err?.message || 'Please check the API server and try again.';
-    return `Failed to load admin ${section}: ${detail}`;
+    if (err?.status === 401) return this.lang.t('ADMIN.MSG.ERR_401');
+    if (err?.status === 403) return this.lang.t('ADMIN.MSG.ERR_403');
+    const detail = err?.error?.message || err?.message || this.lang.t('ADMIN.MSG.ERR_CHECK_API');
+    const sectionKey = `ADMIN.SECTIONS.${section}`;
+    const sectionLabel = this.lang.t(sectionKey);
+    return this.lang.t('ADMIN.MSG.ERR_LOAD_SECTION', { section: sectionLabel !== sectionKey ? sectionLabel : section, detail });
   }
 
   unlinkEmployee(userId: number) {

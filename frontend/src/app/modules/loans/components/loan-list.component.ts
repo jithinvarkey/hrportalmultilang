@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
+import { humanize } from '../../../shared/pipes/i18n.pipes';
 
 @Component({
   standalone: false,
@@ -55,7 +57,7 @@ export class LoanListComponent implements OnInit {
   formError = '';
 
   // ── Loan Type form ───────────────────────────────────────────────────────
-  typeForm: any = { name: '', code: '', max_amount: 0, max_installments: 12, interest_rate: 0, requires_guarantor: false, is_active: true, description: '' };
+  typeForm: any = { name: '', name_ar: '', code: '', max_amount: 0, max_installments: 12, interest_rate: 0, requires_guarantor: false, is_active: true, description: '' };
   typeEditId: number | null = null;
   typeError = '';
   typeSaving = false;
@@ -70,23 +72,24 @@ export class LoanListComponent implements OnInit {
 
   // ── Table columns ────────────────────────────────────────────────────────
   displayedColumns = ['ref', 'employee', 'type', 'amount', 'installments', 'status', 'progress', 'actions'];
-  typeColumns = ['name', 'code', 'max_amount', 'installments', 'interest', 'status', 'actions'];
+  typeColumns = ['name', 'name_ar', 'code', 'max_amount', 'installments', 'interest', 'status', 'actions'];
   instColumns = ['no', 'due_date', 'amount', 'status', 'actions'];
 
+  // Labels are translation keys, translated in the template.
   tabs = [
-    { id: 'mine', label: 'My Requests', icon: 'person' },
-    { id: 'all', label: 'Team Requests', icon: 'list_alt' },
-    { id: 'types', label: 'Loan Types', icon: 'tune' },
+    { id: 'mine', label: 'LOANS.TABS.MINE', icon: 'person' },
+    { id: 'all', label: 'LOANS.TABS.TEAM', icon: 'list_alt' },
+    { id: 'types', label: 'LOANS.TABS.TYPES', icon: 'tune' },
   ];
 
   statusTabs = [
-    { id: '', label: 'All' },
-    { id: 'pending_manager', label: 'Pending Manager' },
-    { id: 'pending_hr', label: 'Pending HR' },
-    { id: 'pending_finance', label: 'Pending Finance' },
-    { id: 'disbursed', label: 'Active' },
-    { id: 'completed', label: 'Completed' },
-    { id: 'rejected', label: 'Rejected' },
+    { id: '', label: 'COMMON.ALL' },
+    { id: 'pending_manager', label: 'STATUS.pending_manager' },
+    { id: 'pending_hr', label: 'STATUS.pending_hr' },
+    { id: 'pending_finance', label: 'STATUS.pending_finance' },
+    { id: 'disbursed', label: 'LOANS.STATUS_ACTIVE' },
+    { id: 'completed', label: 'STATUS.completed' },
+    { id: 'rejected', label: 'STATUS.rejected' },
   ];
 
   employeeId = '';
@@ -97,14 +100,14 @@ export class LoanListComponent implements OnInit {
   showMyLoansTab = true;
   approvalLevels = 3;
 
-  constructor(private http: HttpClient, private auth: AuthService, private route: ActivatedRoute) { }
+  constructor(private http: HttpClient, private auth: AuthService, private route: ActivatedRoute, private lang: LanguageService) { }
 
   ngOnInit() {
     const portalType = this.auth.getPortalType();
     this.showMyLoansTab = portalType !== 'employee';
     this.tabs = this.tabs.map(tab =>
       tab.id === 'all'
-        ? { ...tab, label: portalType === 'employee' ? 'Requests' : 'Team Requests' }
+        ? { ...tab, label: portalType === 'employee' ? 'LOANS.TABS.REQUESTS' : 'LOANS.TABS.TEAM' }
         : tab
     );
     const openPersonalTab = this.route.snapshot.url.some(segment => segment.path === 'my')
@@ -131,29 +134,29 @@ export class LoanListComponent implements OnInit {
     this.isFinance = this.auth.isFinanceManager();
     this.canMarkInstallmentPaid = this.auth.isFinanceManager() || this.auth.isHRManager();
     this.typeColumns = this.isHR
-      ? ['name', 'code', 'max_amount', 'installments', 'interest', 'status', 'actions']
-      : ['name', 'code', 'max_amount', 'installments', 'interest', 'status'];
+      ? ['name', 'name_ar', 'code', 'max_amount', 'installments', 'interest', 'status', 'actions']
+      : ['name', 'name_ar', 'code', 'max_amount', 'installments', 'interest', 'status'];
 
     this.http.get<any>('/api/v1/loans/stats').subscribe({
       next: r => {
         this.stats = r;
         this.approvalLevels = r.approval_levels === 2 ? 2 : 3;
         this.statusTabs = [
-          { id: '', label: 'All' },
-          ...(this.approvalLevels === 3 ? [{ id: 'pending_manager', label: 'Pending Manager' }] : []),
-          { id: 'pending_hr', label: 'Pending HR' },
-          { id: 'pending_finance', label: 'Pending Finance' },
-          { id: 'disbursed', label: 'Active' },
-          { id: 'completed', label: 'Completed' },
-          { id: 'rejected', label: 'Rejected' },
+          { id: '', label: 'COMMON.ALL' },
+          ...(this.approvalLevels === 3 ? [{ id: 'pending_manager', label: 'STATUS.pending_manager' }] : []),
+          { id: 'pending_hr', label: 'STATUS.pending_hr' },
+          { id: 'pending_finance', label: 'STATUS.pending_finance' },
+          { id: 'disbursed', label: 'LOANS.STATUS_ACTIVE' },
+          { id: 'completed', label: 'STATUS.completed' },
+          { id: 'rejected', label: 'STATUS.rejected' },
         ];
         this.statItems = [
-          ...(this.approvalLevels === 3 ? [{ label: 'Pending Manager', value: r.pending_manager, icon: 'manage_accounts', color: '#f59e0b' }] : []),
-          { label: 'Pending HR', value: r.pending_hr, icon: 'badge', color: '#6366f1' },
-          { label: 'Pending Finance', value: r.pending_finance, icon: 'account_balance', color: '#3b82f6' },
-          { label: 'Active Loans', value: r.active_loans, icon: 'credit_card', color: '#10b981' },
-          { label: 'Total Outstanding', value: this.formatSAR(r.total_outstanding), icon: 'payments', color: '#ec4899' },
-          { label: 'Completed', value: r.completed, icon: 'check_circle', color: '#8b949e' },
+          ...(this.approvalLevels === 3 ? [{ label: 'STATUS.pending_manager', value: r.pending_manager, icon: 'manage_accounts', color: '#f59e0b' }] : []),
+          { label: 'STATUS.pending_hr', value: r.pending_hr, icon: 'badge', color: '#6366f1' },
+          { label: 'STATUS.pending_finance', value: r.pending_finance, icon: 'account_balance', color: '#3b82f6' },
+          { label: 'LOANS.STATS.ACTIVE_LOANS', value: r.active_loans, icon: 'credit_card', color: '#10b981' },
+          { label: 'LOANS.STATS.TOTAL_OUTSTANDING', value: this.formatSAR(r.total_outstanding), icon: 'payments', color: '#ec4899' },
+          { label: 'STATUS.completed', value: r.completed, icon: 'check_circle', color: '#8b949e' },
         ];
       }
     });
@@ -237,7 +240,7 @@ export class LoanListComponent implements OnInit {
 
   submitLoan() {
     if (!this.form.loan_type_id || !this.form.requested_amount || !this.form.purpose) {
-      this.formError = 'Loan type, amount and purpose are required.'; return;
+      this.formError = this.lang.t('LOANS.MSG.REQUIRED_FIELDS'); return;
     }
     this.submitting = true; this.formError = '';
     this.http.post<any>('/api/v1/loans', this.form).subscribe({
@@ -245,7 +248,7 @@ export class LoanListComponent implements OnInit {
         this.submitting = false; this.showNewLoan = false;
         this.load(); this.loadMyLoans(); this.loadStats();
       },
-      error: err => { this.submitting = false; this.formError = err?.error?.message || 'Submit failed.'; }
+      error: err => { this.submitting = false; this.formError = err?.error?.message || this.lang.t('LOANS.MSG.SUBMIT_FAILED'); }
     });
   }
 
@@ -294,7 +297,7 @@ export class LoanListComponent implements OnInit {
 
   // ── Cancel ────────────────────────────────────────────────────────────
   cancel(loan: any) {
-    if (!confirm('Cancel this loan request?')) return;
+    if (!confirm(this.lang.t('LOANS.MSG.CONFIRM_CANCEL'))) return;
     this.http.post(`/api/v1/loans/${loan.id}/cancel`, {}).subscribe({
       next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.showDetail = false; }
     });
@@ -302,7 +305,7 @@ export class LoanListComponent implements OnInit {
 
   deleteLoan(loan: any) {
     if (!loan?.can_delete || this.deletingLoan) return;
-    if (!confirm(`Delete loan request ${loan.reference}? This cannot be undone.`)) return;
+    if (!confirm(this.lang.t('LOANS.MSG.CONFIRM_DELETE', { ref: loan.reference }))) return;
     this.deletingLoan = true;
     this.http.delete(`/api/v1/loans/${loan.id}`).subscribe({
       next: () => {
@@ -314,7 +317,7 @@ export class LoanListComponent implements OnInit {
       },
       error: err => {
         this.deletingLoan = false;
-        alert(err.error?.message || 'Unable to delete the loan request. Please try again.');
+        alert(err.error?.message || this.lang.t('LOANS.MSG.DELETE_FAILED'));
         this.reloadDetail();
       }
     });
@@ -322,7 +325,7 @@ export class LoanListComponent implements OnInit {
 
   // ── Disburse ──────────────────────────────────────────────────────────
   disburse(loan: any) {
-    if (!confirm(`Mark loan ${loan.reference} as disbursed?`)) return;
+    if (!confirm(this.lang.t('LOANS.MSG.CONFIRM_DISBURSE', { ref: loan.reference }))) return;
     this.http.post(`/api/v1/loans/${loan.id}/disburse`, {}).subscribe({
       next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.reloadDetail(); }
     });
@@ -371,7 +374,7 @@ export class LoanListComponent implements OnInit {
   // ── Loan Types CRUD ───────────────────────────────────────────────────
   openTypeForm(t?: any) {
     if (t) { this.typeEditId = t.id; this.typeForm = { ...t }; }
-    else { this.typeEditId = null; this.typeForm = { name: '', code: '', max_amount: 0, max_installments: 12, interest_rate: 0, requires_guarantor: false, is_active: true, description: '' }; }
+    else { this.typeEditId = null; this.typeForm = { name: '', name_ar: '', code: '', max_amount: 0, max_installments: 12, interest_rate: 0, requires_guarantor: false, is_active: true, description: '' }; }
     this.typeCodeTouched = !!t;
     this.typeError = ''; this.showTypeForm = true;
   }
@@ -385,14 +388,14 @@ export class LoanListComponent implements OnInit {
   saveType() {
     this.typeForm.name = String(this.typeForm.name || '').trim();
     this.typeForm.code = String(this.typeForm.code || '').trim().toUpperCase() || this.loanTypeCodeFromName(this.typeForm.name);
-    if (!this.typeForm.name || !this.typeForm.code) { this.typeError = 'Name is required.'; return; }
+    if (!this.typeForm.name || !this.typeForm.code) { this.typeError = this.lang.t('LOANS.MSG.NAME_REQUIRED'); return; }
     this.typeSaving = true; this.typeError = '';
     const req = this.typeEditId
       ? this.http.put(`/api/v1/loans/types/${this.typeEditId}`, this.typeForm)
       : this.http.post('/api/v1/loans/types', this.typeForm);
     req.subscribe({
       next: () => { this.typeSaving = false; this.showTypeForm = false; this.loadLoanTypes(); },
-      error: err => { this.typeSaving = false; this.typeError = err?.error?.message || 'Save failed.'; }
+      error: err => { this.typeSaving = false; this.typeError = err?.error?.message || this.lang.t('MESSAGES.SAVE_FAILED'); }
     });
   }
 
@@ -412,7 +415,7 @@ export class LoanListComponent implements OnInit {
       error: err => {
         type.is_active = previous;
         this.typeSaving = false;
-        this.typeError = err?.error?.message || 'Status update failed.';
+        this.typeError = err?.error?.message || this.lang.t('LOANS.MSG.STATUS_UPDATE_FAILED');
       }
     });
   }
@@ -450,12 +453,27 @@ export class LoanListComponent implements OnInit {
     return loan.total_installments || (Array.isArray(loan.installments) ? loan.installments.length : loan.installments) || 0;
   }
 
+  /** Loan status label; a disbursed loan is shown as "Active" in this module. */
   statusLabel(s: string): string {
-    const map: any = {
-      pending_manager: 'Pending Manager', pending_hr: 'Pending HR', pending_finance: 'Pending Finance',
-      approved: 'Approved', disbursed: 'Active', completed: 'Completed', rejected: 'Rejected', cancelled: 'Cancelled'
-    };
-    return map[s] || s;
+    if (!s) return '';
+    const key = s === 'disbursed' ? 'LOANS.STATUS_ACTIVE' : `STATUS.${s}`;
+    const label = this.lang.t(key);
+    return label !== key ? label : humanize(s);
+  }
+
+  /** Approval stage name (manager / hr / finance) for "Rejected at ... stage". */
+  stageLabel(stage: string): string {
+    if (!stage) return '';
+    const key = `LOANS.STAGE.${String(stage).toLowerCase()}`;
+    const label = this.lang.t(key);
+    return label !== key ? label : humanize(String(stage));
+  }
+
+  /** Employee display name: Arabic name when Arabic is active and one is recorded. */
+  empName(e: any): string {
+    if (!e) return '';
+    if (this.lang.current() === 'ar' && e.arabic_name) return e.arabic_name;
+    return `${e.first_name ?? ''} ${e.last_name ?? ''}`.trim();
   }
 
   statusCls(s: string): string {
@@ -618,24 +636,24 @@ export class LoanListComponent implements OnInit {
     const levels = loan.approval_levels === 2 ? 2 : this.approvalLevels;
     return [
       {
-        label: 'Employee', label2: 'Request Submitted', done: true, active: false,
-        by: loan.employee?.first_name + ' ' + loan.employee?.last_name, date: loan.created_at
+        id: 'employee', label: 'COMMON.EMPLOYEE', label2: 'LOANS.STEP.SUBMITTED', done: true, active: false,
+        by: this.empName(loan.employee), date: loan.created_at
       },
       {
-        label: 'Manager', label2: 'Manager Approval',
+        id: 'manager', label: 'LOANS.STAGE.manager', label2: 'LOANS.STEP.MANAGER_APPROVAL',
         done: !!loan.manager_approved_at, active: loan.status === 'pending_manager',
         by: loan.managerApprover?.name, date: loan.manager_approved_at
       },
       {
-        label: 'HR', label2: 'HR Approval',
+        id: 'hr', label: 'LOANS.STAGE.hr', label2: 'LOANS.STEP.HR_APPROVAL',
         done: !!loan.hr_approved_at, active: loan.status === 'pending_hr',
         by: loan.hrApprover?.name, date: loan.hr_approved_at
       },
       {
-        label: 'Finance', label2: 'Finance & Disburse',
+        id: 'finance', label: 'LOANS.STAGE.finance', label2: 'LOANS.STEP.FINANCE_DISBURSE',
         done: !!loan.finance_approved_at, active: loan.status === 'pending_finance',
         by: loan.financeApprover?.name, date: loan.finance_approved_at
       },
-    ].filter(step => levels === 3 || step.label !== 'Manager');
+    ].filter(step => levels === 3 || step.id !== 'manager');
   }
 }

@@ -168,7 +168,7 @@ class SeparationService
                 Mail::to($recipient['email'])->queue(new SeparationWorkflowMail(
                     $sep,
                     $event,
-                    $recipient['name'] ?: 'Colleague',
+                    $recipient['name'] ?: null, // null = "Colleague" in the recipient's language
                     $tasks,
                     $category,
                     $completedByName

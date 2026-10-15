@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Employee;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Validates incoming data for the PUT /api/v1/employees/{id} endpoint.
@@ -48,6 +49,7 @@ class UpdateEmployeeRequest extends FormRequest
             'first_name'          => ['sometimes', 'required', 'string', 'max:100'],
             'last_name'           => ['sometimes', 'required', 'string', 'max:100'],
             'arabic_name'         => ['sometimes', 'nullable', 'string', 'max:200'],
+            'preferred_communication_language' => ['nullable', Rule::in(\App\Support\Locale\SupportedLocales::ALL)],
             'email'               => ['sometimes', 'required', 'email:rfc,dns', "unique:employees,email,{$employeeId}"],
             'phone'               => ['sometimes', 'nullable', 'string', 'max:30'],
             'work_phone'          => ['sometimes', 'nullable', 'string', 'max:30'],

@@ -58,7 +58,7 @@ class PayrollController extends Controller {
 
         if ($existing) {
             return response()->json([
-                'message' => 'Payroll for ' . $request->month . ' already exists (status: ' . $existing->status . '). Reopen or reject it first.',
+                'message' => __('Payroll for :month already exists (status: :status). Reopen or reject it first.', ['month' => $request->month, 'status' => \App\Support\Locale\StatusLabel::for($existing->status)]),
                 'payroll_id' => $existing->id,
             ], 422);
         }
@@ -68,14 +68,14 @@ class PayrollController extends Controller {
 
         try {
             $payroll = $this->service->runPayroll($request->all(), auth()->id());
-            return response()->json(['message' => 'Payroll run successfully', 'payroll' => $payroll], 201);
+            return response()->json(['message' => __('Payroll run successfully'), 'payroll' => $payroll], 201);
         } catch (\Exception $e) {
             // Clean up failed payroll attempt
             Payroll::where('month', $request->month)->where('status', 'pending_approval')
                    ->where('created_by', auth()->id())
                    ->whereDate('created_at', today())
                    ->delete();
-            return response()->json(['message' => 'Payroll run failed: ' . $e->getMessage()], 500);
+            return response()->json(['message' => __('Payroll run failed: :error', ['error' => $e->getMessage()])], 500);
         }
     }
 
@@ -98,12 +98,12 @@ class PayrollController extends Controller {
             ->pluck('roles.name')->toArray(), [], false);
 
         if (!array_intersect($roles, ['super_admin','ceo','hr_manager','finance_manager'])) {
-            return response()->json(['message' => 'Only Finance or HR managers can approve payroll.'], 403);
+            return response()->json(['message' => __('Only Finance or HR managers can approve payroll.')], 403);
         }
 
         $payroll = Payroll::findOrFail($id);
         if ($payroll->status !== 'pending_approval') {
-            return response()->json(['message' => 'Payroll is not pending approval'], 422);
+            return response()->json(['message' => __('Payroll is not pending approval')], 422);
         }
         $payroll->update([
             'status'      => 'approved',
@@ -112,7 +112,7 @@ class PayrollController extends Controller {
         ]);
         $this->service->dispatchPayslipEmails($payroll);
         return response()->json([
-            'message' => 'Payroll approved.',
+            'message' => __('Payroll approved.'),
             'payroll' => $payroll->fresh(),
         ]);
     }
@@ -125,12 +125,12 @@ class PayrollController extends Controller {
             ->pluck('roles.name')->toArray(), [], false);
 
         if (!array_intersect($roles, ['super_admin','ceo','hr_manager','finance_manager'])) {
-            return response()->json(['message' => 'Only Finance or HR managers can mark payroll as paid.'], 403);
+            return response()->json(['message' => __('Only Finance or HR managers can mark payroll as paid.')], 403);
         }
 
         $payroll = Payroll::findOrFail($id);
         if ($payroll->status !== 'approved') {
-            return response()->json(['message' => 'Only approved payrolls can be marked as paid.'], 422);
+            return response()->json(['message' => __('Only approved payrolls can be marked as paid.')], 422);
         }
         DB::transaction(function () use ($payroll) {
             $payroll->update([
@@ -142,7 +142,7 @@ class PayrollController extends Controller {
             ]);
             $this->service->settlePayrollLoanInstallments($payroll, (int) auth()->id());
         });
-        return response()->json(['message' => 'Payroll marked as paid.', 'payroll' => $payroll->fresh()]);
+        return response()->json(['message' => __('Payroll marked as paid.'), 'payroll' => $payroll->fresh()]);
     }
 
     public function reject(Request $request, $id) {
@@ -150,7 +150,7 @@ class PayrollController extends Controller {
         $payroll = Payroll::findOrFail($id);
         $payroll->update(['status' => 'rejected', 'notes' => $request->reason]);
         $this->service->releasePayrollLoanInstallments($payroll);
-        return response()->json(['message' => 'Payroll rejected']);
+        return response()->json(['message' => __('Payroll rejected')]);
     }
 
     public function payslips(Request $request, $id) {
@@ -188,12 +188,12 @@ class PayrollController extends Controller {
         $payslip = Payslip::with(['employee.department', 'employee.designation', 'payroll'])->findOrFail($payslipId);
         if ($payslip->employee?->user?->hasRole('super_admin')) {
             return response()->json([
-                'message' => 'The System Admin account is not eligible for payroll or payslip generation.',
+                'message' => __('The System Admin account is not eligible for payroll or payslip generation.'),
             ], 422);
         }
         if ($payslip->payroll?->status !== 'paid') {
             return response()->json([
-                'message' => 'This payslip cannot be generated because the payroll has not been marked as paid.',
+                'message' => __('This payslip cannot be generated because the payroll has not been marked as paid.'),
             ], 422);
         }
         return response()->json(['payslip' => $payslip, 'company_name' => config('app.name', 'HRMS')]);
@@ -208,7 +208,7 @@ class PayrollController extends Controller {
 
         if (!$this->service->eligibleEmployees()->contains('id', (int) $data['employee_id'])) {
             return response()->json([
-                'message' => 'The System Admin account is not eligible for payroll or payslip generation.',
+                'message' => __('The System Admin account is not eligible for payroll or payslip generation.'),
             ], 422);
         }
 
@@ -218,11 +218,11 @@ class PayrollController extends Controller {
             ->first();
 
         if (!$payroll) {
-            return response()->json(['message' => 'Payroll has not been generated for the selected month.'], 422);
+            return response()->json(['message' => __('Payroll has not been generated for the selected month.')], 422);
         }
         if ($payroll->status !== 'paid') {
             return response()->json([
-                'message' => 'Payroll for the selected month is not paid yet. Mark the payroll as paid before generating the payslip.',
+                'message' => __('Payroll for the selected month is not paid yet. Mark the payroll as paid before generating the payslip.'),
             ], 422);
         }
 
@@ -233,12 +233,12 @@ class PayrollController extends Controller {
 
         if (!$payslip) {
             return response()->json([
-                'message' => 'No payslip was generated for the selected employee in this payroll month.',
+                'message' => __('No payslip was generated for the selected employee in this payroll month.'),
             ], 422);
         }
 
         return response()->json([
-            'message' => 'Paid payslip is ready.', 'payslip' => $payslip,
+            'message' => __('Paid payslip is ready.'), 'payslip' => $payslip,
             'company_name' => config('app.name', 'HRMS'),
         ]);
     }
@@ -268,7 +268,7 @@ class PayrollController extends Controller {
         $payroll = Payroll::findOrFail($payrollId);
 
         if (!in_array($payroll->status, ['draft', 'pending_approval'])) {
-            return response()->json(['message' => 'Cannot edit payslip after approval'], 422);
+            return response()->json(['message' => __('Cannot edit payslip after approval')], 422);
         }
 
         $payslip = Payslip::where('payroll_id', $payrollId)->findOrFail($payslipId);
@@ -325,7 +325,7 @@ class PayrollController extends Controller {
         ]);
 
         return response()->json([
-            'message' => 'Payslip updated successfully',
+            'message' => __('Payslip updated successfully'),
             'payslip' => $payslip->fresh()->load('employee.department'),
             'payroll' => $payroll->fresh()->loadCount('payslips'),
         ]);
@@ -338,7 +338,7 @@ class PayrollController extends Controller {
             $payroll = Payroll::lockForUpdate()->findOrFail($payrollId);
 
             if (!in_array($payroll->status, ['draft', 'pending_approval'])) {
-                abort(422, 'Cannot remove an employee after payroll approval');
+                abort(422, __('Cannot remove an employee after payroll approval'));
             }
 
             $payslip = Payslip::with('employee')
@@ -346,7 +346,7 @@ class PayrollController extends Controller {
                 ->findOrFail($payslipId);
 
             if ($payslip->employee?->status !== 'probation') {
-                abort(422, 'Only probation employees can be removed from payroll');
+                abort(422, __('Only probation employees can be removed from payroll'));
             }
 
             $payslip->delete();
@@ -361,7 +361,7 @@ class PayrollController extends Controller {
         });
 
         return response()->json([
-            'message' => 'Probation employee removed from this payroll',
+            'message' => __('Probation employee removed from this payroll'),
             'payroll' => $result,
         ]);
     }
@@ -374,7 +374,7 @@ class PayrollController extends Controller {
         $payroll = Payroll::findOrFail($id);
 
         if (!in_array($payroll->status, ['approved', 'paid'])) {
-            return response()->json(['message' => 'Only approved or paid payrolls can be reopened'], 422);
+            return response()->json(['message' => __('Only approved or paid payrolls can be reopened')], 422);
         }
 
         DB::transaction(function () use ($payroll) {
@@ -392,7 +392,7 @@ class PayrollController extends Controller {
         });
 
         return response()->json([
-            'message' => 'Payroll reopened successfully. You can now edit payslips and re-approve.',
+            'message' => __('Payroll reopened successfully. You can now edit payslips and re-approve.'),
             'payroll' => $payroll->fresh(),
         ]);
     }
@@ -405,7 +405,7 @@ class PayrollController extends Controller {
         $payroll = Payroll::with('payslips.employee')->findOrFail($id);
 
         if (!in_array($payroll->status, ['draft', 'pending_approval'])) {
-            return response()->json(['message' => 'Only payrolls awaiting approval can be regenerated.'], 422);
+            return response()->json(['message' => __('Only payrolls awaiting approval can be regenerated.')], 422);
         }
 
         try {
@@ -437,11 +437,11 @@ class PayrollController extends Controller {
             ]);
 
             return response()->json([
-                'message' => 'Payroll regenerated for ' . $employees->count() . ' employees and is ready for approval.',
+                'message' => __('Payroll regenerated for :count employees and is ready for approval.', ['count' => $employees->count()]),
                 'payroll' => $payroll->fresh()->loadCount('payslips'),
             ]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Payroll regeneration failed: ' . $e->getMessage()], 500);
+            return response()->json(['message' => __('Payroll regeneration failed: :error', ['error' => $e->getMessage()])], 500);
         }
     }
 }

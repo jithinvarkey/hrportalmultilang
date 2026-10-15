@@ -7,7 +7,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { FormControl } from '@angular/forms';
+import { formatDate as ngFormatDate } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 
 export interface Contract {
   id:           number;
@@ -88,25 +90,25 @@ export class ContractListComponent implements OnInit, OnDestroy {
   expiringFilter = false;
 
   // ── Stat tiles ────────────────────────────────────────────────────────
-  statTiles: Array<{ label: string; value: number; color: string; icon: string; status: string }> = [];
+  statTiles: Array<{ labelKey: string; value: number; color: string; icon: string; status: string }> = [];
 
   // ── Options ───────────────────────────────────────────────────────────
   readonly contractTypes = [
-    { value: 'full_time',   label: 'Full Time' },
-    { value: 'part_time',   label: 'Part Time' },
-    { value: 'contract',    label: 'Contract' },
-    { value: 'intern',      label: 'Intern' },
-    { value: 'probation',   label: 'Probation' },
-    { value: 'fixed_term',  label: 'Fixed Term' },
-    { value: 'unlimited',   label: 'Unlimited' },
+    { value: 'full_time',   labelKey: 'CONTRACTS.TYPES.full_time' },
+    { value: 'part_time',   labelKey: 'CONTRACTS.TYPES.part_time' },
+    { value: 'contract',    labelKey: 'CONTRACTS.TYPES.contract' },
+    { value: 'intern',      labelKey: 'CONTRACTS.TYPES.intern' },
+    { value: 'probation',   labelKey: 'CONTRACTS.TYPES.probation' },
+    { value: 'fixed_term',  labelKey: 'CONTRACTS.TYPES.fixed_term' },
+    { value: 'unlimited',   labelKey: 'CONTRACTS.TYPES.unlimited' },
   ];
 
   readonly statusOptions = [
-    { value: 'draft',       label: 'Draft',       color: '#8b949e' },
-    { value: 'active',      label: 'Active',       color: '#10b981' },
-    { value: 'expired',     label: 'Expired',      color: '#f59e0b' },
-    { value: 'terminated',  label: 'Terminated',   color: '#ef4444' },
-    { value: 'cancelled',   label: 'Cancelled',    color: '#6b7280' },
+    { value: 'draft',       color: '#8b949e' },
+    { value: 'active',      color: '#10b981' },
+    { value: 'expired',     color: '#f59e0b' },
+    { value: 'terminated',  color: '#ef4444' },
+    { value: 'cancelled',   color: '#6b7280' },
   ];
 
   readonly displayedColumns = [
@@ -124,7 +126,8 @@ export class ContractListComponent implements OnInit, OnDestroy {
     private readonly http: HttpClient,
     private readonly fb:   FormBuilder,
     private readonly cdr:  ChangeDetectorRef,
-    private auth: AuthService
+    private auth: AuthService,
+    private readonly lang: LanguageService,
   ) {}
 
   ngOnInit(): void {
@@ -162,7 +165,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
 
   private ensureCanManageContracts(): boolean {
     if (this.isHR) return true;
-    this.errorMsg = 'You do not have permission to manage contracts.';
+    this.errorMsg = this.lang.t('CONTRACTS.MSG.NO_PERMISSION');
     this.showForm = false;
     this.cdr.markForCheck();
     return false;
@@ -210,8 +213,8 @@ export class ContractListComponent implements OnInit, OnDestroy {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
     const okExt = /\.(pdf|doc|docx)$/i.test(file.name);
-    if (!allowed.includes(file.type) && !okExt) return 'Only PDF, DOC, or DOCX files are allowed.';
-    if (file.size > 10 * 1024 * 1024) return 'File must be 10 MB or smaller.';
+    if (!allowed.includes(file.type) && !okExt) return this.lang.t('CONTRACTS.MSG.FILE_TYPE');
+    if (file.size > 10 * 1024 * 1024) return this.lang.t('CONTRACTS.MSG.FILE_SIZE');
     return null;
   }
 
@@ -235,7 +238,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
 
     if (this.contractForm.invalid) {
       this.contractForm.markAllAsTouched();
-      this.formError = 'Please fill in all required fields.';
+      this.formError = this.lang.t('MESSAGES.FILL_REQUIRED');
       return;
     }
 
@@ -258,7 +261,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => {
-        this.formError  = err?.error?.message ?? 'Save failed.';
+        this.formError  = err?.error?.message ?? this.lang.t('CONTRACTS.MSG.SAVE_FAILED');
         this.submitting = false;
         this.cdr.markForCheck();
       },
@@ -269,7 +272,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
   private finishSave(): void {
     this.submitting   = false;
     this.showForm     = false;
-    this.successMsg   = this.editId ? 'Contract updated.' : 'Contract created.';
+    this.successMsg   = this.lang.t(this.editId ? 'CONTRACTS.MSG.UPDATED' : 'CONTRACTS.MSG.CREATED');
     this.selectedFile = null;
     this.loadContracts();
     this.loadStats();
@@ -292,7 +295,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => { if (done) done(); },
         error: (err) => {
-          this.formError  = err?.error?.message ?? 'Contract saved, but the document upload failed.';
+          this.formError  = err?.error?.message ?? this.lang.t('CONTRACTS.MSG.UPLOAD_AFTER_SAVE_FAILED');
           this.submitting = false;
           this.cdr.markForCheck();
         },
@@ -318,14 +321,14 @@ export class ContractListComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.uploadingDocId = null;
-          this.successMsg = 'Document uploaded.';
+          this.successMsg = this.lang.t('CONTRACTS.MSG.DOCUMENT_UPLOADED');
           this.loadContracts();
           setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3000);
           this.cdr.markForCheck();
         },
         error: (e) => {
           this.uploadingDocId = null;
-          this.errorMsg = e?.error?.message ?? 'Upload failed.';
+          this.errorMsg = e?.error?.message ?? this.lang.t('CONTRACTS.MSG.UPLOAD_FAILED');
           this.cdr.markForCheck();
         },
       });
@@ -342,11 +345,11 @@ export class ContractListComponent implements OnInit, OnDestroy {
   approve(contract: Contract): void {
     if (!this.ensureCanManageContracts()) return;
 
-    if (!confirm(`Approve contract ${contract.reference}? This will set it to Active.`)) return;
+    if (!confirm(this.lang.t('CONTRACTS.MSG.CONFIRM_APPROVE', { ref: contract.reference }))) return;
     this.http.post<any>(`${this.api}/${contract.id}/approve`, {})
       .pipe(takeUntil(this.destroy$)).subscribe({
-        next: () => { this.successMsg = 'Contract approved.'; this.loadContracts(); this.loadStats(); this.cdr.markForCheck(); },
-        error: (err) => { this.errorMsg = err?.error?.message ?? 'Approve failed.'; this.cdr.markForCheck(); },
+        next: () => { this.successMsg = this.lang.t('CONTRACTS.MSG.APPROVED'); this.loadContracts(); this.loadStats(); this.cdr.markForCheck(); },
+        error: (err) => { this.errorMsg = err?.error?.message ?? this.lang.t('CONTRACTS.MSG.APPROVE_FAILED'); this.cdr.markForCheck(); },
       });
   }
 
@@ -357,7 +360,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$)).subscribe({
         next: (r) => {
           contract.status = r.contract?.status ?? status;
-          this.successMsg = `Status updated to ${status}.`;
+          this.successMsg = this.lang.t('CONTRACTS.MSG.STATUS_UPDATED', { status: this.lang.t('STATUS.' + status) });
           this.loadStats();
           setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3000);
           this.cdr.markForCheck();
@@ -369,7 +372,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
   deleteContract(id: number): void {
     if (!this.ensureCanManageContracts()) return;
 
-    if (!confirm('Delete this contract? This cannot be undone.')) return;
+    if (!confirm(this.lang.t('CONTRACTS.MSG.CONFIRM_DELETE'))) return;
     this.http.delete(`${this.api}/${id}`).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => { this.loadContracts(); this.loadStats(); this.cdr.markForCheck(); },
       error: () => {},
@@ -442,12 +445,12 @@ export class ContractListComponent implements OnInit, OnDestroy {
       next: (s) => {
         this.stats = s;
         this.statTiles = [
-          { label: 'Total',          value: s.total,         color: '#3b82f6', icon: 'description',      status: 'all' },
-          { label: 'Active',         value: s.active,        color: '#10b981', icon: 'check_circle',     status: 'active' },
-          { label: 'Draft',          value: s.draft,         color: '#8b949e', icon: 'drafts',           status: 'draft' },
-          { label: 'Expiring Soon',  value: s.expiring_soon, color: '#f59e0b', icon: 'schedule',         status: 'expiring' },
-          { label: 'Expired',        value: s.expired,       color: '#ef4444', icon: 'event_busy',       status: 'expired' },
-          { label: 'Terminated',     value: s.terminated,    color: '#6b7280', icon: 'cancel',           status: 'terminated' },
+          { labelKey: 'CONTRACTS.STATS.TOTAL',         value: s.total,         color: '#3b82f6', icon: 'description',  status: 'all' },
+          { labelKey: 'CONTRACTS.STATS.ACTIVE',        value: s.active,        color: '#10b981', icon: 'check_circle', status: 'active' },
+          { labelKey: 'CONTRACTS.STATS.DRAFT',         value: s.draft,         color: '#8b949e', icon: 'drafts',       status: 'draft' },
+          { labelKey: 'CONTRACTS.STATS.EXPIRING_SOON', value: s.expiring_soon, color: '#f59e0b', icon: 'schedule',     status: 'expiring' },
+          { labelKey: 'CONTRACTS.STATS.EXPIRED',       value: s.expired,       color: '#ef4444', icon: 'event_busy',   status: 'expired' },
+          { labelKey: 'CONTRACTS.STATS.TERMINATED',    value: s.terminated,    color: '#6b7280', icon: 'cancel',       status: 'terminated' },
         ];
         this.statsLoading = false;
         this.cdr.markForCheck();
@@ -514,7 +517,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
 
   formatDate(d: string | null): string {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    try { return ngFormatDate(d, 'dd MMM yyyy', this.lang.locale()); } catch { return d; }
   }
 
   formatSalary(s: number | null, currency = 'SAR'): string {
@@ -523,7 +526,8 @@ export class ContractListComponent implements OnInit, OnDestroy {
   }
 
   typeLabel(type: string): string {
-    return this.contractTypes.find(t => t.value === type)?.label ?? type;
+    const t = this.contractTypes.find(o => o.value === type);
+    return t ? this.lang.t(t.labelKey) : type;
   }
 
   get pages(): number[] {

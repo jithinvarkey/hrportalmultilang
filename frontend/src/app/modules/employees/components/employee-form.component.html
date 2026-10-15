@@ -4,17 +4,17 @@
   <div class="page-hdr">
     <div>
       <div class="breadcrumb">
-        <a class="bc-link" [routerLink]="['/employees']">Employees</a>
-        <mat-icon class="bc-sep">chevron_right</mat-icon>
-        <span>{{ isEdit ? 'Edit Employee' : 'Add New Employee' }}</span>
+        <a class="bc-link" [routerLink]="['/employees']">{{ 'EMPLOYEES.TITLE' | translate }}</a>
+        <mat-icon class="bc-sep flip-rtl">chevron_right</mat-icon>
+        <span>{{ (isEdit ? 'EMPLOYEES.FORM.EDIT_EMPLOYEE' : 'EMPLOYEES.FORM.ADD_NEW_EMPLOYEE') | translate }}</span>
       </div>
-      <h1 class="page-title">{{ isEdit ? 'Edit Employee' : 'New Employee' }}</h1>
+      <h1 class="page-title">{{ (isEdit ? 'EMPLOYEES.FORM.EDIT_EMPLOYEE' : 'EMPLOYEES.FORM.NEW_EMPLOYEE') | translate }}</h1>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn-outline" (click)="cancel()">Cancel</button>
+    <div class="hdr-actions">
+      <button class="btn-outline" (click)="cancel()">{{ 'COMMON.CANCEL' | translate }}</button>
       <button class="btn-primary" (click)="submit()" [disabled]="saving">
         <mat-icon>{{ saving ? 'hourglass_empty' : 'save' }}</mat-icon>
-        {{ saving ? 'Saving…' : (isEdit ? 'Save Changes' : 'Create Employee') }}
+        {{ (saving ? 'COMMON.SAVING' : (isEdit ? 'COMMON.SAVE_CHANGES' : 'EMPLOYEES.FORM.CREATE_EMPLOYEE')) | translate }}
       </button>
     </div>
   </div>
@@ -37,78 +37,87 @@
         [class.active]="activeTab === t.id"
         [class.has-error]="tabHasError(t.id)"
         (click)="activeTab = t.id" type="button">
-        <mat-icon>{{ t.icon }}</mat-icon> {{ t.label }}
+        <mat-icon>{{ t.icon }}</mat-icon> {{ t.label | translate }}
         <span class="tab-err-dot" *ngIf="tabHasError(t.id)"></span>
       </button>
     </div>
 
     <!-- ── Tab: Personal ───────────────────────────────────────────── -->
     <div class="form-card" *ngIf="activeTab === 'personal'">
-      <div class="fc-title">Personal Information</div>
+      <div class="fc-title">{{ 'EMPLOYEES.SECTIONS.PERSONAL_INFORMATION' | translate }}</div>
       <div class="form-grid">
 
         <div class="field-group">
-          <label class="field-label">First Name <span class="req">*</span></label>
-          <input class="field-input" formControlName="first_name" placeholder="First name" [class.invalid]="err('first_name')">
-          <span class="field-error" *ngIf="err('first_name')">First name is required</span>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.FIRST_NAME' | translate }} <span class="req">*</span></label>
+          <input class="field-input" formControlName="first_name" [placeholder]="'EMPLOYEES.FIELDS.FIRST_NAME' | translate" [class.invalid]="err('first_name')">
+          <span class="field-error" *ngIf="err('first_name')">{{ 'EMPLOYEES.FORM.ERR_FIRST_NAME' | translate }}</span>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Last Name <span class="req">*</span></label>
-          <input class="field-input" formControlName="last_name" placeholder="Last name" [class.invalid]="err('last_name')">
-          <span class="field-error" *ngIf="err('last_name')">Last name is required</span>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.LAST_NAME' | translate }} <span class="req">*</span></label>
+          <input class="field-input" formControlName="last_name" [placeholder]="'EMPLOYEES.FIELDS.LAST_NAME' | translate" [class.invalid]="err('last_name')">
+          <span class="field-error" *ngIf="err('last_name')">{{ 'EMPLOYEES.FORM.ERR_LAST_NAME' | translate }}</span>
         </div>
 
         <div class="field-group field-full">
-          <label class="field-label">Arabic Name</label>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.ARABIC_NAME' | translate }}</label>
           <input class="field-input" formControlName="arabic_name" placeholder="الاسم بالعربي" dir="rtl">
         </div>
 
         <div class="field-group">
-          <label class="field-label">Email Address <span class="req">*</span></label>
-          <input class="field-input" formControlName="email" type="email" placeholder="email@company.com" [class.invalid]="err('email')">
-          <span class="field-error" *ngIf="err('email')">Valid email is required</span>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.EMAIL' | translate }} <span class="req">*</span></label>
+          <input class="field-input" formControlName="email" type="email" placeholder="email@company.com" dir="ltr" [class.invalid]="err('email')">
+          <span class="field-error" *ngIf="err('email')">{{ 'VALIDATION.EMAIL' | translate }}</span>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Mobile Phone</label>
-          <input class="field-input" formControlName="phone" placeholder="+966 5X XXX XXXX">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.MOBILE' | translate }}</label>
+          <input class="field-input" formControlName="phone" type="tel" placeholder="+966 5X XXX XXXX" dir="ltr">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="prefCommLang">{{ 'EMPLOYEES.FIELDS.PREFERRED_COMM_LANGUAGE' | translate }}</label>
+          <select id="prefCommLang" class="field-select" formControlName="preferred_communication_language">
+            <option value="en" lang="en" dir="ltr">English</option>
+            <option value="ar" lang="ar" dir="rtl">العربية</option>
+          </select>
+          <span class="field-hint">{{ 'EMPLOYEES.FORM.PREFERRED_COMM_LANGUAGE_HINT' | translate }}</span>
         </div>
 
         <div class="field-group" *ngIf="isEdit && canManageExtension">
-          <label class="field-label">Telephone Extension</label>
-          <input class="field-input" formControlName="extension" maxlength="10" placeholder="e.g. 1234">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.EXTENSION' | translate }}</label>
+          <input class="field-input" formControlName="extension" maxlength="10" [placeholder]="'EMPLOYEES.FORM.EXTENSION_PLACEHOLDER' | translate" dir="ltr">
         </div>
 
         <div class="field-group">
-          <label class="field-label">Date of Birth</label>
-          <input class="field-input" formControlName="dob" type="date">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.DOB' | translate }}</label>
+          <input class="field-input" formControlName="dob" type="date" dir="ltr">
         </div>
 
         <div class="field-group">
-          <label class="field-label">Gender</label>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.GENDER' | translate }}</label>
           <select class="field-select" formControlName="gender">
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
+            <option value="">{{ 'EMPLOYEES.FORM.SELECT_GENDER' | translate }}</option>
+            <option value="male">{{ 'EMPLOYEES.GENDER.male' | translate }}</option>
+            <option value="female">{{ 'EMPLOYEES.GENDER.female' | translate }}</option>
+            <option value="other">{{ 'EMPLOYEES.GENDER.other' | translate }}</option>
           </select>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Marital Status</label>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.MARITAL_STATUS' | translate }}</label>
           <select class="field-select" formControlName="marital_status">
-            <option value="">Select status</option>
-            <option value="single">Single</option>
-            <option value="married">Married</option>
-            <option value="divorced">Divorced</option>
-            <option value="widowed">Widowed</option>
+            <option value="">{{ 'EMPLOYEES.FORM.SELECT_STATUS' | translate }}</option>
+            <option value="single">{{ 'single' | statusLabel }}</option>
+            <option value="married">{{ 'married' | statusLabel }}</option>
+            <option value="divorced">{{ 'divorced' | statusLabel }}</option>
+            <option value="widowed">{{ 'widowed' | statusLabel }}</option>
           </select>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Nationality</label>
-          <input class="field-input" formControlName="nationality" list="nationality-options" placeholder="Enter nationality">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.NATIONALITY' | translate }}</label>
+          <input class="field-input" formControlName="nationality" list="nationality-options" [placeholder]="'EMPLOYEES.FORM.NATIONALITY_PLACEHOLDER' | translate">
           <datalist id="nationality-options">
             <option value="Saudi"><option value="Emirati"><option value="Egyptian">
             <option value="Indian"><option value="Pakistani"><option value="Filipino">
@@ -116,23 +125,23 @@
         </div>
 
         <div class="field-group">
-          <label class="field-label">National ID / Iqama</label>
-          <input class="field-input" formControlName="national_id" placeholder="ID number">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.NATIONAL_ID' | translate }}</label>
+          <input class="field-input" formControlName="national_id" [placeholder]="'EMPLOYEES.FORM.ID_NUMBER_PLACEHOLDER' | translate" dir="ltr">
         </div>
 
         <div class="field-group field-full">
-          <label class="field-label">Address</label>
-          <input class="field-input" formControlName="address" placeholder="Street address">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.ADDRESS' | translate }}</label>
+          <input class="field-input" formControlName="address" [placeholder]="'EMPLOYEES.FORM.ADDRESS_PLACEHOLDER' | translate">
         </div>
 
         <div class="field-group">
-          <label class="field-label">City</label>
-          <input class="field-input" formControlName="city" placeholder="Riyadh">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.CITY' | translate }}</label>
+          <input class="field-input" formControlName="city" [placeholder]="'EMPLOYEES.FORM.CITY_PLACEHOLDER' | translate">
         </div>
 
         <div class="field-group">
-          <label class="field-label">Country</label>
-          <input class="field-input" formControlName="country" placeholder="Saudi Arabia">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.COUNTRY' | translate }}</label>
+          <input class="field-input" formControlName="country" [placeholder]="'EMPLOYEES.FORM.COUNTRY_PLACEHOLDER' | translate">
         </div>
 
       </div>
@@ -140,92 +149,92 @@
 
     <!-- ── Tab: Employment ─────────────────────────────────────────── -->
     <div class="form-card" *ngIf="activeTab === 'employment'">
-      <div class="fc-title">Employment Details</div>
+      <div class="fc-title">{{ 'EMPLOYEES.SECTIONS.EMPLOYMENT_DETAILS' | translate }}</div>
       <div class="form-grid">
 
         <div class="field-group">
-          <label class="field-label">Department</label>
+          <label class="field-label">{{ 'COMMON.DEPARTMENT' | translate }}</label>
           <select class="field-select" formControlName="department_id" (change)="onDeptChange()">
-            <option [ngValue]="''">Select Department</option>
-            <option *ngFor="let d of departments" [ngValue]="d.id">{{ d.name }}</option>
+            <option [ngValue]="''">{{ 'EMPLOYEES.FORM.SELECT_DEPARTMENT' | translate }}</option>
+            <option *ngFor="let d of departments" [ngValue]="d.id">{{ d | locName }}</option>
           </select>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Unit / Branch</label>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.UNIT_BRANCH' | translate }}</label>
           <select class="field-select" formControlName="unit_id">
-            <option [ngValue]="''">Select Unit</option>
-            <option *ngFor="let u of units" [ngValue]="u.id">{{ u.name }}</option>
+            <option [ngValue]="''">{{ 'EMPLOYEES.FORM.SELECT_UNIT' | translate }}</option>
+            <option *ngFor="let u of units" [ngValue]="u.id">{{ u | locName }}</option>
           </select>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Designation / Job Title</label>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.DESIGNATION_JOB_TITLE' | translate }}</label>
           <select class="field-select" formControlName="designation_id">
-            <option [ngValue]="''">Select Designation</option>
-            <option *ngFor="let d of designations" [ngValue]="d.id">{{ d.title }}</option>
+            <option [ngValue]="''">{{ 'EMPLOYEES.FORM.SELECT_DESIGNATION' | translate }}</option>
+            <option *ngFor="let d of designations" [ngValue]="d.id">{{ d | locName:'title' }}</option>
           </select>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Reporting Manager</label>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.REPORTING_MANAGER' | translate }}</label>
           <select class="field-select" formControlName="manager_id">
-            <option [ngValue]="''">Select Manager</option>
-            <option *ngFor="let m of managers" [ngValue]="m.id">{{ m.full_name }} · {{ m.designation?.title || m.employee_code }}</option>
+            <option [ngValue]="''">{{ 'EMPLOYEES.FORM.SELECT_MANAGER' | translate }}</option>
+            <option *ngFor="let m of managers" [ngValue]="m.id">{{ m.full_name }} · {{ (m.designation | locName:'title') || m.employee_code }}</option>
           </select>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Employment Type <span class="req">*</span></label>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.EMPLOYMENT_TYPE' | translate }} <span class="req">*</span></label>
           <select class="field-select" formControlName="employment_type" [class.invalid]="err('employment_type')">
-            <option value="">Select Type</option>
-            <option value="full_time">Full Time</option>
-            <option value="part_time">Part Time</option>
-            <option value="contract">Contract</option>
-            <option value="intern">Intern</option>
+            <option value="">{{ 'EMPLOYEES.FORM.SELECT_TYPE' | translate }}</option>
+            <option value="full_time">{{ 'EMPLOYEES.EMPLOYMENT_TYPE.full_time' | translate }}</option>
+            <option value="part_time">{{ 'EMPLOYEES.EMPLOYMENT_TYPE.part_time' | translate }}</option>
+            <option value="contract">{{ 'EMPLOYEES.EMPLOYMENT_TYPE.contract' | translate }}</option>
+            <option value="intern">{{ 'EMPLOYEES.EMPLOYMENT_TYPE.intern' | translate }}</option>
           </select>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Mode of Employment</label>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.MODE_OF_EMPLOYMENT' | translate }}</label>
           <select class="field-select" formControlName="mode_of_employment">
-            <option value="">Select Mode</option>
-            <option value="direct">Direct</option>
-            <option value="agency">Agency</option>
-            <option value="outsourced">Outsourced</option>
-            <option value="secondment">Secondment</option>
+            <option value="">{{ 'EMPLOYEES.FORM.SELECT_MODE' | translate }}</option>
+            <option value="direct">{{ 'EMPLOYEES.MODE.direct' | translate }}</option>
+            <option value="agency">{{ 'EMPLOYEES.MODE.agency' | translate }}</option>
+            <option value="outsourced">{{ 'EMPLOYEES.MODE.outsourced' | translate }}</option>
+            <option value="secondment">{{ 'EMPLOYEES.MODE.secondment' | translate }}</option>
           </select>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Status <span class="req">*</span></label>
+          <label class="field-label">{{ 'COMMON.STATUS' | translate }} <span class="req">*</span></label>
           <select class="field-select" formControlName="status">
-            <option value="active">Active</option>
-            <option value="probation">Probation</option>
-            <option value="on_leave">On Leave</option>
-            <option value="inactive">Inactive</option>
-            <option value="terminated">Terminated</option>
+            <option value="active">{{ 'active' | statusLabel }}</option>
+            <option value="probation">{{ 'probation' | statusLabel }}</option>
+            <option value="on_leave">{{ 'on_leave' | statusLabel }}</option>
+            <option value="inactive">{{ 'inactive' | statusLabel }}</option>
+            <option value="terminated">{{ 'terminated' | statusLabel }}</option>
           </select>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Date of Joining <span class="req">*</span></label>
-          <input class="field-input" formControlName="hire_date" type="date" [class.invalid]="err('hire_date')">
-          <span class="field-error" *ngIf="err('hire_date')">Hire date is required</span>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.HIRE_DATE' | translate }} <span class="req">*</span></label>
+          <input class="field-input" formControlName="hire_date" type="date" dir="ltr" [class.invalid]="err('hire_date')">
+          <span class="field-error" *ngIf="err('hire_date')">{{ 'EMPLOYEES.FORM.ERR_HIRE_DATE' | translate }}</span>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Date of Confirmation</label>
-          <input class="field-input" formControlName="confirmation_date" type="date">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.CONFIRMATION_DATE' | translate }}</label>
+          <input class="field-input" formControlName="confirmation_date" type="date" dir="ltr">
         </div>
 
         <div class="field-group">
-          <label class="field-label">Date of Leaving</label>
-          <input class="field-input" formControlName="termination_date" type="date">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.LEAVING_DATE' | translate }}</label>
+          <input class="field-input" formControlName="termination_date" type="date" dir="ltr">
         </div>
 
         <div class="field-group">
-          <label class="field-label">Probation Period (months)</label>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.PROBATION_MONTHS' | translate }}</label>
           <select class="field-select" formControlName="probation_period">
             <option [value]="0">0</option>
             <option [value]="1">1</option>
@@ -237,13 +246,13 @@
         </div>
 
         <div class="field-group">
-          <label class="field-label">Years of Experience</label>
-          <input class="field-input" formControlName="years_of_experience" type="number" placeholder="0" min="0">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.YEARS_OF_EXPERIENCE' | translate }}</label>
+          <input class="field-input" formControlName="years_of_experience" type="number" placeholder="0" min="0" dir="ltr">
         </div>
 
         <div class="field-group field-full">
-          <label class="field-label">Notes</label>
-          <textarea class="field-textarea" formControlName="notes" rows="3" placeholder="Additional notes…"></textarea>
+          <label class="field-label">{{ 'COMMON.NOTES' | translate }}</label>
+          <textarea class="field-textarea" formControlName="notes" rows="3" [placeholder]="'EMPLOYEES.FORM.NOTES_PLACEHOLDER' | translate"></textarea>
         </div>
 
       </div>
@@ -251,54 +260,54 @@
 
     <!-- ── Tab: Financial ─────────────────────────────────────────── -->
     <div class="form-card" *ngIf="activeTab === 'financial'">
-      <div class="fc-title">Salary Structure</div>
+      <div class="fc-title">{{ 'EMPLOYEES.SECTIONS.SALARY_STRUCTURE' | translate }}</div>
       <div class="form-grid">
 
         <!-- Basic Salary -->
         <div class="field-group">
-          <label class="field-label">Basic Salary (SAR) <span class="req">*</span></label>
-          <input class="field-input" formControlName="salary" type="number" placeholder="0.00" [class.invalid]="err('salary')">
-          <span class="field-error" *ngIf="err('salary')">Valid salary is required</span>
-          <span class="field-hint">Base salary before allowances</span>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.BASIC_SALARY' | translate }} ({{ 'COMMON.SAR' | translate }}) <span class="req">*</span></label>
+          <input class="field-input" formControlName="salary" type="number" placeholder="0.00" dir="ltr" [class.invalid]="err('salary')">
+          <span class="field-error" *ngIf="err('salary')">{{ 'EMPLOYEES.FORM.ERR_SALARY' | translate }}</span>
+          <span class="field-hint">{{ 'EMPLOYEES.FORM.HINT_BASIC' | translate }}</span>
         </div>
 
         <!-- Housing Allowance -->
         <div class="field-group">
-          <label class="field-label">Housing Allowance (SAR)</label>
-          <input class="field-input" formControlName="housing_allowance" type="number" placeholder="Leave blank for default (25% of basic)">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.HOUSING_ALLOWANCE' | translate }} ({{ 'COMMON.SAR' | translate }})</label>
+          <input class="field-input" formControlName="housing_allowance" type="number" dir="ltr" [placeholder]="'EMPLOYEES.FORM.HOUSING_PLACEHOLDER' | translate">
           <span class="field-hint">
-            Default: <strong>SAR {{ computedHousing | number:'1.2-2' }}</strong>
-            (25% of basic). Enter a fixed amount to override.
+            {{ 'EMPLOYEES.FORM.DEFAULT' | translate }}: <strong>{{ 'COMMON.SAR' | translate }} {{ computedHousing | number:'1.2-2' }}</strong>
+            {{ 'EMPLOYEES.FORM.HINT_HOUSING' | translate }}
           </span>
         </div>
 
         <!-- Transport Allowance -->
         <div class="field-group">
-          <label class="field-label">Transport Allowance (SAR)</label>
-          <input class="field-input" formControlName="transport_allowance" type="number" placeholder="Leave blank for default (10% of basic)">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.TRANSPORT_ALLOWANCE' | translate }} ({{ 'COMMON.SAR' | translate }})</label>
+          <input class="field-input" formControlName="transport_allowance" type="number" dir="ltr" [placeholder]="'EMPLOYEES.FORM.TRANSPORT_PLACEHOLDER' | translate">
           <span class="field-hint">
-            Default: <strong>SAR {{ computedTransport | number:'1.2-2' }}</strong>
-            (10% of basic). Enter a fixed amount to override.
+            {{ 'EMPLOYEES.FORM.DEFAULT' | translate }}: <strong>{{ 'COMMON.SAR' | translate }} {{ computedTransport | number:'1.2-2' }}</strong>
+            {{ 'EMPLOYEES.FORM.HINT_TRANSPORT' | translate }}
           </span>
         </div>
 
         <!-- Mobile Allowance -->
         <div class="field-group">
-          <label class="field-label">Mobile Allowance (SAR)</label>
-          <input class="field-input" formControlName="mobile_allowance" type="number" placeholder="0.00">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.MOBILE_ALLOWANCE' | translate }} ({{ 'COMMON.SAR' | translate }})</label>
+          <input class="field-input" formControlName="mobile_allowance" type="number" placeholder="0.00" dir="ltr">
         </div>
 
         <!-- Food Allowance -->
         <div class="field-group">
-          <label class="field-label">Food / Meal Allowance (SAR)</label>
-          <input class="field-input" formControlName="food_allowance" type="number" placeholder="0.00">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.FOOD_MEAL_ALLOWANCE' | translate }} ({{ 'COMMON.SAR' | translate }})</label>
+          <input class="field-input" formControlName="food_allowance" type="number" placeholder="0.00" dir="ltr">
         </div>
 
         <!-- Other Allowances -->
         <div class="field-group">
-          <label class="field-label">Other Allowances (SAR)</label>
-          <input class="field-input" formControlName="other_allowances" type="number" placeholder="0.00">
-          <span class="field-hint">Any additional fixed monthly allowances</span>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.OTHER_ALLOWANCES' | translate }} ({{ 'COMMON.SAR' | translate }})</label>
+          <input class="field-input" formControlName="other_allowances" type="number" placeholder="0.00" dir="ltr">
+          <span class="field-hint">{{ 'EMPLOYEES.FORM.HINT_OTHER' | translate }}</span>
         </div>
 
       </div>
@@ -306,86 +315,86 @@
       <!-- Gross salary preview -->
       <div class="gross-preview">
         <div class="gp-row">
-          <span class="gp-label">Basic Salary</span>
-          <span class="gp-val">SAR {{ form.get('salary')?.value | number:'1.2-2' }}</span>
+          <span class="gp-label">{{ 'EMPLOYEES.FIELDS.BASIC_SALARY' | translate }}</span>
+          <span class="gp-val">{{ 'COMMON.SAR' | translate }} {{ form.get('salary')?.value | number:'1.2-2' }}</span>
         </div>
         <div class="gp-row">
-          <span class="gp-label">Housing Allowance</span>
-          <span class="gp-val">SAR {{ computedHousing | number:'1.2-2' }}</span>
+          <span class="gp-label">{{ 'EMPLOYEES.FIELDS.HOUSING_ALLOWANCE' | translate }}</span>
+          <span class="gp-val">{{ 'COMMON.SAR' | translate }} {{ computedHousing | number:'1.2-2' }}</span>
         </div>
         <div class="gp-row">
-          <span class="gp-label">Transport Allowance</span>
-          <span class="gp-val">SAR {{ computedTransport | number:'1.2-2' }}</span>
+          <span class="gp-label">{{ 'EMPLOYEES.FIELDS.TRANSPORT_ALLOWANCE' | translate }}</span>
+          <span class="gp-val">{{ 'COMMON.SAR' | translate }} {{ computedTransport | number:'1.2-2' }}</span>
         </div>
         <div class="gp-row" *ngIf="form.get('mobile_allowance')?.value > 0">
-          <span class="gp-label">Mobile Allowance</span>
-          <span class="gp-val">SAR {{ form.get('mobile_allowance')?.value | number:'1.2-2' }}</span>
+          <span class="gp-label">{{ 'EMPLOYEES.FIELDS.MOBILE_ALLOWANCE' | translate }}</span>
+          <span class="gp-val">{{ 'COMMON.SAR' | translate }} {{ form.get('mobile_allowance')?.value | number:'1.2-2' }}</span>
         </div>
         <div class="gp-row" *ngIf="form.get('food_allowance')?.value > 0">
-          <span class="gp-label">Food Allowance</span>
-          <span class="gp-val">SAR {{ form.get('food_allowance')?.value | number:'1.2-2' }}</span>
+          <span class="gp-label">{{ 'EMPLOYEES.FIELDS.FOOD_ALLOWANCE' | translate }}</span>
+          <span class="gp-val">{{ 'COMMON.SAR' | translate }} {{ form.get('food_allowance')?.value | number:'1.2-2' }}</span>
         </div>
         <div class="gp-row" *ngIf="form.get('other_allowances')?.value > 0">
-          <span class="gp-label">Other Allowances</span>
-          <span class="gp-val">SAR {{ form.get('other_allowances')?.value | number:'1.2-2' }}</span>
+          <span class="gp-label">{{ 'EMPLOYEES.FIELDS.OTHER_ALLOWANCES' | translate }}</span>
+          <span class="gp-val">{{ 'COMMON.SAR' | translate }} {{ form.get('other_allowances')?.value | number:'1.2-2' }}</span>
         </div>
         <div class="gp-divider"></div>
         <div class="gp-row gp-total">
-          <span class="gp-label">Estimated Gross</span>
-          <span class="gp-val gross">SAR {{ computedGross | number:'1.2-2' }}</span>
+          <span class="gp-label">{{ 'EMPLOYEES.FORM.ESTIMATED_GROSS' | translate }}</span>
+          <span class="gp-val gross">{{ 'COMMON.SAR' | translate }} {{ computedGross | number:'1.2-2' }}</span>
         </div>
         <div class="gp-note">
           <mat-icon>info_outline</mat-icon>
-          GOSI deduction (9% of basic for Saudi nationals) and other deductions applied separately at payroll.
+          {{ 'EMPLOYEES.FORM.GOSI_NOTE' | translate }}
         </div>
       </div>
 
       <!-- Bank Details -->
-      <div class="fc-title" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">Bank Details</div>
+      <div class="fc-title" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">{{ 'EMPLOYEES.SECTIONS.BANK_DETAILS' | translate }}</div>
       <div class="form-grid">
 
         <div class="field-group">
-          <label class="field-label">Bank Name</label>
-          <input class="field-input" formControlName="bank_name" placeholder="e.g. Al Rajhi Bank">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.BANK_NAME' | translate }}</label>
+          <input class="field-input" formControlName="bank_name" [placeholder]="'EMPLOYEES.FORM.BANK_NAME_PLACEHOLDER' | translate">
         </div>
 
         <div class="field-group field-full">
-          <label class="field-label">Bank Account / IBAN</label>
-          <input class="field-input" formControlName="bank_account" placeholder="IBAN or account number">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.BANK_ACCOUNT_IBAN' | translate }}</label>
+          <input class="field-input" formControlName="bank_account" dir="ltr" [placeholder]="'EMPLOYEES.FORM.IBAN_PLACEHOLDER' | translate">
         </div>
 
       </div>
       <div class="info-note">
         <mat-icon>info_outline</mat-icon>
-        Bank account details are only accessible to authorised HR personnel.
+        {{ 'EMPLOYEES.FORM.BANK_NOTE' | translate }}
       </div>
     </div>
 
     <!-- ── Tab: Emergency ─────────────────────────────────────────── -->
     <div class="form-card" *ngIf="activeTab === 'emergency'">
-      <div class="fc-title">Emergency Contact</div>
+      <div class="fc-title">{{ 'EMPLOYEES.SECTIONS.EMERGENCY_CONTACT' | translate }}</div>
       <div class="form-grid">
 
         <div class="field-group">
-          <label class="field-label">Contact Full Name</label>
-          <input class="field-input" formControlName="emergency_contact_name" placeholder="Full name">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.CONTACT_FULL_NAME' | translate }}</label>
+          <input class="field-input" formControlName="emergency_contact_name" [placeholder]="'EMPLOYEES.FORM.FULL_NAME_PLACEHOLDER' | translate">
         </div>
 
         <div class="field-group">
-          <label class="field-label">Contact Phone</label>
-          <input class="field-input" formControlName="emergency_contact_phone" placeholder="+966 5X XXX XXXX">
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.CONTACT_PHONE' | translate }}</label>
+          <input class="field-input" formControlName="emergency_contact_phone" type="tel" placeholder="+966 5X XXX XXXX" dir="ltr">
         </div>
 
         <div class="field-group">
-          <label class="field-label">Relationship</label>
+          <label class="field-label">{{ 'EMPLOYEES.FIELDS.RELATIONSHIP' | translate }}</label>
           <select class="field-select" formControlName="emergency_contact_relation">
-            <option value="">Select Relationship</option>
-            <option value="spouse">Spouse</option>
-            <option value="parent">Parent</option>
-            <option value="sibling">Sibling</option>
-            <option value="child">Child</option>
-            <option value="friend">Friend</option>
-            <option value="other">Other</option>
+            <option value="">{{ 'EMPLOYEES.FORM.SELECT_RELATIONSHIP' | translate }}</option>
+            <option value="spouse">{{ 'EMPLOYEES.RELATION.spouse' | translate }}</option>
+            <option value="parent">{{ 'EMPLOYEES.RELATION.parent' | translate }}</option>
+            <option value="sibling">{{ 'EMPLOYEES.RELATION.sibling' | translate }}</option>
+            <option value="child">{{ 'EMPLOYEES.RELATION.child' | translate }}</option>
+            <option value="friend">{{ 'EMPLOYEES.RELATION.friend' | translate }}</option>
+            <option value="other">{{ 'EMPLOYEES.RELATION.other' | translate }}</option>
           </select>
         </div>
 
@@ -395,15 +404,15 @@
     <!-- Bottom nav -->
     <div class="tab-nav">
       <button class="btn-outline" *ngIf="activeTab !== tabs[0].id" (click)="prevTab()" type="button">
-        <mat-icon>arrow_back</mat-icon> Back
+        <mat-icon class="flip-rtl">arrow_back</mat-icon> {{ 'COMMON.BACK' | translate }}
       </button>
       <span style="flex:1"></span>
       <button class="btn-outline" *ngIf="activeTab !== tabs[tabs.length-1].id" (click)="nextTab()" type="button">
-        Next <mat-icon>arrow_forward</mat-icon>
+        {{ 'COMMON.NEXT' | translate }} <mat-icon class="flip-rtl">arrow_forward</mat-icon>
       </button>
       <button class="btn-primary" *ngIf="activeTab === tabs[tabs.length-1].id" (click)="submit()" [disabled]="saving" type="button">
         <mat-icon>{{ saving ? 'hourglass_empty' : 'save' }}</mat-icon>
-        {{ saving ? 'Saving…' : (isEdit ? 'Save Changes' : 'Create Employee') }}
+        {{ (saving ? 'COMMON.SAVING' : (isEdit ? 'COMMON.SAVE_CHANGES' : 'EMPLOYEES.FORM.CREATE_EMPLOYEE')) | translate }}
       </button>
     </div>
 

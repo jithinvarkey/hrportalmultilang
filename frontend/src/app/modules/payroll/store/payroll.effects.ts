@@ -4,11 +4,12 @@ import { ToastrService } from 'ngx-toastr';
 import { of } from 'rxjs';
 import { switchMap, map, catchError, tap } from 'rxjs/operators';
 import { PayrollApiService } from '../../../core/services/api.services';
+import { LanguageService } from '../../../core/services/language.service';
 import { loadPayrolls, loadPayrollsSuccess, runPayroll, runPayrollSuccess, approvePayroll, approvePayrollSuccess, loadPayslips, loadPayslipsSuccess, payrollFailure } from './payroll.reducer';
 
 @Injectable()
 export class PayrollEffects {
-  constructor(private actions$: Actions, private api: PayrollApiService, private toastr: ToastrService) {}
+  constructor(private actions$: Actions, private api: PayrollApiService, private toastr: ToastrService, private lang: LanguageService) {}
 
   load$ = createEffect(() => this.actions$.pipe(
     ofType(loadPayrolls),
@@ -28,7 +29,7 @@ export class PayrollEffects {
 
   runSuccess$ = createEffect(() => this.actions$.pipe(
     ofType(runPayrollSuccess),
-    tap(() => this.toastr.success('Payroll run successfully. Pending approval.')),
+    tap(() => this.toastr.success(this.lang.t('PAYROLL.MSG.RUN_SUCCESS'))),
   ), { dispatch: false });
 
   approve$ = createEffect(() => this.actions$.pipe(

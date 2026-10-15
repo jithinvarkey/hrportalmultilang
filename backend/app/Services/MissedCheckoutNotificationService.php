@@ -6,8 +6,8 @@ use App\Mail\MissedCheckoutMail;
 use App\Models\AppNotification;
 use App\Models\AttendanceLog;
 use App\Models\Employee;
+use App\Support\Locale\LocalizedMail;
 use Carbon\CarbonInterface;
-use Illuminate\Support\Facades\Mail;
 
 class MissedCheckoutNotificationService
 {
@@ -56,10 +56,12 @@ class MissedCheckoutNotificationService
                 ->whereDoesntHave('user.roles', fn ($query) => $query->where('name', 'hr_staff'))
                 ->pluck('email')->filter()->unique()->values()->all();
 
-            Mail::to($employee->email)->cc($hrEmails)->send(new MissedCheckoutMail(
+            // One message per language group so the employee and each HR manager get their own language.
+            LocalizedMail::send([$employee->email], $hrEmails, fn () => new MissedCheckoutMail(
                 $employee->full_name,
-                $date,
-                $checkIn,
+                $log->date->toDateString(),
+                date('H:i:s', strtotime($log->check_in)),
+                $employee->arabic_name,
             ));
         }
 

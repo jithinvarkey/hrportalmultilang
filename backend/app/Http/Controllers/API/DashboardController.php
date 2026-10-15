@@ -355,21 +355,21 @@ class DashboardController extends Controller
             ->join('employees', 'departments.id', '=', 'employees.department_id')
             ->whereNull('employees.deleted_at')
             ->where('employees.status', 'active'), $scope, 'employees.id')
-            ->selectRaw('departments.name, COUNT(employees.id) as count')
-            ->groupBy('departments.id', 'departments.name')
+            ->selectRaw('departments.name, departments.name_ar, COUNT(employees.id) as count')
+            ->groupBy('departments.id', 'departments.name', 'departments.name_ar')
             ->orderByDesc('count')
             ->limit(8)
             ->get()
-            ->map(fn ($r) => ['name' => $r->name, 'count' => $r->count]));
+            ->map(fn ($r) => ['name' => $r->name, 'name_ar' => $r->name_ar, 'count' => $r->count]));
 
         $leaveByType = $safe(fn () => $this->applyEmployeeScope(DB::table('leave_requests')
             ->join('leave_types', 'leave_requests.leave_type_id', '=', 'leave_types.id')
             ->where('leave_requests.status', 'approved')
             ->whereYear('leave_requests.created_at', now()->year), $scope, 'leave_requests.employee_id')
-            ->selectRaw('leave_types.name as leave_type, COUNT(*) as count')
-            ->groupBy('leave_types.id', 'leave_types.name')
+            ->selectRaw('leave_types.name as leave_type, leave_types.name_ar as leave_type_ar, COUNT(*) as count')
+            ->groupBy('leave_types.id', 'leave_types.name', 'leave_types.name_ar')
             ->get()
-            ->map(fn ($r) => ['leave_type' => $r->leave_type, 'count' => $r->count]));
+            ->map(fn ($r) => ['leave_type' => $r->leave_type, 'leave_type_ar' => $r->leave_type_ar, 'count' => $r->count]));
 
         $perfRatings = $safe(fn () => $this->applyEmployeeScope(DB::table('performance_reviews')
             ->whereNotNull('final_rating'), $scope, 'performance_reviews.employee_id')

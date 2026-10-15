@@ -314,7 +314,7 @@ class MonthlyAttendanceReportService
         $zip = new \ZipArchive();
 
         if ($zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            abort(500, 'Could not create attendance report.');
+            abort(500, __('Could not create attendance report.'));
         }
 
         $sheetNames = $this->uniqueSheetNames(array_column($sheets, 'name'));

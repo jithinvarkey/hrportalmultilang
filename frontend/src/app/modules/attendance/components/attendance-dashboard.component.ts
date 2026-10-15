@@ -7,9 +7,12 @@ import {
   ChangeDetectorRef,
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { formatDate } from '@angular/common';
+import { TranslateService } from '@ngx-translate/core';
 import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 
 declare const Chart: any;
 
@@ -45,12 +48,20 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
     private readonly http: HttpClient,
     private readonly auth: AuthService,
     private readonly cdr:  ChangeDetectorRef,
+    private readonly lang: LanguageService,
+    private readonly translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
     this.isHR = this.auth.isHRRole();
     this.isAdmin = this.auth.isAdminRole();
     this.loadDashboard();
+
+    // Chart labels/legends are baked into the canvas, so rebuild them when the language changes
+    this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.cdr.markForCheck();
+      if (this.data) setTimeout(() => this.renderCharts(), 0);
+    });
 
     interval(1000).pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.clock = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Riyadh' });
@@ -90,13 +101,13 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
       .subscribe({
         next: (res) => {
           if (this.data) this.data.today_log = res.log;
-          this.actionMsg  = 'Checked in at ' + res.log?.check_in;
+          this.actionMsg  = this.lang.t('ATTENDANCE.MSG.CHECKED_IN', { time: res.log?.check_in });
           this.checkingIn = false;
           this.cdr.markForCheck();
         },
         error: (err) => {
           if (err?.error?.log && this.data) this.data.today_log = err.error.log;
-          this.actionError = err?.error?.message ?? 'Check-in failed.';
+          this.actionError = err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKIN_FAILED');
           this.checkingIn  = false;
           this.cdr.markForCheck();
         },
@@ -112,13 +123,13 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
       .subscribe({
         next: (res) => {
           if (this.data) this.data.today_log = res.log;
-          this.actionMsg   = 'Checked out at ' + res.log?.check_out + ' · ' + this.fmt(res.log?.total_minutes);
+          this.actionMsg   = this.lang.t('ATTENDANCE.MSG.CHECKED_OUT', { time: res.log?.check_out, duration: this.fmt(res.log?.total_minutes) });
           this.checkingOut = false;
           this.cdr.markForCheck();
         },
         error: (err) => {
           if (err?.error?.log && this.data) this.data.today_log = err.error.log;
-          this.actionError = err?.error?.message ?? 'Check-out failed.';
+          this.actionError = err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKOUT_FAILED');
           this.checkingOut = false;
           this.cdr.markForCheck();
         },
@@ -149,7 +160,7 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.actionError = err?.error?.message ?? 'Attendance report download failed.';
+          this.actionError = err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.REPORT_FAILED');
           this.reportDownloading = false;
           this.cdr.markForCheck();
         },
@@ -164,7 +175,21 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
   fmt(mins: number | null): string {
     if (!mins) return '—';
     const h = Math.floor(mins / 60), m = mins % 60;
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    return h > 0 ? this.lang.t('ATTENDANCE.FMT.HM', { h, m }) : this.lang.t('ATTENDANCE.FMT.M', { m });
+  }
+
+  /** Tooltip text for a day pill status (no_record is not a stored status code). */
+  dayStatusLabel(s: string): string {
+    if (!s || s === 'no_record') return this.lang.t('ATTENDANCE.NO_RECORD');
+    const key = `STATUS.${s}`;
+    const label = this.lang.t(key);
+    return label !== key ? label : s;
+  }
+
+  /** Short weekday name in the active language for a chart point ({day:'Mon', date:'2026-10-15'}). */
+  private dayLabel(d: any): string {
+    if (!d?.date) return d?.day ?? '';
+    try { return formatDate(d.date, 'EEE', this.lang.locale()); } catch { return d.day ?? ''; }
   }
 
   statusClass(s: string): string {
@@ -214,7 +239,7 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
   private renderWeeklyAdminChart(): void {
     const el = document.getElementById('adminWeekChart') as HTMLCanvasElement;
     if (!el || !this.data?.weekly_trend) return;
-    const labels  = this.data.weekly_trend.map((d: any) => d.day);
+    const labels  = this.data.weekly_trend.map((d: any) => this.dayLabel(d));
     const present = this.data.weekly_trend.map((d: any) => d.present);
     const absent  = this.data.weekly_trend.map((d: any) => d.absent);
     this.charts.push(new Chart(el, {
@@ -222,8 +247,8 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
       data: {
         labels,
         datasets: [
-          { label: 'Present', data: present, backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 6 },
-          { label: 'Absent',  data: absent,  backgroundColor: 'rgba(239,68,68,0.55)',  borderRadius: 6 },
+          { label: this.lang.t('ATTENDANCE.DASH.CHART_PRESENT'), data: present, backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 6 },
+          { label: this.lang.t('ATTENDANCE.DASH.CHART_ABSENT'),  data: absent,  backgroundColor: 'rgba(239,68,68,0.55)',  borderRadius: 6 },
         ],
       },
       options: this.barOpts(),
@@ -241,8 +266,8 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
       data: {
         labels,
         datasets: [
-          { label: 'Present', data: present, backgroundColor: 'rgba(59,130,246,0.75)', borderRadius: 6 },
-          { label: 'Absent',  data: absent,  backgroundColor: 'rgba(239,68,68,0.55)',  borderRadius: 6 },
+          { label: this.lang.t('ATTENDANCE.DASH.CHART_PRESENT'), data: present, backgroundColor: 'rgba(59,130,246,0.75)', borderRadius: 6 },
+          { label: this.lang.t('ATTENDANCE.DASH.CHART_ABSENT'),  data: absent,  backgroundColor: 'rgba(239,68,68,0.55)',  borderRadius: 6 },
         ],
       },
       options: { ...this.barOpts(), indexAxis: 'y' as const },
@@ -252,7 +277,7 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
   private renderWeeklyEmployeeChart(): void {
     const el = document.getElementById('empWeekChart') as HTMLCanvasElement;
     if (!el || !this.data?.weekly) return;
-    const labels = this.data.weekly.map((d: any) => d.day);
+    const labels = this.data.weekly.map((d: any) => this.dayLabel(d));
     const hours  = this.data.weekly.map((d: any) =>
       d.total_minutes ? +(d.total_minutes / 60).toFixed(1) : 0
     );
@@ -267,7 +292,7 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
       data: {
         labels,
         datasets: [{
-          label: 'Hours worked',
+          label: this.lang.t('ATTENDANCE.DASH.CHART_HOURS_WORKED'),
           data:  hours,
           backgroundColor: colors,
           borderRadius: 8,
@@ -276,7 +301,7 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
       options: {
         ...this.barOpts(),
         scales: {
-          y: { ...this.axisStyle(), title: { display: true, text: 'Hours', color: '#484f58', font: { size: 11 } } },
+          y: { ...this.axisStyle(), title: { display: true, text: this.lang.t('ATTENDANCE.DASH.CHART_HOURS'), color: '#484f58', font: { size: 11 } } },
           x: { ...this.axisStyle() },
         },
       },
@@ -284,12 +309,13 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
   }
 
   private barOpts(): any {
+    const rtl = this.lang.isRtl();
     return {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { color: '#8b949e', font: { size: 11 }, boxWidth: 12 } },
-        tooltip: { backgroundColor: '#161b22', titleColor: '#e6edf3', bodyColor: '#8b949e', borderColor: '#21262d', borderWidth: 1 },
+        legend: { rtl, labels: { color: '#8b949e', font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { rtl, backgroundColor: '#161b22', titleColor: '#e6edf3', bodyColor: '#8b949e', borderColor: '#21262d', borderWidth: 1 },
       },
       scales: {
         y: this.axisStyle(),

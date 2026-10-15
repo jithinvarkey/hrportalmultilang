@@ -3,11 +3,14 @@ import {
   ChangeDetectionStrategy, ChangeDetectorRef,
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { formatDate as ngFormatDate } from '@angular/common';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormControl } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
+import { humanize } from '../../../shared/pipes/i18n.pipes';
 
 @Component({
   standalone: false, selector: 'app-recruitment-list',
@@ -38,32 +41,34 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
   jobForm!: FormGroup; hireForm!: FormGroup;
 
   readonly jobStatuses = [
-    { value: 'draft', label: 'Draft', color: '#8b949e' },
-    { value: 'open', label: 'Open', color: '#10b981' },
-    { value: 'on_hold', label: 'On Hold', color: '#f59e0b' },
-    { value: 'closed', label: 'Closed', color: '#6b7280' },
+    // Labels come from STATUS.<value> (statusLabel pipe)
+    { value: 'draft',   color: '#8b949e' },
+    { value: 'open',    color: '#10b981' },
+    { value: 'on_hold', color: '#f59e0b' },
+    { value: 'closed',  color: '#6b7280' },
   ];
   readonly stages = [
-    { value: 'applied',   label: 'Applied',   color: '#3b82f6', icon: 'send'         },
-    { value: 'screening', label: 'Screening', color: '#6366f1', icon: 'manage_search' },
-    { value: 'interview', label: 'Interview', color: '#f59e0b', icon: 'video_call'    },
-    { value: 'offer',     label: 'Offer',     color: '#0ea5e9', icon: 'local_offer'   },
-    { value: 'hired',     label: 'Hired',     color: '#10b981', icon: 'how_to_reg'    },
-    { value: 'rejected',  label: 'Rejected',  color: '#ef4444', icon: 'cancel'        },
+    // Labels come from STATUS.<value> (statusLabel pipe)
+    { value: 'applied',   color: '#3b82f6', icon: 'send'          },
+    { value: 'screening', color: '#6366f1', icon: 'manage_search' },
+    { value: 'interview', color: '#f59e0b', icon: 'video_call'    },
+    { value: 'offer',     color: '#0ea5e9', icon: 'local_offer'   },
+    { value: 'hired',     color: '#10b981', icon: 'how_to_reg'    },
+    { value: 'rejected',  color: '#ef4444', icon: 'cancel'        },
   ];
   readonly employmentTypes = [
-    { value: 'full_time', label: 'Full Time' },
-    { value: 'part_time', label: 'Part Time' },
-    { value: 'contract',  label: 'Contract'  },
-    { value: 'intern',    label: 'Intern'    },
+    { value: 'full_time', label: 'RECRUITMENT.EMPLOYMENT_TYPE.full_time' },
+    { value: 'part_time', label: 'RECRUITMENT.EMPLOYMENT_TYPE.part_time' },
+    { value: 'contract',  label: 'RECRUITMENT.EMPLOYMENT_TYPE.contract'  },
+    { value: 'intern',    label: 'RECRUITMENT.EMPLOYMENT_TYPE.intern'    },
   ];
   readonly statTiles = [
-    { key: 'open_jobs',        label: 'Open Jobs',        color: '#10b981', icon: 'work'       },
-    { key: 'total_applicants', label: 'Total Applicants', color: '#3b82f6', icon: 'people'      },
-    { key: 'new_this_week',    label: 'New This Week',    color: '#6366f1', icon: 'person_add'  },
-    { key: 'in_interview',     label: 'In Interview',     color: '#f59e0b', icon: 'video_call'  },
-    { key: 'offers_sent',      label: 'Offers Sent',      color: '#0ea5e9', icon: 'local_offer' },
-    { key: 'hired',            label: 'Hired',            color: '#10b981', icon: 'how_to_reg'  },
+    { key: 'open_jobs',        label: 'RECRUITMENT.STATS.OPEN_JOBS',        color: '#10b981', icon: 'work'        },
+    { key: 'total_applicants', label: 'RECRUITMENT.STATS.TOTAL_APPLICANTS', color: '#3b82f6', icon: 'people'      },
+    { key: 'new_this_week',    label: 'RECRUITMENT.STATS.NEW_THIS_WEEK',    color: '#6366f1', icon: 'person_add'  },
+    { key: 'in_interview',     label: 'RECRUITMENT.STATS.IN_INTERVIEW',     color: '#f59e0b', icon: 'video_call'  },
+    { key: 'offers_sent',      label: 'RECRUITMENT.STATS.OFFERS_SENT',      color: '#0ea5e9', icon: 'local_offer' },
+    { key: 'hired',            label: 'RECRUITMENT.STATS.HIRED',            color: '#10b981', icon: 'how_to_reg'  },
   ];
   readonly displayedColumns = ['title', 'department', 'type', 'applicants', 'status', 'actions'];
 
@@ -128,11 +133,29 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
   cvFile: File | null = null;
   cvFileError = '';
 
+  // Source values are stored as-is in the database; their display text comes from RECRUITMENT.SOURCE.*
   readonly sources  = ['LinkedIn', 'Walk-in', 'Referral', 'Website', 'Agency', 'Job Portal', 'Other'];
+  private readonly sourceKeys: Record<string, string> = {
+    'LinkedIn': 'LINKEDIN', 'Walk-in': 'WALK_IN', 'Referral': 'REFERRAL', 'Website': 'WEBSITE',
+    'Agency': 'AGENCY', 'Job Portal': 'JOB_PORTAL', 'Other': 'OTHER',
+  };
   readonly ratings  = [
-    { value: 'shortlist', label: 'Shortlist', color: '#10b981' },
-    { value: 'hold',      label: 'Hold',      color: '#f59e0b' },
-    { value: 'reject',    label: 'Reject',    color: '#ef4444' },
+    { value: 'shortlist', label: 'RECRUITMENT.RATING.shortlist', color: '#10b981' },
+    { value: 'hold',      label: 'RECRUITMENT.RATING.hold',      color: '#f59e0b' },
+    { value: 'reject',    label: 'RECRUITMENT.RATING.reject',    color: '#ef4444' },
+  ];
+  // Round values are stored as-is in the database; labels come from RECRUITMENT.ROUND.*
+  readonly interviewRounds = [
+    { value: 'HR',        label: 'RECRUITMENT.ROUND.HR'        },
+    { value: 'Technical', label: 'RECRUITMENT.ROUND.TECHNICAL' },
+    { value: 'Manager',   label: 'RECRUITMENT.ROUND.MANAGER'   },
+    { value: 'Final',     label: 'RECRUITMENT.ROUND.FINAL'     },
+  ];
+  readonly onboardingTaskKeys = [
+    'LAPTOP', 'ACCOUNTS', 'ID_BADGE', 'WORKSTATION', 'CONTRACT', 'PERSONAL_DOCS', 'BANK_PAYROLL', 'COMPLIANCE', 'TEAM_INTRO',
+  ];
+  readonly requiredDocKeys = [
+    'NATIONAL_ID', 'CERTIFICATES', 'BANK_DETAILS', 'SIGNED_CONTRACT', 'PASSPORT', 'MEDICAL',
   ];
 
   private readonly api = '/api/v1/recruitment';
@@ -144,6 +167,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
     private readonly fb: FormBuilder,
     private readonly auth: AuthService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly lang: LanguageService,
   ) {}
 
   ngOnInit(): void {
@@ -309,7 +333,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.applicantJobsLoading = false;
-          this.applicantEditError = 'Could not load job positions. Close and reopen Edit details to retry.';
+          this.applicantEditError = this.lang.t('RECRUITMENT.MSG.JOB_POSITIONS_LOAD_FAILED');
           this.cdr.markForCheck();
         },
       });
@@ -322,7 +346,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
     this.applicantEditForm.patchValue(body);
     if (this.applicantEditForm.invalid) {
       this.applicantEditForm.markAllAsTouched();
-      this.applicantEditError = 'Select a position and enter a name, valid email and phone. Salary must be between 0 and 99,999,999.99 SAR.';
+      this.applicantEditError = this.lang.t('RECRUITMENT.MSG.APPLICANT_EDIT_INVALID');
       return;
     }
     ['expected_salary', 'available_from', 'cover_letter_text'].forEach(key => { if (body[key] === '') body[key] = null; });
@@ -337,14 +361,14 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
           this.selectedApp = { ...this.selectedApp, ...response.application };
           this.editingApplicant = false;
         }
-        this.successMsg = 'Applicant details updated.';
+        this.successMsg = this.lang.t('RECRUITMENT.MSG.APPLICANT_UPDATED');
         this.loadApplications(this.selectedJobFilter ?? undefined);
         this.loadJobs(this.currentPage);
         this.cdr.markForCheck();
       },
       error: err => {
         this.applicantEditBusy = false;
-        this.applicantEditError = this.firstError(err) || 'Failed to save applicant details.';
+        this.applicantEditError = this.firstError(err) || this.lang.t('RECRUITMENT.MSG.APPLICANT_SAVE_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -368,7 +392,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (stage === 'rejected' && !confirm(`Reject ${app.applicant_name}? A rejection email will be sent to ${app.applicant_email}.`)) {
+    if (stage === 'rejected' && !confirm(this.lang.t('RECRUITMENT.CONFIRM.REJECT_APPLICANT', { name: app.applicant_name, email: app.applicant_email }))) {
       return;
     }
 
@@ -376,13 +400,13 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
       next: (r: any) => {
         app.stage = stage;
         if (this.selectedApp?.id === app.id) this.selectedApp.stage = stage;
-        this.successMsg = r?.message || `Moved to ${stage}`;
+        this.successMsg = r?.message || this.lang.t('RECRUITMENT.MSG.MOVED_TO', { stage: this.stageLabel(stage) });
         this.loadStats();
         setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3000);
         this.cdr.markForCheck();
       },
       error: (e: any) => {
-        this.errorMsg = this.firstError(e) || e?.error?.message || 'Failed to update applicant stage.';
+        this.errorMsg = this.firstError(e) || e?.error?.message || this.lang.t('RECRUITMENT.MSG.STAGE_UPDATE_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -436,7 +460,10 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
           this.offerSubmitting  = false;
           this.showOfferForm    = false;
           this.selectedApp.stage = 'offer';
-          this.successMsg = `Offer sent to ${r?.email_to || 'candidate'}${r?.email_cc ? ' and copied to ' + r.email_cc : ''}.`;
+          const to = r?.email_to || this.lang.t('RECRUITMENT.MSG.THE_CANDIDATE');
+          this.successMsg = r?.email_cc
+            ? this.lang.t('RECRUITMENT.MSG.OFFER_SENT_CC', { to, cc: r.email_cc })
+            : this.lang.t('RECRUITMENT.MSG.OFFER_SENT', { to });
           this.loadStats();
           setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3000);
           this.cdr.markForCheck();
@@ -444,7 +471,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
         error: (e: any) => {
           this.offerSubmitting = false;
           const validation = e?.error?.errors ? Object.values(e.error.errors).flat().join(' ') : '';
-          this.errorMsg = validation || e?.error?.message || 'Failed to send offer.';
+          this.errorMsg = validation || e?.error?.message || this.lang.t('RECRUITMENT.MSG.OFFER_FAILED');
           this.cdr.markForCheck();
         },
       });
@@ -471,15 +498,15 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
   }
 
   interviewLocationLabel(): string {
-    if (this.interviewForm.format === 'in_person') return 'Interview Location';
-    if (this.interviewForm.format === 'phone') return 'Phone / Call Details';
-    return 'Meeting Link';
+    if (this.interviewForm.format === 'in_person') return this.lang.t('RECRUITMENT.INTERVIEW.LOCATION');
+    if (this.interviewForm.format === 'phone') return this.lang.t('RECRUITMENT.INTERVIEW.PHONE_DETAILS');
+    return this.lang.t('RECRUITMENT.INTERVIEW.MEETING_LINK');
   }
 
   interviewLocationPlaceholder(): string {
     if (this.interviewForm.format === 'in_person') return this.defaultInterviewMapLink;
-    if (this.interviewForm.format === 'phone') return 'e.g. HR will call the applicant mobile number';
-    return 'e.g. https://meet.google.com/...';
+    if (this.interviewForm.format === 'phone') return this.lang.t('RECRUITMENT.INTERVIEW.PHONE_PLACEHOLDER');
+    return this.lang.t('RECRUITMENT.INTERVIEW.LINK_PLACEHOLDER');
   }
 
   isInterviewerSelected(employeeId: number): boolean {
@@ -530,14 +557,14 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
         if (this.selectedApp) this.selectedApp.stage = 'interview';
         const app = this.applications.find(a => a.id === this.selectedApp?.id);
         if (app) app.stage = 'interview';
-        this.successMsg = r?.message || 'Interview scheduled and invitation email sent.';
+        this.successMsg = r?.message || this.lang.t('RECRUITMENT.MSG.INTERVIEW_SCHEDULED');
         this.loadStats();
         setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3000);
         this.cdr.markForCheck();
       },
       error: (e: any) => {
         this.interviewSubmitting = false;
-        this.errorMsg = e?.error?.message ?? 'Failed.';
+        this.errorMsg = e?.error?.message ?? this.lang.t('RECRUITMENT.MSG.INTERVIEW_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -548,7 +575,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
     this.http.put(`${this.api}/applications/${app.id}`, { hr_notes: this.hrNotesText })
       .pipe(takeUntil(this.destroy$)).subscribe({
         next: () => { app.hr_notes = this.hrNotesText; this.editingNotes = false; this.cdr.markForCheck(); },
-        error: err => { this.applicantEditError = this.firstError(err) || 'Failed to save notes.'; this.cdr.markForCheck(); },
+        error: err => { this.applicantEditError = this.firstError(err) || this.lang.t('RECRUITMENT.MSG.NOTES_SAVE_FAILED'); this.cdr.markForCheck(); },
       });
   }
 
@@ -601,7 +628,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => {
         this.submitting = false;
-        this.errorMsg = err?.error?.message ?? 'Hire failed.';
+        this.errorMsg = err?.error?.message ?? this.lang.t('RECRUITMENT.MSG.HIRE_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -609,17 +636,16 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
 
   hireDepartmentName(): string {
     const job = this.selectedApp?.job_posting;
-    return job?.department?.name
-      ?? this.departments.find(d => Number(d.id) === Number(job?.department_id))?.name
-      ?? 'Not specified';
+    const dept = job?.department ?? this.departments.find(d => Number(d.id) === Number(job?.department_id));
+    return this.locName(dept) || this.lang.t('RECRUITMENT.COMMON.NOT_SPECIFIED');
   }
 
   hirePositionName(): string {
     const job = this.selectedApp?.job_posting;
-    return job?.designation?.title
-      ?? this.designations.find(d => Number(d.id) === Number(job?.designation_id))?.title
-      ?? job?.title
-      ?? 'Not specified';
+    const designation = job?.designation ?? this.designations.find(d => Number(d.id) === Number(job?.designation_id));
+    return this.locName(designation, 'title')
+      || job?.title
+      || this.lang.t('RECRUITMENT.COMMON.NOT_SPECIFIED');
   }
 
   openJobForm(job?: any): void {
@@ -666,8 +692,8 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
     if (this.jobForm.invalid) {
       this.jobForm.markAllAsTouched();
       this.errorMsg = this.jobForm.get('designation_id')?.invalid
-        ? 'Please select a job position.'
-        : 'Please complete the required fields.';
+        ? this.lang.t('RECRUITMENT.MSG.SELECT_JOB_POSITION')
+        : this.lang.t('MESSAGES.FILL_REQUIRED');
       this.cdr.markForCheck();
       return;
     }
@@ -684,14 +710,14 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
     req.pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.submitting = false; this.showJobForm = false;
-        this.successMsg = this.editJobId ? 'Job updated.' : 'Job posted.';
+        this.successMsg = this.lang.t(this.editJobId ? 'RECRUITMENT.MSG.JOB_UPDATED' : 'RECRUITMENT.MSG.JOB_POSTED');
         this.loadJobs(this.currentPage); this.loadStats();
         setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3000);
         this.cdr.markForCheck();
       },
       error: (err: any) => {
         this.submitting = false;
-        this.errorMsg = this.firstError(err) || err?.error?.message || 'Save failed.';
+        this.errorMsg = this.firstError(err) || err?.error?.message || this.lang.t('MESSAGES.SAVE_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -699,7 +725,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
 
   deleteJob(id: number, event: Event): void {
     event.stopPropagation();
-    if (!confirm('Delete this job posting?')) return;
+    if (!confirm(this.lang.t('RECRUITMENT.CONFIRM.DELETE_JOB'))) return;
     this.http.delete(`${this.api}/jobs/${id}`).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => { this.loadJobs(this.currentPage); this.loadStats(); this.cdr.markForCheck(); },
       error: () => {},
@@ -754,13 +780,13 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
     const f = (event.target as HTMLInputElement).files?.[0] ?? null;
     this.cvFileError = '';
     if (!f) { this.cvFile = null; return; }
-    if (f.size > 5 * 1024 * 1024) { this.cvFileError = 'Max 5 MB'; return; }
+    if (f.size > 5 * 1024 * 1024) { this.cvFileError = this.lang.t('RECRUITMENT.MSG.MAX_FILE_SIZE'); return; }
     this.cvFile = f;
   }
 
   submitCv(): void {
     if (!this.cvForm.applicant_name || !this.cvForm.applicant_email || !this.cvForm.applicant_phone) {
-      this.errorMsg = 'Full name, email, and phone are required.';
+      this.errorMsg = this.lang.t('RECRUITMENT.MSG.CV_REQUIRED_FIELDS');
       this.cdr.markForCheck();
       return;
     }
@@ -778,7 +804,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
       },
       error: (e: any) => {
         this.cvFormSubmitting = false;
-        this.errorMsg = e?.error?.message || 'Failed to save CV';
+        this.errorMsg = e?.error?.message || this.lang.t('RECRUITMENT.MSG.CV_SAVE_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -797,10 +823,10 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
   }
 
   deleteCv(cv: any): void {
-    if (!confirm(`Remove ${cv.applicant_name} from CV bank?`)) return;
+    if (!confirm(this.lang.t('RECRUITMENT.CONFIRM.REMOVE_CV', { name: cv.applicant_name }))) return;
     this.http.delete(`${this.api}/cv-bank/${cv.id}`).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => { this.cvBankEntries = this.cvBankEntries.filter(c => c.id !== cv.id); this.cdr.markForCheck(); },
-      error: (e: any) => alert(e?.error?.message || 'Delete failed'),
+      error: (e: any) => alert(e?.error?.message || this.lang.t('MESSAGES.DELETE_FAILED')),
     });
   }
 
@@ -817,12 +843,12 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$)).subscribe({
         next: () => {
           this.showLinkModal = false;
-          this.successMsg = 'CV linked to job posting — appears in pipeline now.';
+          this.successMsg = this.lang.t('RECRUITMENT.MSG.CV_LINKED');
           this.loadCvBank();
           setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 4000);
           this.cdr.markForCheck();
         },
-        error: (e: any) => alert(e?.error?.message || 'Link failed'),
+        error: (e: any) => alert(e?.error?.message || this.lang.t('RECRUITMENT.MSG.LINK_FAILED')),
       });
   }
 
@@ -830,13 +856,39 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
     return ({ shortlist:'#10b981', hold:'#f59e0b', reject:'#ef4444' } as any)[r] ?? '#8b949e';
   }
   ratingLabel(r: string): string {
-    return ({ shortlist:'Shortlist', hold:'Hold', reject:'Reject' } as any)[r] ?? r;
+    return ['shortlist', 'hold', 'reject'].includes(r) ? this.lang.t('RECRUITMENT.RATING.' + r) : (r ?? '');
+  }
+  sourceLabel(source: string): string {
+    const key = this.sourceKeys[source];
+    return key ? this.lang.t('RECRUITMENT.SOURCE.' + key) : source;
+  }
+  roundLabel(round: string | null): string {
+    const match = this.interviewRounds.find(r => r.value === round);
+    return match ? this.lang.t(match.label) : (round || '—');
+  }
+  employmentTypeLabel(type: string | null): string {
+    const match = this.employmentTypes.find(t => t.value === type);
+    return match ? this.lang.t(match.label) : humanize(type || '');
+  }
+  stageLabel(stage: string): string {
+    const key = `STATUS.${stage}`;
+    const label = this.lang.t(key);
+    return label !== key ? label : humanize(stage || '');
+  }
+  /** Arabic column of bilingual master data (departments.name_ar, designations.title_ar) when Arabic is active. */
+  locName(record: any, field = 'name'): string {
+    if (!record) return '';
+    if (this.lang.current() === 'ar') {
+      const ar = record[`${field}_ar`];
+      if (ar !== null && ar !== undefined && String(ar).trim() !== '') return ar;
+    }
+    return record[field] ?? '';
   }
   cvDepartmentName(cv: any): string {
-    return cv?.department?.name || cv?.job_posting?.department?.name || 'No department';
+    return this.locName(cv?.department) || this.locName(cv?.job_posting?.department) || this.lang.t('RECRUITMENT.CV.NO_DEPARTMENT');
   }
   cvPositionLabel(cv: any): string {
-    return cv?.position_applied || cv?.job_posting?.title || 'Position not specified';
+    return cv?.position_applied || cv?.job_posting?.title || this.lang.t('RECRUITMENT.CV.POSITION_NOT_SPECIFIED');
   }
   get jobPositionOptions(): string[] {
     const values = [
@@ -862,20 +914,22 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
   }
 
   appsByStage(stage: string): any[] { return this.applications.filter(a => a.stage === stage); }
-  stageData(s: string): any { return this.stages.find(x => x.value === s) ?? { label: s, color: '#8b949e', icon: 'help' }; }
+  stageData(s: string): any { return this.stages.find(x => x.value === s) ?? { value: s, color: '#8b949e', icon: 'help' }; }
   avatarColor(name?: string|null): string { const p=['#3b82f6','#10b981','#f59e0b','#ef4444','#6366f1','#0ea5e9','#f97316','#a78bfa']; return p[(name?.charCodeAt(0)??0)%p.length]; }
   initial(name?: string|null): string { return name?.charAt(0)?.toUpperCase() ?? '?'; }
-  formatDate(d: string|null): string { if(!d) return '—'; return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+  formatDate(d: string|null): string {
+    if (!d) return '—';
+    try { return ngFormatDate(d, 'dd MMM y', this.lang.locale()); } catch { return String(d); }
+  }
   formatDateTime(d: string|null): string {
     if (!d) return '—';
-    return new Date(d).toLocaleString('en-GB', {
-      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-    });
+    try { return ngFormatDate(d, 'dd MMM y, HH:mm', this.lang.locale()); } catch { return String(d); }
   }
 
   interviewFormat(format: string|null): string {
-    const labels: Record<string, string> = { video: 'Video', in_person: 'In person', phone: 'Phone' };
-    return labels[format ?? ''] ?? '—';
+    const keys: Record<string, string> = { video: 'VIDEO', in_person: 'IN_PERSON', phone: 'PHONE' };
+    const key = keys[format ?? ''];
+    return key ? this.lang.t('RECRUITMENT.INTERVIEW.FORMAT.' + key) : '—';
   }
 
   isWebLink(value: string|null): boolean { return /^https?:\/\//i.test(value ?? ''); }
@@ -908,13 +962,13 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
     const f = (event.target as HTMLInputElement).files?.[0] ?? null;
     this.applicantFileError = '';
     if (!f) { this.applicantFile = null; return; }
-    if (f.size > 5 * 1024 * 1024) { this.applicantFileError = 'Max 5 MB'; return; }
+    if (f.size > 5 * 1024 * 1024) { this.applicantFileError = this.lang.t('RECRUITMENT.MSG.MAX_FILE_SIZE'); return; }
     this.applicantFile = f;
   }
 
   submitApplicant(): void {
     if (!this.applicantForm.job_posting_id || !this.applicantForm.applicant_name || !this.applicantForm.applicant_email || !this.applicantForm.applicant_phone) {
-      this.errorMsg = 'Job posting, full name, email, and phone are required.';
+      this.errorMsg = this.lang.t('RECRUITMENT.MSG.APPLICANT_REQUIRED_FIELDS');
       this.cdr.markForCheck();
       return;
     }
@@ -932,7 +986,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
         next: () => {
           this.addApplicantBusy = false;
           this.showAddApplicant = false;
-          this.successMsg = `${this.applicantForm.applicant_name} added to the pipeline.`;
+          this.successMsg = this.lang.t('RECRUITMENT.MSG.APPLICANT_ADDED', { name: this.applicantForm.applicant_name });
           this.loadApplications(this.selectedJobFilter ?? undefined);
           this.loadStats();
           setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 4000);
@@ -942,7 +996,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
           this.addApplicantBusy = false;
           this.errorMsg = e?.error?.message ?? e?.error?.errors
             ? Object.values(e.error.errors).flat().join(' ')
-            : 'Failed to add applicant.';
+            : this.lang.t('RECRUITMENT.MSG.APPLICANT_ADD_FAILED');
           this.cdr.markForCheck();
         },
       });

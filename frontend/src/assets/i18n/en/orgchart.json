@@ -1,0 +1,48 @@
+{
+  "ORGCHART": {
+    "ABOUT": "About",
+    "ACTIVE_TEAM": "Active Team",
+    "ADD_DEPARTMENT": "Add Department",
+    "BUDGET": "Budget",
+    "COLLAPSE": "Collapse",
+    "COLLAPSE_ALL": "Collapse All",
+    "COUNT_ACTIVE": "{{count}} active",
+    "COUNT_INACTIVE": "{{count}} inactive",
+    "EXPAND": "Expand",
+    "EXPAND_ALL": "Expand All",
+    "FORM": {
+      "CODE_PLACEHOLDER": "e.g. ENG",
+      "DEPARTMENT_MANAGER": "Department Manager",
+      "DESCRIPTION_PLACEHOLDER": "Brief description of this department…",
+      "EDIT_DEPARTMENT": "Edit Department",
+      "ERR_REQUIRED": "Name and code are required.",
+      "NAME_AR": "Name (Arabic)",
+      "NAME_EN": "Name (English)",
+      "NAME_PLACEHOLDER": "e.g. Engineering",
+      "NEW_DEPARTMENT": "New Department",
+      "NONE_OPTION": "— None —",
+      "PARENT_DEPARTMENT": "Parent Department",
+      "SAVE_DEPARTMENT": "Save Department",
+      "TOP_LEVEL": "— Top Level —"
+    },
+    "HEADCOUNT_BUDGET": "Headcount Budget",
+    "HEADCOUNT_UTILISATION": "Headcount Utilisation",
+    "INACTIVE_TEAM": "Inactive Team",
+    "MANAGER": "Manager",
+    "NO_ACTIVE_EMPLOYEES": "No active employees in this department",
+    "NO_MANAGER": "No manager assigned",
+    "PLUS_INACTIVE": "+{{count}} inactive",
+    "SEARCHING": "Searching…",
+    "SEARCH_PLACEHOLDER": "Search employee or department…",
+    "STAFF": "Staff",
+    "SUBTITLE": "{{active}} active employees · {{inactive}} inactive · {{departments}} departments",
+    "SUB_DEPARTMENTS": "Sub-Departments",
+    "SUB_DEPTS": "Sub-depts",
+    "TITLE": "Organisation Chart",
+    "VIEW": {
+      "GRID": "Grid",
+      "LIST": "List",
+      "TREE": "Tree"
+    }
+  }
+}

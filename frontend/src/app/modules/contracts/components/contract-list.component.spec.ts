@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { ReactiveFormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { ContractListComponent } from './contract-list.component';
@@ -21,7 +22,7 @@ describe('ContractListComponent — document upload', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       declarations: [ContractListComponent],
-      imports: [HttpClientTestingModule, ReactiveFormsModule],
+      imports: [HttpClientTestingModule, ReactiveFormsModule, TranslateModule.forRoot()],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
@@ -51,7 +52,7 @@ describe('ContractListComponent — document upload', () => {
 
     const bad = { files: [fileOf('m.exe', 'application/octet-stream')], value: 'x' } as any;
     component.onFileSelected({ target: bad } as unknown as Event);
-    expect(component.formError).toContain('PDF');
+    expect(component.formError).toContain('FILE_TYPE');
     expect(component.selectedFile).toBeNull();
   });
 
@@ -59,7 +60,7 @@ describe('ContractListComponent — document upload', () => {
     flushInit();
     const big = { files: [fileOf('big.pdf', 'application/pdf', 11 * 1024 * 1024)], value: 'x' } as any;
     component.onFileSelected({ target: big } as unknown as Event);
-    expect(component.formError).toContain('10 MB');
+    expect(component.formError).toContain('FILE_SIZE');
     expect(component.selectedFile).toBeNull();
   });
 

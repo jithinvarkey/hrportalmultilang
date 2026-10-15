@@ -164,7 +164,7 @@
 .chart-badge-green {
   background: rgba(16,185,129,.12); color: var(--success); border-color: rgba(16,185,129,.2);
 }
-.chart-body { padding: 12px 16px 14px; position: relative; }
+.chart-body { padding: 12px 16px 14px; position: relative; height: 180px; box-sizing: content-box; }
 
 /* ── Tables ───────────────────────────────────── */
 .tables-grid {
@@ -196,7 +196,7 @@
   padding: 8px 14px; font-size: 10px; font-weight: 700;
   color: var(--text3); text-transform: uppercase; letter-spacing: .1em;
   background: var(--surface2); border-bottom: 1px solid var(--border);
-  text-align: left; white-space: nowrap;
+  text-align: start; white-space: nowrap;
 }
 .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .data-table tbody tr:last-child td { border-bottom: none; }
@@ -219,7 +219,7 @@
 
 .overdue-chip {
   display: inline-block; padding: 1px 6px; border-radius: 6px; font-size: 10px; font-weight: 600;
-  background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.2); margin-left: 4px;
+  background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.2); margin-inline-start: 4px;
 }
 
 /* ── Badges ───────────────────────────────────── */
@@ -355,4 +355,129 @@
 .mono { font-family:'JetBrains Mono',monospace; font-size:12px; }
 
 /* 8-table grid */
-.tables-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:16px; margin-bottom:24px; }
+.tables-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(360px,100%),1fr)); gap:16px; margin-bottom:24px; }
+
+/* ══════════════════════════════════════════════════
+   RTL
+══════════════════════════════════════════════════ */
+/* The arrow is mirrored with .flip-rtl; keep the mirror while nudging it on hover. */
+:host-context([dir='rtl']) .stat-card:hover .sc-arrow { transform: scaleX(-1) translateX(3px); }
+.dash-greeting, .dash-subtitle { overflow-wrap: anywhere; }
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE — tablet ≤1024px, mobile ≤768px, small ≤480px
+══════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  /* The global safety net uses 160px stat tiles; these cards are richer, keep two per row. */
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .chart-wide { flex: 1 1 100%; min-width: 0; }
+  .chart-sm   { flex: 1 1 calc(50% - 7px); min-width: 0; }
+  .sc-big { font-size: 36px; }
+}
+
+@media (max-width: 768px) {
+  .dash-header { align-items: flex-start; }
+  .dash-greeting { font-size: 20px; }
+  .dash-header-right { width: 100%; flex-wrap: wrap; }
+  .status-pill { flex: 1 1 auto; min-height: 36px; box-sizing: border-box; }
+  .refresh-btn { min-height: 36px; }
+
+  /* KPI strip: 2-column grid instead of a single long row */
+  .kpi-strip {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 10px; gap: 4px; overflow-x: visible;
+  }
+  .kpi-item { min-width: 0; padding: 8px; }
+  .kpi-sep { display: none; }
+  .kpi-label { white-space: normal; }
+
+  .chart-sm { flex: 1 1 100%; }
+  .chart-body { height: 220px; padding: 10px 12px 12px; }
+  .chart-header { flex-wrap: wrap; gap: 6px; padding: 12px 14px 8px; }
+
+  .stat-card { padding: 16px; gap: 12px; }
+  .sc-big { font-size: 32px; }
+
+  .table-card-header { padding: 11px 12px; gap: 8px; }
+  .view-all { min-height: 36px; flex-shrink: 0; }
+  .data-table thead th, .data-table td { padding-inline: 10px; }
+  /* Three short columns fit a phone: don't inherit the global 640px table minimum. */
+  .table-scroll > .data-table { min-width: 0; }
+
+  .activity-item { padding: 10px 12px; }
+  .activity-feed { max-height: 320px; }
+}
+
+@media (max-width: 640px) {
+  .stat-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── My services (phone only) ─────────────────── */
+.services-card { display: none; }
+
+/* Phone: app-style home — greeting, service tiles, KPI tiles in a 3-column grid */
+@media (max-width: 768px) {
+  .dash-header { margin-bottom: 14px; }
+  .dash-greeting { font-size: 15px; font-weight: 500; color: var(--text2); font-family: inherit; line-height: 1.35; }
+  .accent-name { display: block; font-size: 24px; font-weight: 800; color: var(--text); margin-top: 2px; }
+  .dash-subtitle { font-size: 12.5px; margin-top: 6px; line-height: 1.5; }
+  .status-pill { display: none; }
+  .dash-header-right { width: auto; position: absolute; inset-inline-end: 12px; margin-top: 4px; }
+  .refresh-btn { padding: 0; width: 38px; min-height: 38px; justify-content: center; font-size: 0; gap: 0; border-radius: 12px; }
+  .refresh-btn mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  .dash-header { position: relative; padding-inline-end: 48px; }
+
+  .services-card {
+    display: block; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 14px 10px 10px; margin-bottom: 6px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.06);
+  }
+  .services-title { font-size: 15px; font-weight: 700; color: var(--text); padding: 0 6px 10px; }
+  .services-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 4px; }
+  .service-tile {
+    display: flex; flex-direction: column; align-items: center; gap: 7px;
+    padding: 8px 2px; border-radius: 14px; text-decoration: none; color: var(--text2);
+    -webkit-tap-highlight-color: transparent;
+    &:active { background: var(--surface2); }
+  }
+  .service-icon {
+    width: 48px; height: 48px; border-radius: 15px;
+    display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, currentColor 13%, transparent);
+    mat-icon { font-size: 24px; width: 24px; height: 24px; }
+  }
+  .service-label { font-size: 11.5px; font-weight: 600; text-align: center; line-height: 1.25; color: var(--text2); }
+
+  /* KPI tiles: icon in a tinted square, big number, label underneath */
+  .kpi-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
+    background: transparent; border: none; padding: 0;
+  }
+  .kpi-item {
+    flex-direction: column; align-items: center; text-align: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 14px 6px 12px; box-shadow: 0 4px 18px rgba(0,0,0,.05);
+  }
+  .kpi-icon {
+    width: 42px !important; height: 42px !important; font-size: 22px !important; line-height: 42px !important;
+    border-radius: 13px; text-align: center; background: color-mix(in srgb, currentColor 13%, transparent);
+  }
+  .kpi-value { font-size: 22px; }
+  .kpi-label { font-size: 11px; line-height: 1.25; }
+
+  .stat-card, .bottom-card, .chart-card, .table-card { border-radius: 18px; }
+}
+
+@media (max-width: 360px) {
+  .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .services-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 480px) {
+  .dash-greeting { font-size: 18px; }
+  .sc-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 10px; }
+  .sc-big { font-size: 28px; }
+  .chart-body { height: 200px; }
+  .qa-grid { padding: 12px; gap: 8px; }
+  .qa-btn { min-height: 76px; }
+}

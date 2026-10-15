@@ -1,0 +1,131 @@
+{
+  "ASSETS": {
+    "TITLE_MANAGER": "إدارة الأصول",
+    "TITLE_MINE": "أصولي (العهدة)",
+    "SUBTITLE_MANAGER": "تتبّع أصول الشركة وإدارتها لدى جميع الموظفين",
+    "SUBTITLE_MINE": "عرض أصول الشركة المسلّمة إليك حاليًا",
+    "REPORT": {
+      "ASSETS": "الأصول",
+      "ASSIGNMENTS": "التسليمات",
+      "MAINTENANCE": "الصيانة"
+    },
+    "CATEGORIES": "الفئات",
+    "ADD_ASSET": "إضافة أصل",
+    "STATS": {
+      "TOTAL": "إجمالي الأصول",
+      "MAINTENANCE": "تحت الصيانة",
+      "DISPOSED_LOST": "مستبعد/مفقود"
+    },
+    "FILTER": {
+      "SEARCH_PLACEHOLDER": "ابحث بالأصل أو المستلم أو الرقم الوظيفي…",
+      "ALL_STATUSES": "جميع الحالات",
+      "ALL_CATEGORIES": "جميع الفئات"
+    },
+    "TABLE": {
+      "ASSET": "الأصل",
+      "CATEGORY": "الفئة",
+      "CONDITION": "الحالة الفنية",
+      "LOCATION": "الموقع",
+      "ASSIGNED_TO": "المسلَّم إليه",
+      "ASSIGN_DATE": "تاريخ التسليم",
+      "RETURN_DATE": "تاريخ الاستلام"
+    },
+    "CURRENT": "حالي",
+    "ACTION": {
+      "ASSIGN": "تسليم",
+      "RETURN": "استلام",
+      "MAINTENANCE": "الصيانة"
+    },
+    "PAGINATOR_ARIA": "اختر صفحة الأصول",
+    "EMPTY": "لم يتم العثور على أصول.",
+    "DETAIL": {
+      "LOADING_FULL": "جارٍ تحميل التفاصيل الكاملة...",
+      "BRAND_MODEL": "العلامة التجارية / الطراز",
+      "SERIAL_NUMBER": "الرقم التسلسلي",
+      "CUSTODIAN": "صاحب العهدة",
+      "PURCHASE_DATE": "تاريخ الشراء",
+      "PURCHASE_PRICE": "سعر الشراء",
+      "WARRANTY": "الضمان",
+      "VENDOR": "المورّد",
+      "DOWNLOAD_DOCUMENT": "تنزيل المستند",
+      "ASSIGNMENT_HISTORY": "سجل التسليم",
+      "NO_ASSIGNMENT_HISTORY": "لا يوجد سجل تسليم.",
+      "MAINTENANCE_LOG": "سجل الصيانة",
+      "NO_MAINTENANCE": "لا توجد سجلات صيانة."
+    },
+    "FORM": {
+      "EDIT_TITLE": "تعديل الأصل",
+      "NEW_TITLE": "أصل جديد",
+      "ASSET_CODE": "رقم الأصل",
+      "BRAND": "العلامة التجارية",
+      "MODEL": "الطراز",
+      "PURCHASE_PRICE_SAR": "سعر الشراء (ريال)",
+      "WARRANTY_EXPIRY": "تاريخ انتهاء الضمان",
+      "DOCUMENT": "مستند (PDF/صورة ≤ 10 ميجابايت)",
+      "NONE_OPTION": "— بدون —",
+      "CREATE_ASSET": "إنشاء الأصل",
+      "PH_LOCATION": "المبنى أ، مكتب 12",
+      "PH_VENDOR": "اسم المورّد",
+      "PH_NOTES": "ملاحظات اختيارية…"
+    },
+    "ASSIGN": {
+      "TITLE": "تسليم \"{{name}}\"",
+      "SELECT_EMPLOYEE": "اختر الموظف…",
+      "ASSIGNING": "جارٍ التسليم…"
+    },
+    "RETURN": {
+      "TITLE": "استلام \"{{name}}\"",
+      "CONDITION_ON_RETURN": "الحالة عند الاستلام",
+      "PROCESSING": "جارٍ المعالجة…",
+      "CONFIRM": "تأكيد الاستلام"
+    },
+    "MAINT": {
+      "TITLE": "تسجيل صيانة لـ \"{{name}}\"",
+      "TITLE_FIELD": "العنوان",
+      "PH_TITLE": "صيانة سنوية",
+      "SCHEDULED_DATE": "التاريخ المجدول",
+      "COST_SAR": "التكلفة (ريال)",
+      "VENDOR_TECH": "المورّد / الفني",
+      "SUBMIT": "تسجيل الصيانة"
+    },
+    "CAT": {
+      "TITLE": "فئات الأصول",
+      "ICON": "الأيقونة",
+      "PH_NAME": "أجهزة تقنية المعلومات",
+      "ADD": "إضافة فئة",
+      "UPDATE": "تحديث الفئة"
+    },
+    "CONDITION": {
+      "new": "جديد",
+      "good": "جيد",
+      "fair": "مقبول",
+      "poor": "سيئ"
+    },
+    "MAINT_TYPE": {
+      "repair": "إصلاح",
+      "service": "صيانة دورية",
+      "inspection": "فحص",
+      "upgrade": "ترقية"
+    },
+    "MSG": {
+      "DETAIL_LOAD_FAILED": "تعذّر تحميل التفاصيل الكاملة للأصل.",
+      "FILE_TOO_LARGE": "يجب ألا يتجاوز حجم الملف 10 ميجابايت.",
+      "NAME_CODE_REQUIRED": "الاسم ورقم الأصل مطلوبان.",
+      "CREATED": "تم إنشاء الأصل.",
+      "UPDATED": "تم تحديث الأصل.",
+      "CONFIRM_DELETE": "هل تريد حذف الأصل \"{{name}}\"؟",
+      "DELETED": "تم حذف الأصل.",
+      "REPORT_FAILED": "تعذّر تنزيل التقرير.",
+      "EMPLOYEE_DATE_REQUIRED": "الموظف والتاريخ مطلوبان.",
+      "ASSIGNED": "تم تسليم الأصل.",
+      "ASSIGN_FAILED": "تعذّر تسليم الأصل.",
+      "RETURNED": "تم استلام الأصل.",
+      "RETURN_FAILED": "تعذّر استلام الأصل.",
+      "TITLE_REQUIRED": "العنوان مطلوب.",
+      "MAINT_LOGGED": "تم تسجيل الصيانة.",
+      "CAT_SAVED": "تم حفظ الفئة.",
+      "CAT_CONFIRM_DELETE": "هل تريد حذف الفئة \"{{name}}\"؟",
+      "CAT_DELETED": "تم حذف الفئة."
+    }
+  }
+}

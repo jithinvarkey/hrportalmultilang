@@ -1,9 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { formatDate as ngFormatDate } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
+import { humanize } from '../../../shared/pipes/i18n.pipes';
 
 @Component({
   standalone:   false,
@@ -45,13 +48,13 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   statusMsg    = '';
   statusError  = '';
 
-  /** Available status transitions shown as buttons in the hero section. */
+  /** Available status transitions shown as buttons in the hero section (labels via statusLabel pipe). */
   readonly statusOptions = [
-    { value: 'active',     label: 'Active',     color: '#10b981' },
-    { value: 'probation',  label: 'Probation',  color: '#f59e0b' },
-    { value: 'on_leave',   label: 'On Leave',   color: '#6366f1' },
-    { value: 'inactive',   label: 'Inactive',   color: '#8b949e' },
-    { value: 'terminated', label: 'Terminated', color: '#ef4444' },
+    { value: 'active',     color: '#10b981' },
+    { value: 'probation',  color: '#f59e0b' },
+    { value: 'on_leave',   color: '#6366f1' },
+    { value: 'inactive',   color: '#8b949e' },
+    { value: 'terminated', color: '#ef4444' },
   ];
 
   // ── Attendance tab state ───────────────────────────────────────────────
@@ -79,21 +82,17 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   };
 
   tabs = [
-    { id: 'profile',    label: 'Profile',      icon: 'person' },
-    { id: 'documents',  label: 'Documents',    icon: 'folder' },
-    { id: 'leave',      label: 'Leave Balance', icon: 'event_available' },
-    { id: 'onboarding', label: 'Onboarding',   icon: 'checklist' },
-    { id: 'attendance', label: 'Attendance',   icon: 'fingerprint' },
-    { id: 'contracts',  label: 'Contracts',    icon: 'description' },
-    { id: 'assets',     label: 'Assets',       icon: 'inventory_2' },
+    { id: 'profile',    label: 'EMPLOYEES.TABS.PROFILE', icon: 'person' },
+    { id: 'documents',  label: 'EMPLOYEES.TABS.DOCUMENTS', icon: 'folder' },
+    { id: 'leave',      label: 'EMPLOYEES.TABS.LEAVE_BALANCE', icon: 'event_available' },
+    { id: 'onboarding', label: 'EMPLOYEES.TABS.ONBOARDING', icon: 'checklist' },
+    { id: 'attendance', label: 'EMPLOYEES.TABS.ATTENDANCE', icon: 'fingerprint' },
+    { id: 'contracts',  label: 'EMPLOYEES.TABS.CONTRACTS', icon: 'description' },
+    { id: 'assets',     label: 'EMPLOYEES.TABS.ASSETS', icon: 'inventory_2' },
   ];
 
-  months = [
-    { v: 1, l: 'January' }, { v: 2, l: 'February' }, { v: 3, l: 'March' },
-    { v: 4, l: 'April' },   { v: 5, l: 'May' },       { v: 6, l: 'June' },
-    { v: 7, l: 'July' },    { v: 8, l: 'August' },    { v: 9, l: 'September' },
-    { v: 10, l: 'October'},{ v: 11, l: 'November' }, { v: 12, l: 'December' },
-  ];
+  /** Month options; names are rendered with the locDate pipe so they follow the active language. */
+  months = Array.from({ length: 12 }, (_, i) => ({ v: i + 1, d: new Date(2000, i, 1) }));
 
   years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - i);
   isHR = false;
@@ -106,6 +105,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly http:   HttpClient,
     private readonly auth:   AuthService,
+    private readonly lang:   LanguageService,
   ) {}
 
   ngOnInit(): void {
@@ -124,18 +124,18 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
           this.dependents   = this.employee?.dependents || [];
           const ownEmployeeId = this.auth.getUser()?.employee?.id || this.auth.getUser()?.employee_id;
           if (!this.isSaudiEmployee && (this.isHR || Number(ownEmployeeId) === Number(this.employeeId)) && !this.tabs.some(t => t.id === 'dependents')) {
-            this.tabs.splice(2, 0, { id: 'dependents', label: 'Dependents', icon: 'family_restroom' });
+            this.tabs.splice(2, 0, { id: 'dependents', label: 'EMPLOYEES.TABS.DEPENDENTS', icon: 'family_restroom' });
           }
           this.loadDocuments();
         },
         error: err => {
           this.loading = false;
           if (err?.status === 0) {
-            this.loadError = 'Cannot connect to server. Make sure the backend is running on port 8000.';
+            this.loadError = this.lang.t('MESSAGES.NETWORK_ERROR');
           } else if (err?.status === 404) {
-            this.loadError = 'Employee not found (ID may be invalid).';
+            this.loadError = this.lang.t('EMPLOYEES.DETAIL.NOT_FOUND');
           } else {
-            this.loadError = err?.error?.message || ('Server error ' + err?.status + '. Check Laravel logs.');
+            this.loadError = err?.error?.message || this.lang.t('EMPLOYEES.DETAIL.SERVER_ERROR', { status: err?.status });
           }
         },
       });
@@ -213,8 +213,8 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   }
 
   saveDependent(): void {
-    if (!this.dependentForm.full_name?.trim()) { this.dependentError = 'Dependent name is required.'; return; }
-    if (!this.dependentForm.id_number?.trim()) { this.dependentError = 'Iqama / ID number is required.'; return; }
+    if (!this.dependentForm.full_name?.trim()) { this.dependentError = this.lang.t('EMPLOYEES.DEPENDENTS.ERR_NAME'); return; }
+    if (!this.dependentForm.id_number?.trim()) { this.dependentError = this.lang.t('EMPLOYEES.DEPENDENTS.ERR_ID'); return; }
     this.dependentSaving = true; this.dependentError = '';
     const formData = new FormData();
     Object.entries(this.dependentForm).forEach(([key, value]) => {
@@ -231,7 +231,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
       error: err => {
         this.dependentSaving = false;
         const errors = err?.error?.errors;
-        this.dependentError = errors ? String(Object.values(errors)[0]?.[0] || '') : (err?.error?.message || 'Could not save dependent.');
+        this.dependentError = errors ? String(Object.values(errors)[0]?.[0] || '') : (err?.error?.message || this.lang.t('EMPLOYEES.DEPENDENTS.SAVE_FAILED'));
       }
     });
   }
@@ -254,7 +254,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
         link.click();
         URL.revokeObjectURL(url);
       },
-      error: () => this.dependentError = 'Could not download the document.',
+      error: () => this.dependentError = this.lang.t('EMPLOYEES.DOCUMENTS.DOWNLOAD_FAILED'),
     });
   }
 
@@ -263,7 +263,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   }
 
   deleteDependent(dependent: any): void {
-    if (!confirm(`Delete ${dependent.full_name}?`)) return;
+    if (!confirm(this.lang.t('EMPLOYEES.DEPENDENTS.CONFIRM_DELETE', { name: dependent.full_name }))) return;
     this.http.delete(`/api/v1/employees/${this.employeeId}/dependents/${dependent.id}`).subscribe({ next: () => this.loadDependents() });
   }
 
@@ -303,11 +303,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   }
 
   contractTypeLabel(type: string): string {
-    const m: Record<string,string> = {
-      full_time: 'Full Time', part_time: 'Part Time', contract: 'Contract',
-      intern: 'Intern', probation: 'Probation', fixed_term: 'Fixed Term', unlimited: 'Unlimited',
-    };
-    return m[type] ?? type;
+    return this.enumLabel('EMPLOYEES.CONTRACT_TYPE', type, type);
   }
 
   contractStatusClass(status: string): string {
@@ -320,7 +316,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
 
   formatDate(d: string | null): string {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    try { return ngFormatDate(d, 'dd MMM yyyy', this.lang.locale()); } catch { return d; }
   }
 
   formatSalary(s: number | null, cur = 'SAR'): string {
@@ -332,7 +328,9 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     if (!mins) return '—';
     const h = Math.floor(mins / 60);
     const m = mins % 60;
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    return h > 0
+      ? this.lang.t('EMPLOYEES.ATTENDANCE.DURATION_HM', { h, m })
+      : this.lang.t('EMPLOYEES.ATTENDANCE.DURATION_M', { m });
   }
 
   attendanceStatusClass(status: string): string {
@@ -417,7 +415,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
         this.cfPeriodStart = r?.selected_period?.start_date || '';
 
         if (!annual) {
-          this.cfNotice = 'This employee has no annual leave allocation for the current contract period yet.';
+          this.cfNotice = this.lang.t('EMPLOYEES.LEAVE.CF_NO_ALLOCATION');
         } else {
           this.cfCurrentValue = Number(annual.carried_forward_days || 0);
           this.cfValue = this.cfCurrentValue;
@@ -427,12 +425,12 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
         }
 
         if (!this.canSetCarryForward) {
-          this.cfNotice = 'Only an HR manager or system admin can change this, and only for active employees.';
+          this.cfNotice = this.lang.t('EMPLOYEES.LEAVE.CF_NOT_ALLOWED');
         }
         this.cfLoading = false;
       },
       error: err => {
-        this.cfError = err?.error?.message || 'Could not load the current carry forward value.';
+        this.cfError = err?.error?.message || this.lang.t('EMPLOYEES.LEAVE.CF_LOAD_FAILED');
         this.cfLoading = false;
       }
     });
@@ -447,10 +445,10 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     if (this.cfSaving || !this.canSetCarryForward || !this.cfPeriodStart) return;
     if (!clear && (this.cfValue === null || isNaN(Number(this.cfValue))
         || Number(this.cfValue) < 0 || Number(this.cfValue) > 999.9)) {
-      this.cfError = 'Enter a number of days from 0 to 999.9.';
+      this.cfError = this.lang.t('EMPLOYEES.LEAVE.CF_INVALID');
       return;
     }
-    if (clear && !confirm('Discard the value set by hand and go back to the calculated carry forward?')) return;
+    if (clear && !confirm(this.lang.t('EMPLOYEES.LEAVE.CF_CONFIRM_RESET'))) return;
 
     this.cfSaving = true;
     this.cfError = '';
@@ -467,7 +465,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
       error: err => {
         this.cfError = err?.error?.message
           || err?.error?.errors?.carried_forward_days?.[0]
-          || 'Could not update carry forward.';
+          || this.lang.t('EMPLOYEES.LEAVE.CF_SAVE_FAILED');
         this.cfSaving = false;
       }
     });
@@ -576,10 +574,10 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   }
 
   submitUpload(): void {
-    if (!this.uploadData.title) { this.uploadError = 'Document title is required.'; return; }
-    if (!this.uploadData.type)  { this.uploadError = 'Document type is required.'; return; }
-    if (!this.uploadData.file)  { this.uploadError = 'Please select a file to upload.'; return; }
-    if (this.uploadData.file.size > 10 * 1024 * 1024) { this.uploadError = 'File must be under 10MB.'; return; }
+    if (!this.uploadData.title) { this.uploadError = this.lang.t('EMPLOYEES.DOCUMENTS.ERR_TITLE'); return; }
+    if (!this.uploadData.type)  { this.uploadError = this.lang.t('EMPLOYEES.DOCUMENTS.ERR_TYPE'); return; }
+    if (!this.uploadData.file)  { this.uploadError = this.lang.t('EMPLOYEES.DOCUMENTS.ERR_FILE'); return; }
+    if (this.uploadData.file.size > 10 * 1024 * 1024) { this.uploadError = this.lang.t('EMPLOYEES.DOCUMENTS.ERR_SIZE'); return; }
 
     this.uploading      = true;
     this.uploadProgress = 0;
@@ -613,13 +611,13 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
           clearInterval(ivl);
           this.uploading      = false;
           this.uploadProgress = 0;
-          this.uploadError    = err?.error?.message || 'Upload failed. Please try again.';
+          this.uploadError    = err?.error?.message || this.lang.t('EMPLOYEES.DOCUMENTS.UPLOAD_FAILED');
         },
       });
   }
 
   deleteDoc(docId: number): void {
-    if (!confirm('Delete this document? This cannot be undone.')) return;
+    if (!confirm(this.lang.t('EMPLOYEES.DOCUMENTS.CONFIRM_DELETE'))) return;
     this.http.delete(`/api/v1/employees/${this.employee.id}/documents/${docId}`)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -640,7 +638,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
         },
         error: err => {
           doc.verifying = false;
-          this.uploadError = err?.error?.message || 'Could not approve the document.';
+          this.uploadError = err?.error?.message || this.lang.t('EMPLOYEES.DOCUMENTS.APPROVE_FAILED');
         },
       });
   }
@@ -664,7 +662,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
           URL.revokeObjectURL(url);
         },
         error: err => {
-          this.uploadError = err?.error?.message || 'Could not download document.';
+          this.uploadError = err?.error?.message || this.lang.t('EMPLOYEES.DOCUMENTS.DOWNLOAD_FAILED');
         },
       });
   }
@@ -707,13 +705,13 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res) => {
           this.employee.status = res.employee?.status ?? newStatus;
-          this.statusMsg       = `Status updated to "${newStatus.replace('_', ' ')}"`;
+          this.statusMsg       = this.lang.t('EMPLOYEES.DETAIL.STATUS_UPDATED', { status: this.enumLabel('STATUS', newStatus) });
           this.statusSaving    = false;
           // Reload stats strip on list if we navigate back
           setTimeout(() => { this.statusMsg = ''; }, 4000);
         },
         error: (err) => {
-          this.statusError  = err?.error?.message ?? 'Failed to update status.';
+          this.statusError  = err?.error?.message ?? this.lang.t('EMPLOYEES.DETAIL.STATUS_FAILED');
           this.statusSaving = false;
           setTimeout(() => { this.statusError = ''; }, 5000);
         },
@@ -749,7 +747,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
 
   saveTask(): void {
     if (!this.taskForm.title || !this.taskForm.category) {
-      this.taskFormError = 'Title and category are required.'; return;
+      this.taskFormError = this.lang.t('EMPLOYEES.ONBOARDING.ERR_REQUIRED'); return;
     }
     this.taskSaving = true; this.taskFormError = '';
     const req = this.editTaskId
@@ -757,7 +755,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
       : this.http.post<any>(`/api/v1/onboarding/${this.employeeId}/tasks`, this.taskForm);
     req.pipe(takeUntil(this.destroy$)).subscribe({
       next: () => { this.taskSaving = false; this.showTaskForm = false; this.loadOnboarding(); },
-      error: (e: any) => { this.taskSaving = false; this.taskFormError = e?.error?.message ?? 'Save failed.'; },
+      error: (e: any) => { this.taskSaving = false; this.taskFormError = e?.error?.message ?? this.lang.t('MESSAGES.SAVE_FAILED'); },
     });
   }
 
@@ -778,7 +776,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   }
 
   deleteTask(taskId: number): void {
-    if (!confirm('Delete this task?')) return;
+    if (!confirm(this.lang.t('EMPLOYEES.ONBOARDING.CONFIRM_DELETE'))) return;
     this.http.delete(`/api/v1/onboarding/tasks/${taskId}`)
       .pipe(takeUntil(this.destroy$)).subscribe({
         next: () => this.loadOnboarding(),
@@ -807,6 +805,24 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     return text;
   }
 
+  /**
+   * Translated label for an enum code stored on the record (gender, employment type, document type …).
+   * Looks up `<group>.<code>`; unknown codes fall back to a humanised version of the code.
+   */
+  enumLabel(group: string, value: any, fallback?: string): string {
+    const text = this.displayText(value);
+    if (text === '-') return text;
+    const key = `${group}.${text.toLowerCase()}`;
+    const label = this.lang.t(key);
+    return label !== key ? label : (fallback ?? humanize(text));
+  }
+
+  /** Arabic name when Arabic is active and one is recorded, otherwise the English full name. */
+  displayName(e: any): string {
+    if (this.lang.current() === 'ar' && e?.arabic_name) return e.arabic_name;
+    return e?.full_name ?? '';
+  }
+
   displayLabel(value: any): string {
     const text = this.displayText(value);
     return text === '-' ? text : text.replace(/_/g, ' ');
@@ -831,22 +847,10 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     const title = this.displayText(task?.title, '');
     if (title) return title;
 
-    const fallbackTitles = [
-      'Provide company laptop and accessories',
-      'Create email and system accounts',
-      'Prepare ID badge and access card',
-      'Set up workstation and desk allocation',
-      'Sign employment contract',
-      'Collect required personal documents',
-      'Register bank and payroll details',
-      'Complete mandatory compliance training',
-      'Introduce to team and department',
-      'Set up buddy or mentor',
-      '30-day probation check-in',
-      '90-day probation review',
-    ];
-
-    return fallbackTitles[index] ?? 'Onboarding task';
+    // Translation keys EMPLOYEES.ONBOARDING.DEFAULT_TASKS.T1 … T12
+    return index >= 0 && index < 12
+      ? this.lang.t(`EMPLOYEES.ONBOARDING.DEFAULT_TASKS.T${index + 1}`)
+      : this.lang.t('EMPLOYEES.ONBOARDING.DEFAULT_TASK');
   }
 
   taskDescription(task: any): string {

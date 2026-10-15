@@ -40,6 +40,7 @@ class Kernel extends HttpKernel
 
         'api' => [
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+            \App\Http\Middleware\SetLocale::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];

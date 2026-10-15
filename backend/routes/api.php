@@ -64,6 +64,7 @@ Route::prefix('v1')->group(function () {
             Route::post('logout',   [AuthController::class, 'logout']);
             Route::get('me',        [AuthController::class, 'me']);
             Route::put('password',  [AuthController::class, 'changePassword']);
+            Route::put('language',  [AuthController::class, 'updateLanguage']);
         });
 
         // Profile (authenticated user's own account)
@@ -72,6 +73,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/',         [ProfileController::class, 'update']);
             Route::post('avatar',   [ProfileController::class, 'uploadAvatar']);
             Route::put('password',  [ProfileController::class, 'changePassword']);
+            Route::put('communication-language', [ProfileController::class, 'updateCommunicationLanguage']);
         });
 
         // Announcements (HR/Admin manage; everyone reads)

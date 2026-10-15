@@ -52,7 +52,7 @@ class ContractController extends Controller
         $contract = Contract::create($data);
 
         return response()->json([
-            'message'  => 'Contract created successfully.',
+            'message'  => __('Contract created successfully.'),
             'contract' => $contract->load('employee.department'),
         ], 201);
     }
@@ -82,7 +82,7 @@ class ContractController extends Controller
         $contract->update($data);
 
         return response()->json([
-            'message'  => 'Contract updated.',
+            'message'  => __('Contract updated.'),
             'contract' => $contract->fresh('employee.department'),
         ]);
     }
@@ -108,7 +108,7 @@ class ContractController extends Controller
             ->first();
 
         if ($existing) {
-            return response()->json(['message' => 'A renewal request is already in progress.'], 422);
+            return response()->json(['message' => __('A renewal request is already in progress.')], 422);
         }
 
         $renewal = ContractRenewal::create([
@@ -124,7 +124,7 @@ class ContractController extends Controller
         $contract->update(['renewal_requested' => true]);
 
         return response()->json([
-            'message' => 'Renewal request created and sent to manager.',
+            'message' => __('Renewal request created and sent to manager.'),
             'renewal' => $renewal,
         ], 201);
     }
@@ -165,7 +165,7 @@ class ContractController extends Controller
     public function approveRenewal(ContractRenewal $renewal)
     {
         if (!$renewal->isActionable()) {
-            return response()->json(['message' => 'This renewal is already finalised.'], 422);
+            return response()->json(['message' => __('This renewal is already finalised.')], 422);
         }
 
         $user     = Auth::user();
@@ -210,13 +210,13 @@ class ContractController extends Controller
         $renewal->update($updates);
 
         $stageLabels = [
-            'pending_hr'  => 'forwarded to HR',
-            'pending_ceo' => 'forwarded to CEO',
-            'approved'    => 'fully approved — new contract created',
+            'pending_hr'  => __('Renewal forwarded to HR.'),
+            'pending_ceo' => __('Renewal forwarded to CEO.'),
+            'approved'    => __('Renewal fully approved — new contract created.'),
         ];
 
         return response()->json([
-            'message' => 'Renewal ' . ($stageLabels[$updates['status']] ?? 'updated') . '.',
+            'message' => $stageLabels[$updates['status']] ?? __('Renewal updated.'),
             'renewal' => $renewal->fresh(),
         ]);
     }
@@ -227,7 +227,7 @@ class ContractController extends Controller
         $request->validate(['reason' => 'required|string|min:5']);
 
         if (!$renewal->isActionable()) {
-            return response()->json(['message' => 'This renewal is already finalised.'], 422);
+            return response()->json(['message' => __('This renewal is already finalised.')], 422);
         }
 
         $renewal->update([
@@ -240,6 +240,6 @@ class ContractController extends Controller
         // Allow a new renewal to be triggered
         $renewal->contract->update(['renewal_requested' => false]);
 
-        return response()->json(['message' => 'Renewal rejected.']);
+        return response()->json(['message' => __('Renewal rejected.')]);
     }
 }

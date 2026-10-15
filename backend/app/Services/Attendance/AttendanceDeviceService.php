@@ -28,7 +28,7 @@ class AttendanceDeviceService
             }
             return $this->testHttp($device);
         } catch (\Throwable $e) {
-            return ['ok' => false, 'message' => 'Exception: ' . $e->getMessage()];
+            return ['ok' => false, 'message' => __('Exception: :error', ['error' => $e->getMessage()])];
         }
     }
 
@@ -386,9 +386,9 @@ class AttendanceDeviceService
         $socket = @fsockopen($device->ip_address, $device->port, $errno, $errstr, 5);
         if ($socket) {
             fclose($socket);
-            return ['ok' => true, 'message' => "Connected to {$device->ip_address}:{$device->port} — device is reachable."];
+            return ['ok' => true, 'message' => __('Connected to :host — device is reachable.', ['host' => "{$device->ip_address}:{$device->port}"])];
         }
-        return ['ok' => false, 'message' => "Cannot connect to {$device->ip_address}:{$device->port} — {$errstr} (errno {$errno})"];
+        return ['ok' => false, 'message' => __('Cannot connect to :host — :error (errno :errno)', ['host' => "{$device->ip_address}:{$device->port}", 'error' => $errstr, 'errno' => $errno])];
     }
 
     private function testHttp(AttendanceDevice $device): array
@@ -396,9 +396,9 @@ class AttendanceDeviceService
         $url = "{$device->protocol}://{$device->ip_address}:{$device->port}";
         try {
             $resp = Http::timeout(5)->get($url);
-            return ['ok' => true, 'message' => "HTTP {$resp->status()} — device responded at {$url}"];
+            return ['ok' => true, 'message' => __('HTTP :status — device responded at :url', ['status' => $resp->status(), 'url' => $url])];
         } catch (\Throwable $e) {
-            return ['ok' => false, 'message' => "HTTP request failed: " . $e->getMessage()];
+            return ['ok' => false, 'message' => __('HTTP request failed: :error', ['error' => $e->getMessage()])];
         }
     }
 

@@ -6,8 +6,8 @@ namespace App\Mail;
 
 class LeaveRejectedMail extends LeaveStatusMail
 {
-    public function __construct($leave, string $recipientName, ?string $remarks = null)
+    public function __construct($leave, string $recipientName, ?string $remarks = null, ?string $recipientNameAr = null)
     {
-        parent::__construct($leave, 'hr_rejected', $recipientName, $remarks);
+        parent::__construct($leave, 'hr_rejected', $recipientName, $remarks, null, $recipientNameAr);
     }
 }

@@ -1,12 +1,12 @@
 <!-- ── Page Header ───────────────────────────────────────────────── -->
 <div class="dash-header">
   <div>
-    <h1><mat-icon>fingerprint</mat-icon> Attendance Dashboard</h1>
-    <p>{{ data?.type === 'department' ? 'Department attendance overview' : isAdmin ? 'Organisation-wide attendance overview' : 'Your personal attendance summary' }}</p>
+    <h1><mat-icon>fingerprint</mat-icon> {{ 'ATTENDANCE.DASH.TITLE' | translate }}</h1>
+    <p>{{ (data?.type === 'department' ? 'ATTENDANCE.DASH.SUB_DEPARTMENT' : isAdmin ? 'ATTENDANCE.DASH.SUB_ORG' : 'ATTENDANCE.DASH.SUB_MINE') | translate }}</p>
   </div>
   <div class="header-right">
-    <div class="live-clock">{{ clock }}</div>
-    <button class="refresh-btn" (click)="loadDashboard()">
+    <div class="live-clock" dir="ltr" [attr.aria-label]="'ATTENDANCE.LIVE_CLOCK' | translate">{{ clock }}</div>
+    <button class="refresh-btn" (click)="loadDashboard()" [matTooltip]="'COMMON.REFRESH' | translate" [attr.aria-label]="'COMMON.REFRESH' | translate">
       <mat-icon>refresh</mat-icon>
     </button>
   </div>
@@ -26,42 +26,42 @@
   <a class="hr-action-btn" routerLink="/attendance/log">
     <mat-icon>list_alt</mat-icon>
     <div>
-      <div class="ha-title">Attendance Log</div>
-      <div class="ha-sub">View &amp; edit all records · Manual entry</div>
+      <div class="ha-title">{{ 'ATTENDANCE.TABS.LOG' | translate }}</div>
+      <div class="ha-sub">{{ 'ATTENDANCE.DASH.LOG_SUB' | translate }}</div>
     </div>
-    <mat-icon class="ha-arrow">arrow_forward</mat-icon>
+    <mat-icon class="ha-arrow flip-rtl">arrow_forward</mat-icon>
   </a>
   <a class="hr-action-btn" *ngIf="isHR || isAdmin" routerLink="/attendance/log" [queryParams]="{tab:'manual'}">
     <mat-icon>edit_calendar</mat-icon>
     <div>
-      <div class="ha-title">Manual Entry</div>
-      <div class="ha-sub">Add or correct attendance records</div>
+      <div class="ha-title">{{ 'ATTENDANCE.TABS.MANUAL' | translate }}</div>
+      <div class="ha-sub">{{ 'ATTENDANCE.DASH.MANUAL_SUB' | translate }}</div>
     </div>
-    <mat-icon class="ha-arrow">arrow_forward</mat-icon>
+    <mat-icon class="ha-arrow flip-rtl">arrow_forward</mat-icon>
   </a>
   <a class="hr-action-btn"  *ngIf="isHR || isAdmin" routerLink="/attendance/biotime">
     <mat-icon>fingerprint</mat-icon>
     <div>
-      <div class="ha-title">BioTime Sync</div>
-      <div class="ha-sub">Import records from biometric device</div>
+      <div class="ha-title">{{ 'ATTENDANCE.DASH.BIOTIME' | translate }}</div>
+      <div class="ha-sub">{{ 'ATTENDANCE.DASH.BIOTIME_SUB' | translate }}</div>
     </div>
-    <mat-icon class="ha-arrow">arrow_forward</mat-icon>
+    <mat-icon class="ha-arrow flip-rtl">arrow_forward</mat-icon>
   </a>
   <div class="hr-report-action" *ngIf="isHR || isAdmin">
     <mat-icon>description</mat-icon>
     <div class="report-fields">
       <div>
-        <label>From</label>
-        <input type="date" [(ngModel)]="reportFrom">
+        <label>{{ 'COMMON.FROM' | translate }}</label>
+        <input type="date" dir="ltr" [(ngModel)]="reportFrom">
       </div>
       <div>
-        <label>To</label>
-        <input type="date" [(ngModel)]="reportTo">
+        <label>{{ 'COMMON.TO' | translate }}</label>
+        <input type="date" dir="ltr" [(ngModel)]="reportTo">
       </div>
     </div>
     <button type="button" (click)="downloadAttendanceReport()" [disabled]="reportDownloading || !reportFrom || !reportTo">
       <mat-icon>{{ reportDownloading ? 'hourglass_empty' : 'download' }}</mat-icon>
-      {{ reportDownloading ? 'Fetching...' : 'Fetch Report' }}
+      {{ (reportDownloading ? 'ATTENDANCE.DASH.FETCHING' : 'ATTENDANCE.DASH.FETCH_REPORT') | translate }}
     </button>
   </div>
 </div>
@@ -87,39 +87,45 @@
 
   <!-- Check-in card -->
   <div class="checkin-card">
+    <!-- Phone only: today's check-in time in a ring -->
+    <div class="ci-ring" [class.done]="data.today_log?.check_in" aria-hidden="true">
+      <mat-icon class="ci-ring-ok" *ngIf="data.today_log?.check_in">check_circle</mat-icon>
+      <div class="ci-ring-time" dir="ltr">{{ data.today_log?.check_in?.slice(0,5) || '--:--' }}</div>
+      <div class="ci-ring-lbl">{{ 'ATTENDANCE.CHECK_IN' | translate }}</div>
+    </div>
     <div class="checkin-left">
-      <div class="ci-label">Today · {{ data.today_log?.date || 'Not recorded yet' }}</div>
+      <div class="ci-label">{{ 'ATTENDANCE.TODAY' | translate }} · {{ data.today_log?.date ? (data.today_log.date | locDate:'EEEE, d MMMM y') : ('ATTENDANCE.NOT_RECORDED_YET' | translate) }}</div>
       <div class="ci-times">
         <div class="ci-time-block" [class.active]="data.today_log?.check_in">
           <mat-icon>login</mat-icon>
           <div>
-            <div class="ci-time">{{ data.today_log?.check_in || '—' }}</div>
-            <div class="ci-lbl">Check-in</div>
+            <div class="ci-time" dir="ltr">{{ data.today_log?.check_in || '—' }}</div>
+            <div class="ci-lbl">{{ 'ATTENDANCE.CHECK_IN' | translate }}</div>
           </div>
         </div>
-        <mat-icon class="ci-arrow">arrow_forward</mat-icon>
+        <mat-icon class="ci-arrow flip-rtl">arrow_forward</mat-icon>
         <div class="ci-time-block" [class.active]="data.today_log?.check_out">
           <mat-icon>logout</mat-icon>
           <div>
-            <div class="ci-time">{{ data.today_log?.check_out || '—' }}</div>
-            <div class="ci-lbl">Check-out</div>
+            <div class="ci-time" dir="ltr">{{ data.today_log?.check_out || '—' }}</div>
+            <div class="ci-lbl">{{ 'ATTENDANCE.CHECK_OUT' | translate }}</div>
           </div>
         </div>
         <div class="ci-time-block" [class.active]="data.today_log?.total_minutes">
           <mat-icon>schedule</mat-icon>
           <div>
             <div class="ci-time">{{ fmt(data.today_log?.total_minutes) }}</div>
-            <div class="ci-lbl">Duration</div>
+            <div class="ci-lbl">{{ 'ATTENDANCE.DURATION' | translate }}</div>
           </div>
         </div>
       </div>
     </div>
     <div class="checkin-right" *ngIf="isHR || isAdmin">
       <button class="btn-ci" [disabled]="!canCheckIn || checkingIn" (click)="checkIn()">
-        <mat-icon>login</mat-icon> {{ checkingIn ? 'Recording…' : 'Check In' }}
+        <mat-icon>login</mat-icon> {{ (checkingIn ? 'ATTENDANCE.RECORDING' : 'ATTENDANCE.CHECK_IN_BTN') | translate }}
       </button>
       <button class="btn-co" [disabled]="!canCheckOut || checkingOut" (click)="checkOut()">
-        <mat-icon>logout</mat-icon> {{ checkingOut ? 'Recording…' : 'Check Out' }}
+        <mat-icon>logout</mat-icon> {{ (checkingOut ? 'ATTENDANCE.RECORDING' : 'ATTENDANCE.CHECK_OUT_BTN') | translate }}
       </button>
     </div>
   </div>
@@ -132,7 +138,7 @@
       </div>
       <div>
         <div class="kpi-val" style="color:#10b981">{{ data.summary?.present_days ?? 0 }}</div>
-        <div class="kpi-lbl">Present days</div>
+        <div class="kpi-lbl">{{ 'ATTENDANCE.DASH.PRESENT_DAYS' | translate }}</div>
       </div>
     </div>
     <div class="kpi-sep"></div>
@@ -142,7 +148,7 @@
       </div>
       <div>
         <div class="kpi-val" style="color:#ef4444">{{ data.summary?.absent_days ?? 0 }}</div>
-        <div class="kpi-lbl">Absent days</div>
+        <div class="kpi-lbl">{{ 'ATTENDANCE.DASH.ABSENT_DAYS' | translate }}</div>
       </div>
     </div>
     <div class="kpi-sep"></div>
@@ -152,7 +158,7 @@
       </div>
       <div>
         <div class="kpi-val" style="color:#f59e0b">{{ data.summary?.late_days ?? 0 }}</div>
-        <div class="kpi-lbl">Late days</div>
+        <div class="kpi-lbl">{{ 'ATTENDANCE.DASH.LATE_DAYS' | translate }}</div>
       </div>
     </div>
     <div class="kpi-sep"></div>
@@ -161,8 +167,8 @@
         <mat-icon style="color:#3b82f6">timer</mat-icon>
       </div>
       <div>
-        <div class="kpi-val" style="color:#3b82f6">{{ data.summary?.avg_hours ?? 0 }}h</div>
-        <div class="kpi-lbl">Avg hours/day</div>
+        <div class="kpi-val" style="color:#3b82f6">{{ 'ATTENDANCE.FMT.HOURS' | translate:{n: data.summary?.avg_hours ?? 0} }}</div>
+        <div class="kpi-lbl">{{ 'ATTENDANCE.DASH.AVG_HOURS' | translate }}</div>
       </div>
     </div>
     <div class="kpi-sep"></div>
@@ -172,7 +178,7 @@
       </div>
       <div>
         <div class="kpi-val" style="color:#6366f1">{{ data.summary?.streak ?? 0 }}</div>
-        <div class="kpi-lbl">Day streak</div>
+        <div class="kpi-lbl">{{ 'ATTENDANCE.DASH.STREAK' | translate }}</div>
       </div>
     </div>
     <div class="kpi-sep"></div>
@@ -182,7 +188,7 @@
       </div>
       <div>
         <div class="kpi-val" style="color:#10b981">{{ data.summary?.attendance_rate ?? 0 }}%</div>
-        <div class="kpi-lbl">This month</div>
+        <div class="kpi-lbl">{{ 'ATTENDANCE.DASH.THIS_MONTH' | translate }}</div>
       </div>
     </div>
   </div>
@@ -193,7 +199,7 @@
     <!-- Weekly bar chart -->
     <div class="dash-card chart-card">
       <div class="card-header">
-        <div class="card-title"><mat-icon>bar_chart</mat-icon> Last 7 Days</div>
+        <div class="card-title"><mat-icon>bar_chart</mat-icon> {{ 'ATTENDANCE.DASH.LAST_7_DAYS' | translate }}</div>
       </div>
       <div class="chart-body">
         <canvas id="empWeekChart"></canvas>
@@ -203,14 +209,14 @@
     <!-- Weekly day pills -->
     <div class="dash-card">
       <div class="card-header">
-        <div class="card-title"><mat-icon>date_range</mat-icon> Daily Status</div>
+        <div class="card-title"><mat-icon>date_range</mat-icon> {{ 'ATTENDANCE.DASH.DAILY_STATUS' | translate }}</div>
       </div>
       <div class="day-pills">
-        <div class="day-pill" *ngFor="let d of data.weekly" [class]="'pill-' + d.status">
-          <div class="pill-day">{{ d.day }}</div>
+        <div class="day-pill" *ngFor="let d of data.weekly" [class]="'pill-' + d.status" [attr.title]="dayStatusLabel(d.status)">
+          <div class="pill-day">{{ d.date ? (d.date | locDate:'EEE') : d.day }}</div>
           <mat-icon class="pill-icon">{{ statusIcon(d.status) }}</mat-icon>
-          <div class="pill-ci">{{ d.check_in?.slice(0,5) || '—' }}</div>
-          <div class="pill-co">{{ d.check_out?.slice(0,5) || '—' }}</div>
+          <div class="pill-ci" dir="ltr">{{ d.check_in?.slice(0,5) || '—' }}</div>
+          <div class="pill-co" dir="ltr">{{ d.check_out?.slice(0,5) || '—' }}</div>
           <div class="pill-dur">{{ fmt(d.total_minutes) }}</div>
         </div>
       </div>
@@ -220,25 +226,27 @@
   <!-- Recent log table -->
   <div class="dash-card">
     <div class="card-header">
-      <div class="card-title"><mat-icon>history</mat-icon> Recent Records</div>
+      <div class="card-title"><mat-icon>history</mat-icon> {{ 'ATTENDANCE.DASH.RECENT' | translate }}</div>
     </div>
-    <table class="att-table">
+    <div class="table-scroll">
+    <table class="att-table att-recent">
       <thead><tr>
-        <th>Date</th><th>Check-in</th><th>Check-out</th><th>Duration</th><th>Status</th>
+        <th>{{ 'COMMON.DATE' | translate }}</th><th>{{ 'ATTENDANCE.CHECK_IN' | translate }}</th><th>{{ 'ATTENDANCE.CHECK_OUT' | translate }}</th><th>{{ 'ATTENDANCE.DURATION' | translate }}</th><th>{{ 'COMMON.STATUS' | translate }}</th>
       </tr></thead>
       <tbody>
         <tr *ngFor="let r of data.recent">
-          <td class="mono">{{ r.date }}</td>
-          <td class="mono">{{ r.check_in || '—' }}</td>
-          <td class="mono">{{ r.check_out || '—' }}</td>
+          <td class="mono">{{ r.date | locDate:'EEE d MMM y' }}</td>
+          <td class="mono"><span dir="ltr">{{ r.check_in || '—' }}</span></td>
+          <td class="mono"><span dir="ltr">{{ r.check_out || '—' }}</span></td>
           <td>{{ fmt(r.total_minutes) }}</td>
-          <td><span class="badge" [class]="statusClass(r.status)">{{ r.status }}</span></td>
+          <td><span class="badge" [class]="statusClass(r.status)">{{ r.status | statusLabel }}</span></td>
         </tr>
         <tr *ngIf="!data.recent?.length">
-          <td colspan="5" class="empty-row"><mat-icon>event_busy</mat-icon> No records</td>
+          <td colspan="5" class="empty-row"><mat-icon>event_busy</mat-icon> {{ 'ATTENDANCE.DASH.NO_RECORDS' | translate }}</td>
         </tr>
       </tbody>
     </table>
+    </div>
   </div>
 
 </ng-container>
@@ -253,7 +261,7 @@
 
     <!-- Presence card -->
     <div class="dash-card presence-card">
-      <div class="card-title"><mat-icon>groups</mat-icon> {{ data.type === 'department' ? "Department Presence" : "Today's Presence" }}</div>
+      <div class="card-title"><mat-icon>groups</mat-icon> {{ (data.type === 'department' ? 'ATTENDANCE.DASH.DEPT_PRESENCE' : 'ATTENDANCE.DASH.TODAY_PRESENCE') | translate }}</div>
       <div class="presence-ring-wrap">
         <svg class="presence-ring" viewBox="0 0 120 120">
           <circle cx="60" cy="60" r="52" fill="none" stroke="#21262d" stroke-width="12"/>
@@ -263,15 +271,15 @@
             stroke-dashoffset="81.7"
             stroke-linecap="round"/>
           <text x="60" y="55" text-anchor="middle" fill="#e6edf3" font-size="22" font-weight="800"
-            font-family="Syne,sans-serif">{{ presencePct() }}%</text>
-          <text x="60" y="74" text-anchor="middle" fill="#484f58" font-size="10">present</text>
+            font-family="Syne,sans-serif" direction="ltr">{{ presencePct() }}%</text>
+          <text x="60" y="74" text-anchor="middle" fill="#484f58" font-size="10">{{ 'ATTENDANCE.DASH.PRESENT_RING' | translate }}</text>
         </svg>
       </div>
       <div class="presence-legend">
-        <div class="leg-item"><span class="leg-dot" style="background:#10b981"></span>Present {{ data.summary?.present_today }}</div>
-        <div class="leg-item"><span class="leg-dot" style="background:#f59e0b"></span>Late {{ data.summary?.late_today }}</div>
-        <div class="leg-item"><span class="leg-dot" style="background:#ef4444"></span>Absent {{ data.summary?.absent_today }}</div>
-        <div class="leg-item"><span class="leg-dot" style="background:#484f58"></span>Not recorded {{ data.summary?.not_recorded }}</div>
+        <div class="leg-item"><span class="leg-dot" style="background:#10b981"></span>{{ 'present' | statusLabel }} {{ data.summary?.present_today }}</div>
+        <div class="leg-item"><span class="leg-dot" style="background:#f59e0b"></span>{{ 'late' | statusLabel }} {{ data.summary?.late_today }}</div>
+        <div class="leg-item"><span class="leg-dot" style="background:#ef4444"></span>{{ 'absent' | statusLabel }} {{ data.summary?.absent_today }}</div>
+        <div class="leg-item"><span class="leg-dot" style="background:#484f58"></span>{{ 'ATTENDANCE.NOT_RECORDED' | translate }} {{ data.summary?.not_recorded }}</div>
       </div>
     </div>
 
@@ -280,22 +288,22 @@
       <div class="akpi-card" style="--c:#3b82f6">
         <mat-icon>people</mat-icon>
         <div class="akpi-val">{{ data.summary?.total_active ?? 0 }}</div>
-        <div class="akpi-lbl">{{ data.type === 'department' ? 'Dept. active' : 'Total active' }}</div>
+        <div class="akpi-lbl">{{ (data.type === 'department' ? 'ATTENDANCE.DASH.DEPT_ACTIVE' : 'ATTENDANCE.DASH.TOTAL_ACTIVE') | translate }}</div>
       </div>
       <div class="akpi-card" style="--c:#10b981">
         <mat-icon>how_to_reg</mat-icon>
         <div class="akpi-val">{{ data.summary?.checked_in_now ?? 0 }}</div>
-        <div class="akpi-lbl">Checked in now</div>
+        <div class="akpi-lbl">{{ 'ATTENDANCE.DASH.CHECKED_IN_NOW' | translate }}</div>
       </div>
       <div class="akpi-card" style="--c:#6366f1">
         <mat-icon>percent</mat-icon>
         <div class="akpi-val">{{ data.summary?.attendance_rate ?? 0 }}%</div>
-        <div class="akpi-lbl">Month rate</div>
+        <div class="akpi-lbl">{{ 'ATTENDANCE.DASH.MONTH_RATE' | translate }}</div>
       </div>
       <div class="akpi-card" style="--c:#0ea5e9">
         <mat-icon>timer</mat-icon>
-        <div class="akpi-val">{{ data.summary?.avg_hours ?? 0 }}h</div>
-        <div class="akpi-lbl">Avg hours/day</div>
+        <div class="akpi-val">{{ 'ATTENDANCE.FMT.HOURS' | translate:{n: data.summary?.avg_hours ?? 0} }}</div>
+        <div class="akpi-lbl">{{ 'ATTENDANCE.DASH.AVG_HOURS' | translate }}</div>
       </div>
     </div>
   </div>
@@ -304,7 +312,7 @@
   <div class="two-col">
     <div class="dash-card chart-card">
       <div class="card-header">
-        <div class="card-title"><mat-icon>bar_chart</mat-icon> 7-Day Trend</div>
+        <div class="card-title"><mat-icon>bar_chart</mat-icon> {{ 'ATTENDANCE.DASH.TREND_7' | translate }}</div>
       </div>
       <div class="chart-body">
         <canvas id="adminWeekChart"></canvas>
@@ -313,7 +321,7 @@
 
     <div class="dash-card chart-card">
       <div class="card-header">
-        <div class="card-title"><mat-icon>business</mat-icon> By Department</div>
+        <div class="card-title"><mat-icon>business</mat-icon> {{ 'ATTENDANCE.DASH.BY_DEPARTMENT' | translate }}</div>
       </div>
       <div class="chart-body">
         <canvas id="deptChart"></canvas>
@@ -324,21 +332,23 @@
   <!-- Alerts table -->
   <div class="dash-card" *ngIf="data.alerts?.length">
     <div class="card-header">
-      <div class="card-title"><mat-icon style="color:#ef4444">warning</mat-icon> Alerts — Late &amp; Absent Today</div>
+      <div class="card-title"><mat-icon style="color:#ef4444">warning</mat-icon> {{ 'ATTENDANCE.DASH.ALERTS' | translate }}</div>
     </div>
+    <div class="table-scroll">
     <table class="att-table">
       <thead><tr>
-        <th>Employee</th><th>Department</th><th>Status</th><th>Check-in</th>
+        <th>{{ 'COMMON.EMPLOYEE' | translate }}</th><th>{{ 'COMMON.DEPARTMENT' | translate }}</th><th>{{ 'COMMON.STATUS' | translate }}</th><th>{{ 'ATTENDANCE.CHECK_IN' | translate }}</th>
       </tr></thead>
       <tbody>
         <tr *ngFor="let a of data.alerts">
           <td class="emp-name">{{ a.name }}</td>
           <td class="text-muted">{{ a.department || '—' }}</td>
-          <td><span class="badge" [class]="statusClass(a.status)">{{ a.status }}</span></td>
-          <td class="mono">{{ a.check_in || '—' }}</td>
+          <td><span class="badge" [class]="statusClass(a.status)">{{ a.status | statusLabel }}</span></td>
+          <td class="mono"><span dir="ltr">{{ a.check_in || '—' }}</span></td>
         </tr>
       </tbody>
     </table>
+    </div>
   </div>
 
 </ng-container>

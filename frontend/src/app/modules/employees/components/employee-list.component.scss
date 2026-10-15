@@ -1,3 +1,4 @@
+.hdr-actions { display:flex; gap:8px; flex-wrap:wrap; }
 .page-hdr    { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px; }
 .page-title  { font-family:'IBM Plex Sans',sans-serif; font-size:22px; font-weight:800; color:var(--text); }
 .page-sub    { font-size:13px; color:var(--text2); margin-top:2px; }
@@ -15,7 +16,7 @@
 
 /* Table card */
 .data-card   { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; position:relative; }
-.loading-bar { position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--accent),var(--accent2)); animation:shimmer 1.2s infinite; z-index:5; }
+.loading-bar { position:absolute; top:0; inset-inline:0; height:2px; background:linear-gradient(90deg,var(--accent),var(--accent2)); animation:shimmer 1.2s infinite; z-index:5; }
 @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
 
 /* Cells */
@@ -72,9 +73,9 @@
   border: 1px solid var(--border);
   cursor: pointer;
   transition: all .15s;
-  text-align: left;
+  text-align: start;
   font-family: 'Inter', sans-serif;
-  border-left: 3px solid var(--tile-color, var(--accent));
+  border-inline-start: 3px solid var(--tile-color, var(--accent));
 
   &:hover {
     border-color: var(--tile-color, var(--accent));
@@ -139,3 +140,84 @@
 @keyframes emp-pulse { 0%,100%{opacity:.35} 50%{opacity:.75} }
 
 .row-btn.success:hover { background: rgba(16,185,129,.1); color: var(--success); border-color: rgba(16,185,129,.3); }
+
+/* RTL: shimmer travels in the reading direction */
+:host-context([dir=rtl]) .loading-bar { animation-name: shimmer-rtl; }
+@keyframes shimmer-rtl { 0%{transform:translateX(100%)} 100%{transform:translateX(-100%)} }
+
+/* Touch devices have no hover: always show row actions */
+@media (hover: none) { .row-actions { opacity:1; } }
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .stat-tile { min-width: calc(50% - 5px); }
+  .filter-select { flex: 1 1 160px; min-width: 0; }
+}
+
+@media (max-width: 768px) {
+  .hdr-actions { width:100%; }
+  .hdr-actions > button { flex:1 1 auto; justify-content:center; min-height:38px; }
+  .search-wrap { min-width:0; flex:1 1 100%; }
+  .filter-select { flex:1 1 calc(50% - 5px); }
+  .row-actions { opacity:1; }
+  .row-btn { width:36px; height:36px; }
+  .pg-btn  { width:36px; height:36px; }
+
+  /* Employee table becomes stacked cards */
+  .data-card { overflow-x: visible; }
+  .emp-table { display:block; width:100%; min-width:0 !important; }
+  .emp-table ::ng-deep thead { display:none; }
+  .emp-table ::ng-deep tbody { display:block; }
+  .emp-table ::ng-deep tr.data-row {
+    display:grid;
+    grid-template-columns: 40px auto minmax(0,1fr) auto;
+    grid-template-areas:
+      "av   name name   code"
+      "av   dept dept   dept"
+      "unit unit unit   unit"
+      "nat  nat  nat    nat"
+      "type type status actions";
+    column-gap:10px; row-gap:4px;
+    height:auto;
+    padding:12px 14px;
+    border-bottom:1px solid var(--border);
+  }
+  .emp-table ::ng-deep tr.data-row td.mat-mdc-cell {
+    display:block; padding:0 !important; border:none !important; min-height:0; background:transparent !important;
+  }
+  .emp-table ::ng-deep td.cell-avatar  { grid-area:av; align-self:start; }
+  .emp-table ::ng-deep td.cell-name    { grid-area:name; min-width:0; }
+  .emp-table ::ng-deep td.cell-code    { grid-area:code; text-align:end; }
+  .emp-table ::ng-deep td.cell-dept    { grid-area:dept; }
+  .emp-table ::ng-deep td.cell-unit    { grid-area:unit; font-size:12px; color:var(--text2); }
+  .emp-table ::ng-deep td.cell-nat     { grid-area:nat; font-size:12px; color:var(--text2); }
+  .emp-table ::ng-deep td.cell-type    { grid-area:type; align-self:center; }
+  .emp-table ::ng-deep td.cell-status  { grid-area:status; align-self:center; }
+  .emp-table ::ng-deep td.cell-actions { grid-area:actions; justify-self:end; }
+  .emp-table ::ng-deep td.cell-unit::before,
+  .emp-table ::ng-deep td.cell-nat::before {
+    content: attr(data-label) ": "; color:var(--text3); font-weight:600;
+  }
+  .emp-table ::ng-deep td.cell-type,
+  .emp-table ::ng-deep td.cell-status { display:inline-block !important; }
+  .name-main, .name-sub { overflow-wrap:anywhere; }
+  .empty-td { padding:32px 16px; }
+
+  .pagination-bar { flex-wrap:wrap; gap:8px; padding:10px 12px; }
+}
+
+@media (max-width: 480px) {
+  .stat-tile { min-width:100%; }
+  .filter-select { flex:1 1 100%; }
+  .emp-table ::ng-deep tr.data-row {
+    grid-template-areas:
+      "av   name name   name"
+      "av   code code   code"
+      "dept dept dept   dept"
+      "unit unit unit   unit"
+      "nat  nat  nat    nat"
+      "type type status actions";
+  }
+  .emp-table ::ng-deep td.cell-code { text-align:start; }
+  .pagination-bar { justify-content:center; }
+}

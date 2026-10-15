@@ -1,0 +1,121 @@
+{
+  "PERFORMANCE": {
+    "TITLE": "تقييم الأداء",
+    "SUBTITLE": "دورات التقييم · التقييم الذاتي · تقييم المدير · مؤشرات الأداء الرئيسية",
+    "NEW_CYCLE": "دورة جديدة",
+    "STATS": {
+      "TOTAL_CYCLES": "إجمالي الدورات",
+      "ACTIVE": "نشطة",
+      "PENDING_SELF": "بانتظار التقييم الذاتي",
+      "PENDING_MANAGER": "بانتظار تقييم المدير",
+      "FINALIZED": "معتمدة نهائياً",
+      "AVG_RATING": "متوسط التقدير"
+    },
+    "TABS": {
+      "CYCLES": "دورات التقييم",
+      "REVIEWS": "التقييمات",
+      "KPIS": "مؤشرات الأداء"
+    },
+    "COLS": {
+      "CYCLE": "دورة التقييم",
+      "TYPE": "النوع",
+      "PERIOD": "الفترة",
+      "REVIEWS": "التقييمات",
+      "SELF": "الذاتي",
+      "MANAGER": "المدير",
+      "FINAL": "النهائي",
+      "BAND": "التقدير",
+      "KPI_TITLE": "عنوان المؤشر",
+      "CATEGORY": "الفئة",
+      "TARGET": "المستهدف",
+      "WEIGHT": "الوزن"
+    },
+    "DONE_COUNT": "{{count}} مكتمل",
+    "TOOLTIP": {
+      "VIEW_REVIEWS": "عرض التقييمات",
+      "INITIATE": "بدء الدورة — إنشاء سجلات التقييم",
+      "CLOSE_CYCLE": "إغلاق الدورة",
+      "SELF_ASSESS": "تقديم التقييم الذاتي",
+      "MANAGER_REVIEW": "تقييم المدير",
+      "FINALIZE": "اعتماد نهائي"
+    },
+    "EMPTY": {
+      "NO_CYCLES": "لا توجد دورات تقييم",
+      "NO_REVIEWS": "لا توجد تقييمات",
+      "NO_KPIS": "لم يتم تعريف مؤشرات أداء",
+      "NO_CYCLE_REVIEWS": "لا توجد تقييمات بعد. ابدأ الدورة لإنشاء سجلات التقييم."
+    },
+    "SEARCH_EMPLOYEE": "ابحث عن موظف…",
+    "FILTER": {
+      "ALL_STATUS": "جميع الحالات",
+      "PENDING_SELF": "بانتظار التقييم الذاتي",
+      "PENDING_MANAGER": "بانتظار تقييم المدير",
+      "PENDING_FINALIZE": "بانتظار الاعتماد النهائي",
+      "FINALIZED": "معتمدة نهائياً"
+    },
+    "KPI_LIBRARY": "مكتبة مؤشرات الأداء الرئيسية",
+    "ADD_KPI": "إضافة مؤشر",
+    "CYCLE_TYPES": {
+      "annual": "سنوي",
+      "mid_year": "نصف سنوي",
+      "quarterly": "ربع سنوي",
+      "probation": "فترة التجربة"
+    },
+    "BANDS": {
+      "excellent": "ممتاز",
+      "good": "جيد جداً",
+      "average": "متوسط",
+      "below_average": "دون المتوسط",
+      "poor": "ضعيف"
+    },
+    "INITIATE_CYCLE": "بدء الدورة",
+    "FORM": {
+      "EDIT_CYCLE": "تعديل دورة التقييم",
+      "NEW_CYCLE_TITLE": "دورة تقييم أداء جديدة",
+      "CYCLE_NAME": "اسم الدورة",
+      "CYCLE_NAME_PH": "مثال: التقييم السنوي 2025",
+      "SELF_DEADLINE": "الموعد النهائي للتقييم الذاتي",
+      "MANAGER_DEADLINE": "الموعد النهائي لتقييم المدير",
+      "SAVE_CYCLE": "حفظ الدورة",
+      "SELF_ASSESSMENT_TITLE": "التقييم الذاتي — {{cycle}}",
+      "RATING": "التقدير (1–5)",
+      "SELF_COMMENTS_PH": "صف إنجازاتك والجوانب التي تحتاج إلى تحسين…",
+      "MANAGER_REVIEW_TITLE": "تقييم المدير — {{name}}",
+      "MANAGER_COMMENTS_PH": "تقييم الأداء مقارنة بالأهداف…",
+      "SUBMIT_REVIEW": "تقديم التقييم",
+      "FINALIZE_TITLE": "الاعتماد النهائي للتقييم — {{name}}",
+      "SELF_RATING": "التقدير الذاتي",
+      "MANAGER_RATING": "تقدير المدير",
+      "FINAL_RATING": "التقدير النهائي (1–5)",
+      "PERFORMANCE_BAND": "فئة الأداء",
+      "DEVELOPMENT_PLAN": "خطة التطوير",
+      "DEVELOPMENT_PLAN_PH": "الأهداف وإجراءات التطوير للفترة القادمة…",
+      "HR_NOTES": "ملاحظات الموارد البشرية",
+      "FINALIZE": "اعتماد نهائي",
+      "FINALIZING": "جارٍ الاعتماد…",
+      "EDIT_KPI": "تعديل المؤشر",
+      "NEW_KPI": "مؤشر أداء جديد",
+      "KPI_TITLE": "العنوان",
+      "KPI_TITLE_PH": "مثال: مؤشر رضا العملاء",
+      "CATEGORY": "الفئة",
+      "CATEGORY_PH": "مثال: الجودة، المبيعات، القيادة",
+      "TARGET_VALUE": "القيمة المستهدفة",
+      "TARGET_PH": "مثال: 95",
+      "UNIT": "الوحدة",
+      "UNIT_PH": "مثال: %، درجة، مكالمات",
+      "WEIGHT_PCT": "الوزن (%)",
+      "WEIGHT_PH": "0–100",
+      "SAVE_KPI": "حفظ المؤشر"
+    },
+    "MSG": {
+      "CYCLE_CREATED": "تم إنشاء الدورة.",
+      "CYCLE_UPDATED": "تم تحديث الدورة.",
+      "CONFIRM_INITIATE": "بدء دورة \"{{name}}\"؟ سيتم إنشاء سجلات تقييم لجميع الموظفين النشطين.",
+      "INITIATE_FAILED": "تعذّر بدء الدورة.",
+      "SELF_SUBMITTED": "تم تقديم التقييم الذاتي.",
+      "MANAGER_SUBMITTED": "تم تقديم تقييم المدير.",
+      "FINALIZED": "تم اعتماد التقييم نهائياً.",
+      "CONFIRM_DELETE_KPI": "هل تريد حذف هذا المؤشر؟"
+    }
+  }
+}

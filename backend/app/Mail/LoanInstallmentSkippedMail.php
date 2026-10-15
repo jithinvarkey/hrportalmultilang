@@ -7,10 +7,9 @@ namespace App\Mail;
 use App\Models\Loan;
 use App\Models\LoanInstallment;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class LoanInstallmentSkippedMail extends Mailable
+class LoanInstallmentSkippedMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
@@ -21,7 +20,8 @@ class LoanInstallmentSkippedMail extends Mailable
         public LoanInstallment $skippedInstallment,
         public LoanInstallment $replacementInstallment,
         public string $recipientName,
-        public string $performedBy
+        public string $performedBy,
+        public ?string $recipientNameAr = null
     ) {
         $this->loanUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/')
             . '/loans?loan_id=' . $loan->id;
@@ -29,7 +29,7 @@ class LoanInstallmentSkippedMail extends Mailable
 
     public function build(): self
     {
-        return $this->subject("Loan Installment Skipped - {$this->loan->reference}")
+        return $this->subject(__('mail_loan.subject.installment_skipped', ['reference' => $this->loan->reference]))
             ->view('emails.loan.installment-skipped');
     }
 }

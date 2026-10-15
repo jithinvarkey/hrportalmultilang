@@ -9,6 +9,8 @@ use App\Models\JobApplication;
 use App\Models\JobPosting;
 use App\Models\Employee;
 use App\Models\User;
+use App\Support\Locale\LocalizedMail;
+use App\Support\Locale\SupportedLocales;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -53,7 +55,7 @@ class RecruitmentService
         }
 
         try {
-            Mail::to($recipients)->send(new RecruitmentCreatedNotificationMail($type, $record, $addedBy));
+            LocalizedMail::send($recipients, [], fn () => new RecruitmentCreatedNotificationMail($type, $record, $addedBy));
             Log::info("New recruitment {$type} notification sent.", [
                 'record_id' => $record->id,
                 'recipients' => $recipients,
@@ -95,15 +97,19 @@ class RecruitmentService
 
         $recipients = array_values(array_unique(array_filter(array_merge([$email], $interviewerEmails))));
         $testEmail = config('mail.test_email');
-        $mail = Mail::to($recipients);
 
+        // The applicant is not an employee, so their copy is always English; interviewers get their own copy in
+        // their own communication language.
+        $mail = Mail::to($email)->locale(SupportedLocales::DEFAULT);
         if ($testEmail
             && !app()->environment('prod')
             && !in_array($testEmail, $recipients, true)) {
             $mail->cc($testEmail);
         }
-
         $mail->send(new InterviewInviteMail($interview, $interviewers));
+
+        $internal = array_values(array_filter($interviewerEmails, fn ($interviewerEmail) => strcasecmp($interviewerEmail, $email) !== 0));
+        LocalizedMail::send($internal, [], fn () => new InterviewInviteMail($interview, $interviewers));
     }
 
     public function sendApplicantRejection(JobApplication $application): void
@@ -112,7 +118,7 @@ class RecruitmentService
 
         if (!$application->applicant_email) {
             throw ValidationException::withMessages([
-                'email' => 'Applicant email is missing. The applicant was not rejected.',
+                'email' => __('Applicant email is missing. The applicant was not rejected.'),
             ]);
         }
 
@@ -131,7 +137,7 @@ class RecruitmentService
             ]);
 
             throw ValidationException::withMessages([
-                'email' => 'The rejection email could not be sent. The applicant was not rejected: ' . $e->getMessage(),
+                'email' => __('The rejection email could not be sent. The applicant was not rejected: :error', ['error' => $e->getMessage()]),
             ]);
         }
     }
@@ -141,12 +147,18 @@ class RecruitmentService
         $app->loadMissing(['jobPosting.department', 'jobPosting.designation']);
         $offer = $this->documents->generateOfferPdf($app, $data);
 
-        $mail = Mail::to($app->applicant_email);
         $testEmail = config('mail.test_email');
         $ccEmails = $this->offerCcEmails($app->applicant_email, $testEmail);
 
-        if (!empty($ccEmails)) {
-            $mail->cc($ccEmails);
+        // The applicant's copy is always English (applicants are not employees) and keeps the test-address CC;
+        // HR managers get their own copy in their own communication language.
+        $normalizedTestEmail = strtolower(trim((string) $testEmail));
+        $internalCcEmails = array_values(array_filter($ccEmails, fn ($ccEmail) => $ccEmail !== $normalizedTestEmail));
+        $applicantCcEmails = array_values(array_diff($ccEmails, $internalCcEmails));
+
+        $mail = Mail::to($app->applicant_email)->locale(SupportedLocales::DEFAULT);
+        if (!empty($applicantCcEmails)) {
+            $mail->cc($applicantCcEmails);
         }
 
         try {
@@ -158,6 +170,7 @@ class RecruitmentService
             ]);
 
             $mail->send(new RecruitmentOfferMail($app, [$offer]));
+            LocalizedMail::send([], $internalCcEmails, fn () => new RecruitmentOfferMail($app, [$offer]));
 
             Log::info('Recruitment offer email sent.', [
                 'application_id' => $app->id,
@@ -175,7 +188,7 @@ class RecruitmentService
             ]);
 
             throw ValidationException::withMessages([
-                'email' => 'Offer letter generated, but email sending failed: ' . $e->getMessage(),
+                'email' => __('Offer letter generated, but email sending failed: :error', ['error' => $e->getMessage()]),
             ]);
         }
 

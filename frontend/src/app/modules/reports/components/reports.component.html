@@ -3,21 +3,21 @@
   <!-- Header -->
   <div class="page-hdr">
     <div>
-      <h1 class="page-title">Reports</h1>
-      <p class="page-sub">Generate, preview and export reports as Excel (CSV) or PDF</p>
+      <h1 class="page-title">{{ 'REPORTS.TITLE' | translate }}</h1>
+      <p class="page-sub">{{ 'REPORTS.SUBTITLE' | translate }}</p>
     </div>
     <div class="header-actions" *ngIf="activeReport && previewLoaded">
       <button class="btn-export csv" (click)="download('csv')" [disabled]="downloading">
         <mat-icon>table_chart</mat-icon>
-        {{ downloading ? 'Exporting…' : 'Export CSV / Excel' }}
+        {{ (downloading ? 'REPORTS.EXPORTING' : 'REPORTS.EXPORT_CSV_EXCEL') | translate }}
       </button>
       <button class="btn-export csv" *ngIf="activeReport.id === 'attendance'" (click)="download('xlsx')" [disabled]="downloading">
         <mat-icon>grid_on</mat-icon>
-        {{ downloading ? 'Exportingâ€¦' : 'Monthly XLSX' }}
+        {{ (downloading ? 'REPORTS.EXPORTING' : 'REPORTS.MONTHLY_XLSX') | translate }}
       </button>
       <button class="btn-export pdf" (click)="download('pdf')" [disabled]="downloading">
         <mat-icon>picture_as_pdf</mat-icon>
-        {{ downloading ? 'Exporting…' : 'Export PDF' }}
+        {{ (downloading ? 'REPORTS.EXPORTING' : 'REPORTS.EXPORT_PDF') | translate }}
       </button>
     </div>
   </div>
@@ -33,10 +33,10 @@
           <mat-icon>{{ r.icon }}</mat-icon>
         </div>
         <div class="rc-body">
-          <div class="rc-label">{{ r.label }}</div>
-          <div class="rc-desc">{{ r.description }}</div>
+          <div class="rc-label">{{ 'REPORTS.DEFS.' + r.key + '.LABEL' | translate }}</div>
+          <div class="rc-desc">{{ 'REPORTS.DEFS.' + r.key + '.DESC' | translate }}</div>
         </div>
-        <mat-icon class="rc-chevron">chevron_right</mat-icon>
+        <mat-icon class="rc-chevron flip-rtl">chevron_right</mat-icon>
       </div>
     </div>
 
@@ -49,8 +49,8 @@
           <mat-icon>{{ activeReport.icon }}</mat-icon>
         </div>
         <div>
-          <div class="panel-title">{{ activeReport.label }}</div>
-          <div class="panel-sub">{{ activeReport.description }}</div>
+          <div class="panel-title">{{ 'REPORTS.DEFS.' + activeReport.key + '.LABEL' | translate }}</div>
+          <div class="panel-sub">{{ 'REPORTS.DEFS.' + activeReport.key + '.DESC' | translate }}</div>
         </div>
       </div>
 
@@ -58,83 +58,83 @@
       <div class="filters-row">
 
         <div class="filter-group" *ngIf="hasFilter('month')">
-          <label class="filter-label">Month</label>
-          <input class="filter-input" type="month" [(ngModel)]="filters.month">
+          <label class="filter-label">{{ 'COMMON.MONTH' | translate }}</label>
+          <input class="filter-input" type="month" dir="ltr" [(ngModel)]="filters.month">
         </div>
 
         <div class="filter-group" *ngIf="hasFilter('year')">
-          <label class="filter-label">Year</label>
-          <select class="filter-select" [(ngModel)]="filters.year">
+          <label class="filter-label">{{ 'COMMON.YEAR' | translate }}</label>
+          <select class="filter-select" dir="ltr" [(ngModel)]="filters.year">
             <option *ngFor="let y of YEARS" [value]="y">{{ y }}</option>
           </select>
         </div>
 
         <div class="filter-group" *ngIf="hasFilter('from')">
-          <label class="filter-label">From</label>
-          <input class="filter-input" type="date" [(ngModel)]="filters.from">
+          <label class="filter-label">{{ 'COMMON.FROM' | translate }}</label>
+          <input class="filter-input" type="date" dir="ltr" [(ngModel)]="filters.from">
         </div>
 
         <div class="filter-group" *ngIf="hasFilter('to')">
-          <label class="filter-label">To</label>
-          <input class="filter-input" type="date" [(ngModel)]="filters.to">
+          <label class="filter-label">{{ 'COMMON.TO' | translate }}</label>
+          <input class="filter-input" type="date" dir="ltr" [(ngModel)]="filters.to">
         </div>
 
         <div class="filter-group" *ngIf="hasFilter('department')">
-          <label class="filter-label">Department</label>
+          <label class="filter-label">{{ 'COMMON.DEPARTMENT' | translate }}</label>
           <select class="filter-select" [(ngModel)]="filters.department_id">
-            <option value="">All Departments</option>
-            <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+            <option value="">{{ 'REPORTS.ALL_DEPARTMENTS' | translate }}</option>
+            <option *ngFor="let d of departments" [value]="d.id">{{ d | locName }}</option>
           </select>
         </div>
 
         <div class="filter-group" *ngIf="hasFilter('status') && activeReport.id === 'employees'">
-          <label class="filter-label">Status</label>
+          <label class="filter-label">{{ 'COMMON.STATUS' | translate }}</label>
           <select class="filter-select" [(ngModel)]="filters.status">
-            <option value="">All Statuses</option>
-            <option *ngFor="let s of EMP_STATUSES" [value]="s">{{ s | titlecase }}</option>
+            <option value="">{{ 'REPORTS.ALL_STATUSES' | translate }}</option>
+            <option *ngFor="let s of EMP_STATUSES" [value]="s">{{ statusText(s) }}</option>
           </select>
         </div>
 
         <div class="filter-group" *ngIf="hasFilter('status') && activeReport.id === 'leave-requests'">
-          <label class="filter-label">Status</label>
+          <label class="filter-label">{{ 'COMMON.STATUS' | translate }}</label>
           <select class="filter-select" [(ngModel)]="filters.status">
-            <option value="">All Statuses</option>
-            <option *ngFor="let s of LEAVE_STATUSES" [value]="s">{{ s | titlecase }}</option>
+            <option value="">{{ 'REPORTS.ALL_STATUSES' | translate }}</option>
+            <option *ngFor="let s of LEAVE_STATUSES" [value]="s">{{ statusText(s) }}</option>
           </select>
         </div>
 
         <div class="filter-group" *ngIf="hasFilter('status') && activeReport.id === 'attendance'">
-          <label class="filter-label">Status</label>
+          <label class="filter-label">{{ 'COMMON.STATUS' | translate }}</label>
           <select class="filter-select" [(ngModel)]="filters.status">
-            <option value="">All Statuses</option>
-            <option *ngFor="let s of ATT_STATUSES" [value]="s">{{ s | titlecase }}</option>
+            <option value="">{{ 'REPORTS.ALL_STATUSES' | translate }}</option>
+            <option *ngFor="let s of ATT_STATUSES" [value]="s">{{ statusText(s) }}</option>
           </select>
         </div>
 
         <div class="filter-group" *ngIf="hasFilter('status') && activeReport.id === 'loans'">
-          <label class="filter-label">Status</label>
+          <label class="filter-label">{{ 'COMMON.STATUS' | translate }}</label>
           <select class="filter-select" [(ngModel)]="filters.status">
-            <option value="">All Statuses</option>
-            <option *ngFor="let s of LOAN_STATUSES" [value]="s">{{ s | titlecase }}</option>
+            <option value="">{{ 'REPORTS.ALL_STATUSES' | translate }}</option>
+            <option *ngFor="let s of LOAN_STATUSES" [value]="s">{{ statusText(s) }}</option>
           </select>
         </div>
 
         <div class="filter-group" *ngIf="hasFilter('leave_type')">
-          <label class="filter-label">Leave Type</label>
+          <label class="filter-label">{{ 'REPORTS.LEAVE_TYPE' | translate }}</label>
           <select class="filter-select" [(ngModel)]="filters.leave_type_id">
-            <option value="">All Types</option>
-            <option *ngFor="let t of leaveTypes" [value]="t.id">{{ t.name }}</option>
+            <option value="">{{ 'REPORTS.ALL_TYPES' | translate }}</option>
+            <option *ngFor="let t of leaveTypes" [value]="t.id">{{ t | locName }}</option>
           </select>
         </div>
 
         <!-- Run button -->
         <button class="btn-run" (click)="runPreview()" [disabled]="loading">
           <mat-icon>{{ loading ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
-          {{ loading ? 'Loading…' : 'Run Report' }}
+          {{ (loading ? 'COMMON.LOADING' : 'REPORTS.RUN') | translate }}
         </button>
         <button class="btn-run" *ngIf="activeReport.id === 'attendance'" (click)="download('xlsx')" [disabled]="downloading">
           <mat-icon>table_view</mat-icon>
-          Fetch XLSX Report
+          {{ 'REPORTS.FETCH_XLSX' | translate }}
         </button>
 
       </div>
@@ -151,17 +151,17 @@
         <div class="summary-bar">
           <div class="sb-count">
             <mat-icon>table_rows</mat-icon>
-            <strong>{{ previewTotal }}</strong> records
+            <strong>{{ previewTotal }}</strong> {{ 'REPORTS.RECORDS' | translate }}
           </div>
           <div class="sb-export">
             <button class="btn-dl csv" (click)="download('csv')" [disabled]="downloading">
-              <mat-icon>grid_on</mat-icon> CSV / Excel
+              <mat-icon>grid_on</mat-icon> {{ 'REPORTS.CSV_EXCEL' | translate }}
             </button>
             <button class="btn-dl csv" *ngIf="activeReport.id === 'attendance'" (click)="download('xlsx')" [disabled]="downloading">
-              <mat-icon>table_view</mat-icon> Fetch XLSX Report
+              <mat-icon>table_view</mat-icon> {{ 'REPORTS.FETCH_XLSX' | translate }}
             </button>
             <button class="btn-dl pdf" (click)="download('pdf')" [disabled]="downloading">
-              <mat-icon>picture_as_pdf</mat-icon> PDF
+              <mat-icon>picture_as_pdf</mat-icon> {{ 'REPORTS.PDF' | translate }}
             </button>
           </div>
         </div>
@@ -169,15 +169,15 @@
         <!-- Empty state -->
         <div class="empty-preview" *ngIf="!previewData.length">
           <mat-icon>search_off</mat-icon>
-          <p>No records match the selected filters.</p>
+          <p>{{ 'REPORTS.EMPTY' | translate }}</p>
         </div>
 
         <!-- Data table -->
-        <div class="preview-wrap" *ngIf="previewData.length">
+        <div class="preview-wrap table-scroll" *ngIf="previewData.length">
           <table class="preview-table">
             <thead>
               <tr>
-                <th *ngFor="let h of activeReport.headers">{{ h }}</th>
+                <th *ngFor="let h of activeReport.headers">{{ 'REPORTS.COL.' + h | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -185,7 +185,7 @@
                 <td *ngFor="let col of activeReport.columns; let ci = index">
                   <ng-container [ngSwitch]="col">
                     <span *ngSwitchCase="'status'" [ngClass]="['status-badge', statusCls(row['status'] ?? row[col])]">
-                      {{ row['status'] ?? row[col] ?? '—' }}
+                      {{ (row['status'] ?? row[col]) ? statusText(row['status'] ?? row[col]) : '—' }}
                     </span>
                     <span *ngSwitchDefault>{{ getCellValue(row, col) ?? '—' }}</span>
                   </ng-container>
@@ -194,7 +194,7 @@
             </tbody>
           </table>
           <div class="preview-note" *ngIf="previewTotal > 50">
-            Showing first 50 of {{ previewTotal }} records. Download CSV/PDF for full data.
+            {{ 'REPORTS.SHOWING_FIRST' | translate:{total: previewTotal} }}
           </div>
         </div>
 
@@ -203,8 +203,8 @@
       <!-- Idle state (before run) -->
       <div class="idle-state" *ngIf="!previewLoaded && !loading && !error">
         <mat-icon [style.color]="activeReport.color">{{ activeReport.icon }}</mat-icon>
-        <p>Set filters above and click <strong>Run Report</strong> to preview data.</p>
-        <p class="idle-sub">The full dataset will be included in CSV/PDF exports.</p>
+        <p [innerHTML]="'REPORTS.IDLE' | translate"></p>
+        <p class="idle-sub">{{ 'REPORTS.IDLE_SUB' | translate }}</p>
       </div>
 
     </div>

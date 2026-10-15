@@ -11,6 +11,10 @@ use Illuminate\Notifications\Messages\MailMessage;
  * Password reset notification whose action link points at the Angular SPA
  * reset page (FRONTEND_URL/auth/reset-password?token=...&email=...) instead of
  * the default backend web route.
+ *
+ * Laravel builds notifications in the notifiable's preferredLocale() (User implements HasLocalePreference),
+ * so the __() calls below and the Blade view are already in the recipient's language. A portal-styled view
+ * is used instead of Laravel's default markdown layout because that layout cannot be switched to RTL.
  */
 class ResetPasswordNotification extends BaseResetPassword
 {
@@ -32,11 +36,12 @@ class ResetPasswordNotification extends BaseResetPassword
         $expire = (int) config('auth.passwords.users.expire', 60);
 
         return (new MailMessage())
-            ->subject('Reset Your HRMS Password')
-            ->greeting('Password Reset Request')
-            ->line('You are receiving this email because we received a password reset request for your account.')
-            ->action('Reset Password', $url)
-            ->line("This password reset link will expire in {$expire} minutes.")
-            ->line('If you did not request a password reset, no further action is required.');
+            ->subject(__('mail_auth.reset_password.subject'))
+            ->view('emails.auth.reset-password', [
+                'url' => $url,
+                'expire' => $expire,
+                'name' => $notifiable->name ?? null,
+                'nameAr' => $notifiable->employee?->arabic_name ?? null,
+            ]);
     }
 }

@@ -188,7 +188,7 @@ class ContractRenewalController extends Controller {
                 ->exists();
 
         if ($existing) {
-            return response()->json(['message' => 'An open renewal request already exists for this contract.'], 422);
+            return response()->json(['message' => __('An open renewal request already exists for this contract.')], 422);
         }
 
         $docData = [];
@@ -220,7 +220,7 @@ class ContractRenewalController extends Controller {
         app(ContractRenewalNotificationService::class)->notifyManagerAndHr($renewal);
 
         return response()->json([
-                    'message' => 'Renewal request created.',
+                    'message' => __('Renewal request created.'),
                     'renewal' => $this->formatRenewal($renewal->load(['employee', 'contract'])),
                         ], 201);
     }
@@ -268,7 +268,7 @@ class ContractRenewalController extends Controller {
         switch ($renewal->status) {
             case 'pending':
                 if (!$user->hasAnyRole(['department_manager', 'hr_manager', 'hr_staff', 'super_admin'])) {
-                    return response()->json(['message' => 'Only managers can approve at this stage.'], 403);
+                    return response()->json(['message' => __('Only managers can approve at this stage.')], 403);
                 }
                 $renewal->update([
                     'status' => 'manager_approved',
@@ -276,12 +276,12 @@ class ContractRenewalController extends Controller {
                     'manager_approved_at' => now(),
                     'manager_notes' => $notes,
                 ]);
-                $message = 'Approved at manager level. Awaiting HR approval.';
+                $message = __('Approved at manager level. Awaiting HR approval.');
                 break;
 
             case 'manager_approved':
                 if (!$user->hasAnyRole(['hr_manager', 'hr_staff', 'super_admin'])) {
-                    return response()->json(['message' => 'Only HR can approve at this stage.'], 403);
+                    return response()->json(['message' => __('Only HR can approve at this stage.')], 403);
                 }
                 $renewal->update([
                     'status' => 'hr_approved',
@@ -289,12 +289,12 @@ class ContractRenewalController extends Controller {
                     'hr_approved_at' => now(),
                     'hr_notes' => $notes,
                 ]);
-                $message = 'Approved by HR. Awaiting CEO approval.';
+                $message = __('Approved by HR. Awaiting CEO approval.');
                 break;
 
             case 'hr_approved':
                 if (!$user->hasAnyRole(['ceo', 'super_admin'])) {
-                    return response()->json(['message' => 'Only the CEO can give final approval.'], 403);
+                    return response()->json(['message' => __('Only the CEO can give final approval.')], 403);
                 }
                 // Final approval — create the new contract
                 $newContract = $this->createRenewedContract($renewal);
@@ -305,11 +305,11 @@ class ContractRenewalController extends Controller {
                     'ceo_notes' => $notes,
                     'new_contract_id' => $newContract->id,
                 ]);
-                $message = 'Final approval granted by CEO. New contract has been created automatically.';
+                $message = __('Final approval granted by CEO. New contract has been created automatically.');
                 break;
 
             default:
-                return response()->json(['message' => "Cannot approve a request with status '{$renewal->status}'."], 422);
+                return response()->json(['message' => __('Cannot approve a request with status \':status\'.', ['status' => \App\Support\Locale\StatusLabel::for($renewal->status)])], 422);
         }
 
         return response()->json([
@@ -336,7 +336,7 @@ class ContractRenewalController extends Controller {
         $request->validate(['reason' => 'required|string|max:1000']);
 
         if (!in_array($renewal->status, ['pending', 'manager_approved', 'hr_approved'])) {
-            return response()->json(['message' => "Cannot reject a request with status '{$renewal->status}'."], 422);
+            return response()->json(['message' => __('Cannot reject a request with status \':status\'.', ['status' => \App\Support\Locale\StatusLabel::for($renewal->status)])], 422);
         }
 
         $canReject = match ($renewal->status) {
@@ -347,7 +347,7 @@ class ContractRenewalController extends Controller {
         };
 
         if (!$canReject) {
-            return response()->json(['message' => 'You are not authorized to reject at this approval stage.'], 403);
+            return response()->json(['message' => __('You are not authorized to reject at this approval stage.')], 403);
         }
 
         $stage = $renewal->current_stage;
@@ -361,7 +361,7 @@ class ContractRenewalController extends Controller {
         ]);
 
         return response()->json([
-                    'message' => "Renewal request rejected at {$stage} stage.",
+                    'message' => __('Renewal request rejected at :stage stage.', ['stage' => __($stage)]),
                     'renewal' => $this->formatRenewal($renewal->fresh(['employee', 'contract', 'rejectedBy'])),
         ]);
     }
@@ -424,7 +424,7 @@ class ContractRenewalController extends Controller {
         ]);
 
         return response()->json([
-                    'message' => 'Renewal document uploaded.',
+                    'message' => __('Renewal document uploaded.'),
                     'renewal' => $this->formatRenewal($renewal->fresh(['employee', 'contract'])),
                         ], 201);
     }
@@ -439,7 +439,7 @@ class ContractRenewalController extends Controller {
         $renewal = ContractRenewalRequest::findOrFail($id);
 
         if (!$renewal->document_path || !Storage::disk('public')->exists($renewal->document_path)) {
-            return response()->json(['message' => 'No document attached to this renewal request.'], 404);
+            return response()->json(['message' => __('No document attached to this renewal request.')], 404);
         }
 
         return Storage::disk('public')->download(
@@ -467,7 +467,7 @@ class ContractRenewalController extends Controller {
             ]);
         }
 
-        return response()->json(['message' => 'Renewal document removed.']);
+        return response()->json(['message' => __('Renewal document removed.')]);
     }
 
     /**
@@ -502,6 +502,7 @@ class ContractRenewalController extends Controller {
         'full_name' => $r->employee->full_name,
         'code' => $r->employee->employee_code,
         'department' => $r->employee->department?->name,
+        'department_ar' => $r->employee->department?->name_ar,
             ] : null,
             'contract' => $r->contract ? [
         'id' => $r->contract->id,

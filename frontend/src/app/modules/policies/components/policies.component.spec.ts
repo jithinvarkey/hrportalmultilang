@@ -1,3 +1,5 @@
+import { TranslateModule } from '@ngx-translate/core';
+import { I18N_PIPES } from '../../../shared/pipes/i18n.pipes';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { FormsModule } from '@angular/forms';
@@ -23,7 +25,7 @@ describe('PoliciesComponent', () => {
     const authStub = { hasAnyRole: () => isManager } as unknown as AuthService;
     TestBed.configureTestingModule({
       declarations: [PoliciesComponent],
-      imports: [HttpClientTestingModule, FormsModule],
+      imports: [HttpClientTestingModule, FormsModule, TranslateModule.forRoot(), ...I18N_PIPES],
       providers: [{ provide: AuthService, useValue: authStub }],
       schemas: [NO_ERRORS_SCHEMA],
     });

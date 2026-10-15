@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\EmployeeDependent;
 use App\Models\LeaveAllocation;
 use App\Mail\EmployeeDocumentUploadedMail;
+use App\Support\Locale\LocalizedMail;
 use App\Services\EmployeeService;
 use App\Services\XlsxReportService;
 use Carbon\Carbon;
@@ -51,7 +52,7 @@ class EmployeeController extends Controller {
 
     public function managerOptions(Request $request): JsonResponse {
         if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => __('Unauthorized.')], 403);
         }
 
         $editingEmployeeId = (int) $request->query('employee_id', 0);
@@ -62,7 +63,7 @@ class EmployeeController extends Controller {
             ->pluck('model_has_roles.model_id');
         $departmentManagerIds = DB::table('departments')->whereNotNull('manager_id')->pluck('manager_id');
 
-        $managers = Employee::with(['department:id,name', 'designation:id,title,level'])
+        $managers = Employee::with(['department:id,name,name_ar', 'designation:id,title,title_ar,level'])
             ->where('id', '<>', $editingEmployeeId)
             ->where(function ($query) use ($roleUserIds, $departmentManagerIds, $currentManagerId) {
                 $query->where(function ($active) use ($roleUserIds, $departmentManagerIds) {
@@ -268,7 +269,7 @@ class EmployeeController extends Controller {
     public function store(Request $request): JsonResponse {
         // Role guard — only HR roles can create employees
         if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => __('Unauthorized.')], 403);
         }
 
         $request->validate([
@@ -288,6 +289,7 @@ class EmployeeController extends Controller {
             'probation_period' => 'nullable|integer|min:0',
             'years_of_experience' => 'nullable|integer|min:0',
             'dob' => 'nullable|date',
+            'preferred_communication_language' => ['nullable', \Illuminate\Validation\Rule::in(\App\Support\Locale\SupportedLocales::ALL)],
         ]);
 
         return DB::transaction(function () use ($request): JsonResponse {
@@ -310,8 +312,13 @@ class EmployeeController extends Controller {
                         'probation_period', 'years_of_experience', 'dob',
                         'nationality', 'gender', 'marital_status',
                         'housing_allowance', 'transport_allowance', 'mobile_allowance',
-                        'food_allowance', 'other_allowances', 'mode_of_employment'
+                        'food_allowance', 'other_allowances', 'mode_of_employment',
+                        'preferred_communication_language',
                     ]);
+                    // Missing/empty language falls back to the column default ('en').
+                    if (empty($employeeData['preferred_communication_language'])) {
+                        unset($employeeData['preferred_communication_language']);
+                    }
 
                     $employee = Employee::create(array_merge($employeeData, [
                                 'user_id' => $user->id,
@@ -322,7 +329,7 @@ class EmployeeController extends Controller {
                     $this->service->createOnboardingTasks($employee);
 
                     return response()->json([
-                        'message' => 'Employee created successfully.',
+                        'message' => __('Employee created successfully.'),
                         'employee' => $employee->load(['department', 'designation']),
                         'temp_password' => $tempPassword,
                             ], 201);
@@ -354,7 +361,7 @@ class EmployeeController extends Controller {
 
             return response()->json(['employee' => $employee]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
-            return response()->json(['message' => 'Employee not found'], 404);
+            return response()->json(['message' => __('Employee not found')], 404);
         }
     }
 
@@ -362,7 +369,7 @@ class EmployeeController extends Controller {
         $employee = Employee::findOrFail($id);
 
         if (!$this->canViewEmployeeLeaveBalances($employee)) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => __('Unauthorized.')], 403);
         }
 
         $asOf = now();
@@ -413,6 +420,7 @@ class EmployeeController extends Controller {
                 'leave_type' => $allocation->leaveType ? [
                     'id' => $allocation->leaveType->id,
                     'name' => $allocation->leaveType->name,
+                    'name_ar' => $allocation->leaveType->name_ar,
                     'code' => $allocation->leaveType->code,
                 ] : null,
             ]);
@@ -437,8 +445,8 @@ class EmployeeController extends Controller {
         if (!$this->canSetCarryForward($employee)) {
             return response()->json([
                 'message' => $employee->status === 'active'
-                    ? 'Only an HR manager or system admin can set carry forward.'
-                    : 'Carry forward can only be set for active employees.',
+                    ? __('Only an HR manager or system admin can set carry forward.')
+                    : __('Carry forward can only be set for active employees.'),
             ], 403);
         }
 
@@ -451,7 +459,7 @@ class EmployeeController extends Controller {
         $periodStart = Carbon::parse($data['period_start'])->startOfDay();
 
         if (!collect($this->contractPeriodsFor($employee, now()))->firstWhere('start_date', $periodStart->toDateString())) {
-            return response()->json(['message' => 'That contract period does not exist for this employee.'], 422);
+            return response()->json(['message' => __('That contract period does not exist for this employee.')], 422);
         }
 
         $allocation = LeaveAllocation::with(['employee', 'leaveType'])
@@ -468,7 +476,7 @@ class EmployeeController extends Controller {
             ->first();
 
         if (!$allocation) {
-            return response()->json(['message' => 'No annual leave allocation exists for that contract period yet.'], 422);
+            return response()->json(['message' => __('No annual leave allocation exists for that contract period yet.')], 422);
         }
 
         $days = $data['carried_forward_days'] === null ? null : (float) $data['carried_forward_days'];
@@ -488,8 +496,8 @@ class EmployeeController extends Controller {
 
         return response()->json([
             'message' => $days === null
-                ? 'Carry forward reset to the calculated value.'
-                : 'Carry forward updated.',
+                ? __('Carry forward reset to the calculated value.')
+                : __('Carry forward updated.'),
             'carried_forward_days' => (float) $allocation->carried_forward_days,
             'remaining_days' => (float) $allocation->remaining_days,
             'carry_forward_overridden' => (bool) $allocation->carry_forward_overridden_at,
@@ -545,13 +553,13 @@ class EmployeeController extends Controller {
         $employee = Employee::findOrFail($id);
         $user = auth()->user();
         if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff']) && (int) $user->employee?->id !== $employee->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => __('Unauthorized.')], 403);
         }
         return response()->json(['dependents' => $employee->dependents()->orderBy('full_name')->get()]);
     }
 
     public function storeDependent(Request $request, int $id): JsonResponse {
-        if (!$this->canManageDependents($id)) return response()->json(['message' => 'Unauthorized.'], 403);
+        if (!$this->canManageDependents($id)) return response()->json(['message' => __('Unauthorized.')], 403);
         $employee = Employee::findOrFail($id);
         $data = $this->validateDependent($request);
         $data = $this->storeDependentFiles($request, $id, $data);
@@ -559,7 +567,7 @@ class EmployeeController extends Controller {
     }
 
     public function updateDependent(Request $request, int $id, int $dependentId): JsonResponse {
-        if (!$this->canManageDependents($id)) return response()->json(['message' => 'Unauthorized.'], 403);
+        if (!$this->canManageDependents($id)) return response()->json(['message' => __('Unauthorized.')], 403);
         $dependent = EmployeeDependent::where('employee_id', $id)->findOrFail($dependentId);
         $data = $this->storeDependentFiles($request, $id, $this->validateDependent($request), $dependent);
         $dependent->update($data);
@@ -567,19 +575,19 @@ class EmployeeController extends Controller {
     }
 
     public function deleteDependent(int $id, int $dependentId): JsonResponse {
-        if (!$this->canManageDependents($id)) return response()->json(['message' => 'Unauthorized.'], 403);
+        if (!$this->canManageDependents($id)) return response()->json(['message' => __('Unauthorized.')], 403);
         $dependent = EmployeeDependent::where('employee_id', $id)->findOrFail($dependentId);
         Storage::delete(array_filter([$dependent->passport_file_path, $dependent->id_file_path]));
         $dependent->delete();
-        return response()->json(['message' => 'Dependent deleted.']);
+        return response()->json(['message' => __('Dependent deleted.')]);
     }
 
     public function downloadDependentDocument(int $id, int $dependentId, string $type) {
-        if (!$this->canManageDependents($id)) return response()->json(['message' => 'Unauthorized.'], 403);
+        if (!$this->canManageDependents($id)) return response()->json(['message' => __('Unauthorized.')], 403);
         $dependent = EmployeeDependent::where('employee_id', $id)->findOrFail($dependentId);
         $path = $type === 'passport' ? $dependent->passport_file_path : $dependent->id_file_path;
         $name = $type === 'passport' ? $dependent->passport_file_name : $dependent->id_file_name;
-        if (!$path || !Storage::exists($path)) return response()->json(['message' => 'Document not found.'], 404);
+        if (!$path || !Storage::exists($path)) return response()->json(['message' => __('Document not found.')], 404);
         return Storage::download($path, $name ?: basename($path));
     }
 
@@ -633,11 +641,11 @@ class EmployeeController extends Controller {
         $employee = Employee::findOrFail($id);
 
         if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff']) && (int) auth()->user()?->employee?->id !== $employee->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => __('Unauthorized.')], 403);
         }
 
         if ($request->has('extension') && !$this->hasAnyRoleDB(['super_admin', 'hr_manager'])) {
-            return response()->json(['message' => 'Only an HR manager or system administrator can update the telephone extension.'], 403);
+            return response()->json(['message' => __('Only an HR manager or system administrator can update the telephone extension.')], 403);
         }
 
         $data = $request->validate([
@@ -645,6 +653,7 @@ class EmployeeController extends Controller {
             'first_name' => 'sometimes|required|string|max:100',
             'last_name' => 'sometimes|required|string|max:100',
             'arabic_name' => 'sometimes|nullable|string|max:200',
+            'preferred_communication_language' => ['sometimes', 'nullable', \Illuminate\Validation\Rule::in(\App\Support\Locale\SupportedLocales::ALL)],
             'email' => 'sometimes|required|email|unique:employees,email,' . $id,
             'phone' => 'sometimes|nullable|string|max:30',
             'work_phone' => 'sometimes|nullable|string|max:30',
@@ -683,6 +692,9 @@ class EmployeeController extends Controller {
             'emergency_contact_relation' => 'sometimes|nullable|string|max:50',
             'notes' => 'sometimes|nullable|string|max:2000',
         ]);
+        if (array_key_exists('preferred_communication_language', $data) && empty($data['preferred_communication_language'])) {
+            unset($data['preferred_communication_language']);
+        }
 
         $employee->update($data);
 
@@ -694,7 +706,7 @@ class EmployeeController extends Controller {
         }
 
         return response()->json([
-                    'message' => 'Employee updated successfully.',
+                    'message' => __('Employee updated successfully.'),
                     'employee' => $employee->load(['department', 'unit', 'designation']),
         ]);
     }
@@ -710,7 +722,7 @@ class EmployeeController extends Controller {
         $employee->delete();
         $employee->user?->tokens()->delete();
 
-        return response()->json(['message' => 'Employee terminated and archived.']);
+        return response()->json(['message' => __('Employee terminated and archived.')]);
     }
 
     // ── Avatar / Documents / Export ───────────────────────────────────────
@@ -726,7 +738,7 @@ class EmployeeController extends Controller {
     }
 
     public function uploadDocument(Request $request, int $id): JsonResponse {
-        if (!$this->canManageDependents($id)) return response()->json(['message' => 'Unauthorized.'], 403);
+        if (!$this->canManageDependents($id)) return response()->json(['message' => __('Unauthorized.')], 403);
         $request->validate([
             'title' => 'required|string|max:100',
             'type' => 'required|in:contract,id,certificate,visa,passport,medical,other',
@@ -771,10 +783,8 @@ class EmployeeController extends Controller {
                 return;
             }
 
-            $primaryEmail = $hrEmails->shift();
-            Mail::to($primaryEmail)
-                ->cc($hrEmails->all())
-                ->send(new EmployeeDocumentUploadedMail($employee, $document));
+            // One message per language group: the first HR address of each group in To, the others in CC.
+            LocalizedMail::send([], $hrEmails->all(), fn () => new EmployeeDocumentUploadedMail($employee, $document));
         } catch (\Throwable $e) {
             Log::warning('Employee document verification email failed.', [
                 'employee_id' => $employee->id,
@@ -785,21 +795,21 @@ class EmployeeController extends Controller {
     }
 
     public function listDocuments(int $id): JsonResponse {
-        if (!$this->canManageDependents($id)) return response()->json(['message' => 'Unauthorized.'], 403);
+        if (!$this->canManageDependents($id)) return response()->json(['message' => __('Unauthorized.')], 403);
         return response()->json(['documents' => Employee::findOrFail($id)->documents()->latest()->get()]);
     }
 
     public function deleteDocument(int $id, int $docId): JsonResponse {
-        if (!$this->canManageDependents($id)) return response()->json(['message' => 'Unauthorized.'], 403);
+        if (!$this->canManageDependents($id)) return response()->json(['message' => __('Unauthorized.')], 403);
         $doc = Employee::findOrFail($id)->documents()->findOrFail($docId);
         Storage::delete($doc->file_path);
         $doc->delete();
-        return response()->json(['message' => 'Document deleted']);
+        return response()->json(['message' => __('Document deleted')]);
     }
 
     public function approveDocument(int $id, int $docId): JsonResponse {
         if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff'])) {
-            return response()->json(['message' => 'Only HR or a super admin can approve documents.'], 403);
+            return response()->json(['message' => __('Only HR or a super admin can approve documents.')], 403);
         }
         $doc = Employee::findOrFail($id)->documents()->findOrFail($docId);
         $doc->update([
@@ -807,14 +817,14 @@ class EmployeeController extends Controller {
             'verified_by' => auth()->id(),
             'verified_at' => now(),
         ]);
-        return response()->json(['message' => 'Document approved.', 'document' => $doc->fresh()]);
+        return response()->json(['message' => __('Document approved.'), 'document' => $doc->fresh()]);
     }
 
     public function downloadDocument(int $id, int $docId) {
-        if (!$this->canManageDependents($id)) return response()->json(['message' => 'Unauthorized.'], 403);
+        if (!$this->canManageDependents($id)) return response()->json(['message' => __('Unauthorized.')], 403);
         $doc = Employee::findOrFail($id)->documents()->findOrFail($docId);
         if (!Storage::exists($doc->file_path)) {
-            return response()->json(['message' => 'File not found'], 404);
+            return response()->json(['message' => __('File not found')], 404);
         }
         return Storage::download($doc->file_path, $doc->file_name);
     }
@@ -825,7 +835,7 @@ class EmployeeController extends Controller {
 
     public function downloadDetailsReport(Request $request) {
         if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => __('Unauthorized.')], 403);
         }
 
         $query = Employee::with(['department', 'unit', 'designation', 'manager'])

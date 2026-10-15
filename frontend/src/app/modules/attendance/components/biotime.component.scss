@@ -120,11 +120,17 @@
 
 /* ── Stats drawer ────────────────────────────────────────────────────── */
 .stats-drawer {
-  position:fixed; top:0; right:0; height:100vh; width:min(420px, 94vw); z-index:61;
-  background:var(--surface); border-left:1px solid var(--border);
+  position:fixed; top:0; inset-inline-end:0; height:100vh; height:100dvh; width:min(420px, 94vw); z-index:61;
+  background:var(--surface); border-inline-start:1px solid var(--border);
   box-shadow:-12px 0 40px rgba(0,0,0,.25);
   transform:translateX(100%); transition:transform .25s ease;
   display:flex; flex-direction:column;
+  &.open { transform:translateX(0); }
+}
+/* RTL: the drawer slides in from the left edge */
+:host-context([dir=rtl]) .stats-drawer {
+  box-shadow:12px 0 40px rgba(0,0,0,.25);
+  transform:translateX(-100%);
   &.open { transform:translateX(0); }
 }
 .drawer-body { padding:20px; overflow:auto; }
@@ -133,3 +139,30 @@
   &.warn { border-color:color-mix(in srgb, var(--warning, #f59e0b) 50%, var(--border)); }
   .sb-num { font-size:26px; font-weight:800; color:var(--text); font-family:'IBM Plex Sans', sans-serif; }
   .sb-lbl { font-size:11px; color:var(--text3); margin-top:4px; text-transform:uppercase; letter-spacing:.03em; } }
+
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .device-grid { grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  .page-header h1 { font-size:19px; }
+  .page-header .btn { justify-content:center; min-height:40px; }
+  .device-grid { grid-template-columns:1fr; gap:12px; }
+  .device-card { padding:14px; }
+  .empty-state { padding:48px 16px; }
+  .btn-sm { min-height:36px; padding:6px 12px; }
+  .dc-actions .btn-sm:not(.danger) { flex:1 1 auto; justify-content:center; }
+  .two-col { grid-template-columns:1fr; }
+  .fg input, .fg select { min-height:40px; box-sizing:border-box; }
+  .modal-footer { flex-wrap:wrap;
+    .btn, .btn-outline { flex:1 1 auto; justify-content:center; min-height:40px; } }
+  .icon-btn { min-width:36px; min-height:36px; justify-content:center; }
+}
+
+@media (max-width: 480px) {
+  .modal-hdr, .modal-body, .modal-footer { padding-inline:14px; }
+  .dc-meta { gap:10px; }
+  .dcm-item { min-width:calc(50% - 10px); }
+}

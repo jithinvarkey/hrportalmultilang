@@ -16,6 +16,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   otpForm!: FormGroup;
   hidePassword = true;
   loading = false;
+  /** API message (localised by the backend) or an AUTH.* key; the template pipes it through translate. */
   errorMsg = '';
   otpStep = false;
   challengeToken = '';
@@ -66,7 +67,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.loading = false;
         this.errorMsg = err?.error?.message
           ?? err?.error?.errors?.email?.[0]
-          ?? 'Login failed';
+          ?? 'AUTH.LOGIN.FAILED';
       },
     });
   }
@@ -96,7 +97,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.loading = false;
         this.errorMsg = err?.error?.message
           ?? err?.error?.errors?.otp?.[0]
-          ?? 'OTP verification failed';
+          ?? 'AUTH.OTP.VERIFY_FAILED';
       },
     });
   }
@@ -118,7 +119,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.resendCoolingDown = false;
         this.errorMsg = err?.error?.message
           ?? err?.error?.errors?.otp?.[0]
-          ?? 'Could not resend OTP';
+          ?? 'AUTH.OTP.RESEND_FAILED';
       },
     });
   }

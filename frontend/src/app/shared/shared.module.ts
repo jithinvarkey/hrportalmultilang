@@ -2,6 +2,8 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { BidiModule } from '@angular/cdk/bidi';
+import { TranslateModule } from '@ngx-translate/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -27,7 +29,10 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MainLayoutComponent } from './components/main-layout/main-layout.component';
+import { LanguageSwitcherComponent } from './components/language-switcher/language-switcher.component';
+import { BilingualNameComponent } from './components/bilingual-name/bilingual-name.component';
 import { ButtonClickLoadingDirective } from './directives/button-click-loading.directive';
+import { I18N_PIPES } from './pipes/i18n.pipes';
 
 const MATERIAL = [
   MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule,
@@ -39,9 +44,13 @@ const MATERIAL = [
   MatTooltipModule, MatProgressSpinnerModule
 ];
 
+// Every feature module imports SharedModule, so the translate pipe, i18n pipes
+// and the language switcher are available on every page.
+const I18N = [TranslateModule, BidiModule, LanguageSwitcherComponent, BilingualNameComponent, ...I18N_PIPES];
+
 @NgModule({
   declarations: [MainLayoutComponent],
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, ButtonClickLoadingDirective, ...MATERIAL],
-  exports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, MainLayoutComponent, ButtonClickLoadingDirective, ...MATERIAL]
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, ButtonClickLoadingDirective, ...I18N, ...MATERIAL],
+  exports: [CommonModule, RouterModule, ReactiveFormsModule, FormsModule, MainLayoutComponent, ButtonClickLoadingDirective, ...I18N, ...MATERIAL]
 })
 export class SharedModule {}

@@ -5,10 +5,9 @@ namespace App\Mail;
 use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class EmployeeDocumentUploadedMail extends Mailable
+class EmployeeDocumentUploadedMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
@@ -20,7 +19,7 @@ class EmployeeDocumentUploadedMail extends Mailable
 
     public function build(): self
     {
-        return $this->subject('Employee document pending verification')
+        return $this->subject(__('mail_onboarding.document.subject'))
             ->view('emails.employee-document-uploaded');
     }
 }

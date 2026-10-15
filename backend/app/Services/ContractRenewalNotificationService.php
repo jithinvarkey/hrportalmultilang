@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\Mail\ContractRenewalReminderMail;
 use App\Models\ContractRenewalRequest;
+use App\Support\Locale\LocalizedMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class ContractRenewalNotificationService
 {
@@ -29,7 +29,8 @@ class ContractRenewalNotificationService
         $cc = array_values(array_diff($hrEmails, [$to]));
 
         try {
-            Mail::to($to)->cc($cc)->send(new ContractRenewalReminderMail($renewal));
+            // One message per language group so the manager and each HR member get their own language.
+            LocalizedMail::send([$to], $cc, fn () => new ContractRenewalReminderMail($renewal));
             Log::info('[Contracts] Renewal notification sent', [
                 'renewal_reference' => $renewal->reference,
                 'to' => $to,

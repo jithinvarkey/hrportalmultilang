@@ -1,11 +1,11 @@
 <div class="page-header">
   <div>
-    <h1><mat-icon>policy</mat-icon> HR Policies</h1>
-    <p>Company policies and guidelines for all employees</p>
+    <h1><mat-icon>policy</mat-icon> {{ 'POLICIES.TITLE' | translate }}</h1>
+    <p>{{ 'POLICIES.SUBTITLE' | translate }}</p>
   </div>
   <div class="hdr-actions" *ngIf="isManager">
-    <button class="btn-outline" (click)="openCategories()"><mat-icon>sell</mat-icon> Categories</button>
-    <button class="btn btn-primary" (click)="openForm()"><mat-icon>add</mat-icon> New Policy</button>
+    <button class="btn-outline" (click)="openCategories()"><mat-icon>sell</mat-icon> {{ 'POLICIES.CATEGORIES' | translate }}</button>
+    <button class="btn btn-primary" (click)="openForm()"><mat-icon>add</mat-icon> {{ 'POLICIES.NEW' | translate }}</button>
   </div>
 </div>
 
@@ -14,22 +14,22 @@
 <!-- Acknowledgement reminder -->
 <div class="ack-reminder" *ngIf="!isManager && pendingAckCount">
   <mat-icon>assignment_late</mat-icon>
-  You have <strong>{{ pendingAckCount }}</strong> {{ pendingAckCount === 1 ? 'policy' : 'policies' }} awaiting your acknowledgement.
+  <span [innerHTML]="(pendingAckCount === 1 ? 'POLICIES.ACK_REMINDER_ONE' : 'POLICIES.ACK_REMINDER_MANY') | translate:{ count: pendingAckCount }"></span>
 </div>
 
 <!-- Filters -->
 <div class="filters">
   <div class="search-box">
     <mat-icon>search</mat-icon>
-    <input [(ngModel)]="search" (keyup.enter)="onFilterChange()" placeholder="Search policies…">
+    <input [(ngModel)]="search" (keyup.enter)="onFilterChange()" [placeholder]="'POLICIES.SEARCH_PLACEHOLDER' | translate">
   </div>
   <select [(ngModel)]="filterCategoryId" (ngModelChange)="onFilterChange()">
-    <option [ngValue]="null">All categories</option>
-    <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
+    <option [ngValue]="null">{{ 'POLICIES.ALL_CATEGORIES' | translate }}</option>
+    <option *ngFor="let c of categories" [ngValue]="c.id">{{ c | locName }}</option>
   </select>
   <select *ngIf="isManager" [(ngModel)]="filterDepartmentId" (ngModelChange)="onFilterChange()">
-    <option [ngValue]="null">All departments</option>
-    <option *ngFor="let d of departments" [ngValue]="d.id">{{ d.name }}</option>
+    <option [ngValue]="null">{{ 'POLICIES.ALL_DEPARTMENTS' | translate }}</option>
+    <option *ngFor="let d of departments" [ngValue]="d.id">{{ d | locName }}</option>
   </select>
 </div>
 
@@ -40,42 +40,42 @@
   <div class="policy-group" *ngFor="let g of grouped">
     <div class="group-head">
       <mat-icon>{{ g.icon || 'folder' }}</mat-icon>
-      <span>{{ g.name }}</span>
+      <span>{{ g.category ? (g.category | locName) : ('POLICIES.UNCATEGORIZED' | translate) }}</span>
       <span class="group-count">{{ g.items.length }}</span>
     </div>
 
     <div class="policy-row" *ngFor="let p of g.items">
       <button type="button" class="pr-main pr-open" (click)="openReader(p)">
         <div class="pr-title">
-          {{ p.title }}
-          <span class="ver-chip">v{{ p.version }}</span>
-          <span class="type-chip" *ngIf="p.document_type">{{ p.document_type }}</span>
-          <span class="mand-flag" *ngIf="p.mandatory">Mandatory</span>
-          <span class="draft-flag" *ngIf="!p.is_published">Draft</span>
+          <span class="pr-title-text" dir="auto">{{ p.title }}</span>
+          <span class="ver-chip" dir="ltr">v{{ p.version }}</span>
+          <span class="type-chip" *ngIf="p.document_type">{{ documentTypeLabel(p.document_type) }}</span>
+          <span class="mand-flag" *ngIf="p.mandatory">{{ 'POLICIES.MANDATORY' | translate }}</span>
+          <span class="draft-flag" *ngIf="!p.is_published">{{ 'draft' | statusLabel }}</span>
         </div>
         <div class="pr-meta">
-          <span *ngIf="p.effective_date">Effective {{ p.effective_date | date:'MMM d, y' }}</span>
-          <span *ngIf="p.has_attachment"><mat-icon>attach_file</mat-icon> Document</span>
+          <span *ngIf="p.effective_date">{{ 'POLICIES.EFFECTIVE_ON' | translate:{ date: (p.effective_date | locDate:'MMM d, y') } }}</span>
+          <span *ngIf="p.has_attachment"><mat-icon>attach_file</mat-icon> {{ 'POLICIES.DOCUMENT' | translate }}</span>
         </div>
       </button>
       <div class="pr-status">
-        <span class="ack-badge done" *ngIf="p.acknowledged"><mat-icon>check_circle</mat-icon> Acknowledged</span>
-        <span class="ack-badge read" *ngIf="!isManager && p.is_read"><mat-icon>done_all</mat-icon> Read</span>
-        <span class="ack-badge pending" *ngIf="!p.acknowledged && p.requires_acknowledgement"><mat-icon>pending</mat-icon> Action needed</span>
+        <span class="ack-badge done" *ngIf="p.acknowledged"><mat-icon>check_circle</mat-icon> {{ 'POLICIES.ACKNOWLEDGED' | translate }}</span>
+        <span class="ack-badge read" *ngIf="!isManager && p.is_read"><mat-icon>done_all</mat-icon> {{ 'POLICIES.READ' | translate }}</span>
+        <span class="ack-badge pending" *ngIf="!p.acknowledged && p.requires_acknowledgement"><mat-icon>pending</mat-icon> {{ 'POLICIES.ACTION_NEEDED' | translate }}</span>
         <span class="read-total" *ngIf="isManager"><mat-icon>visibility</mat-icon> {{ p.reads_count || 0 }}</span>
-        <button type="button" class="action-btn" *ngIf="isManager" (click)="onPolicyAction($event, 'report', p)"><mat-icon>fact_check</mat-icon><span>Report</span></button>
-        <button type="button" class="action-btn" *ngIf="isManager" (click)="onPolicyAction($event, 'edit', p)"><mat-icon>edit</mat-icon><span>Edit</span></button>
-        <button type="button" class="action-btn warn" *ngIf="isManager" (click)="onPolicyAction($event, 'publish', p)"><mat-icon>{{ p.is_published ? 'visibility_off' : 'publish' }}</mat-icon><span>{{ p.is_published ? 'Draft' : 'Publish' }}</span></button>
-        <button type="button" class="action-btn danger" *ngIf="isManager" (click)="onPolicyAction($event, 'delete', p)"><mat-icon>delete_outline</mat-icon><span>Delete</span></button>
-        <button type="button" class="action-btn" *ngIf="!isManager" (click)="onPolicyAction($event, 'open', p)"><mat-icon>open_in_new</mat-icon><span>Open</span></button>
-        <button type="button" class="icon-btn" (click)="onPolicyAction($event, 'open', p)" matTooltip="View policy"><mat-icon>chevron_right</mat-icon></button>
+        <button type="button" class="action-btn" *ngIf="isManager" (click)="onPolicyAction($event, 'report', p)"><mat-icon>fact_check</mat-icon><span>{{ 'POLICIES.REPORT' | translate }}</span></button>
+        <button type="button" class="action-btn" *ngIf="isManager" (click)="onPolicyAction($event, 'edit', p)"><mat-icon>edit</mat-icon><span>{{ 'COMMON.EDIT' | translate }}</span></button>
+        <button type="button" class="action-btn warn" *ngIf="isManager" (click)="onPolicyAction($event, 'publish', p)"><mat-icon>{{ p.is_published ? 'visibility_off' : 'publish' }}</mat-icon><span>{{ (p.is_published ? 'POLICIES.DRAFT_ACTION' : 'POLICIES.PUBLISH') | translate }}</span></button>
+        <button type="button" class="action-btn danger" *ngIf="isManager" (click)="onPolicyAction($event, 'delete', p)"><mat-icon>delete_outline</mat-icon><span>{{ 'COMMON.DELETE' | translate }}</span></button>
+        <button type="button" class="action-btn" *ngIf="!isManager" (click)="onPolicyAction($event, 'open', p)"><mat-icon>open_in_new</mat-icon><span>{{ 'POLICIES.OPEN' | translate }}</span></button>
+        <button type="button" class="icon-btn" (click)="onPolicyAction($event, 'open', p)" [matTooltip]="'POLICIES.VIEW_POLICY' | translate" [attr.aria-label]="'POLICIES.VIEW_POLICY' | translate"><mat-icon class="flip-rtl">chevron_right</mat-icon></button>
       </div>
     </div>
   </div>
 
   <div class="empty-hint" *ngIf="!policies.length">
     <mat-icon>policy</mat-icon>
-    <p>No policies published yet.</p>
+    <p>{{ 'POLICIES.EMPTY' | translate }}</p>
   </div>
 </div>
 
@@ -84,53 +84,53 @@
 <div class="reader-drawer" [class.open]="showReader" (contextmenu)="blockPolicyActions($event)" (dragstart)="blockPolicyActions($event)">
   <ng-container *ngIf="selected">
     <div class="modal-hdr">
-      <h3><mat-icon>policy</mat-icon> {{ selected.title }}</h3>
-      <button class="icon-btn" (click)="closeReader()"><mat-icon>close</mat-icon></button>
+      <h3><mat-icon>policy</mat-icon> <span class="reader-title" dir="auto">{{ selected.title }}</span></h3>
+      <button class="icon-btn reader-close" (click)="closeReader()" [matTooltip]="'COMMON.CLOSE' | translate" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
     </div>
     <div class="reader-body">
       <div class="reader-meta">
-        <span class="ver-chip">v{{ selected.version }}</span>
-        <span *ngIf="selected.category">· {{ selected.category.name }}</span>
-        <span *ngIf="selected.effective_date">· Effective {{ selected.effective_date | date:'MMM d, y' }}</span>
+        <span class="ver-chip" dir="ltr">v{{ selected.version }}</span>
+        <span *ngIf="selected.category">· {{ selected.category | locName }}</span>
+        <span *ngIf="selected.effective_date">· {{ 'POLICIES.EFFECTIVE_ON' | translate:{ date: (selected.effective_date | locDate:'MMM d, y') } }}</span>
       </div>
 
-      <div class="reader-content" *ngIf="selected.content">{{ selected.content }}</div>
+      <div class="reader-content" dir="auto" *ngIf="selected.content">{{ selected.content }}</div>
       <div class="reader-empty" *ngIf="!selected.content && !selected.has_attachment">
-        No text content. Please refer to the attached document if provided.
+        {{ 'POLICIES.READER.NO_CONTENT' | translate }}
       </div>
 
       <div class="reader-attach" *ngIf="selected.has_attachment && isManager">
         <mat-icon>picture_as_pdf</mat-icon>
-        <span>{{ selected.attachment_name }}</span>
+        <span class="attach-name" dir="auto">{{ selected.attachment_name }}</span>
         <button class="attachment-view" *ngIf="canPreviewAttachment(selected)" (click)="viewAttachment(selected)"
-                matTooltip="View attachment" [attr.aria-label]="'View ' + selected.attachment_name">
+                [matTooltip]="'POLICIES.READER.VIEW_ATTACHMENT' | translate" [attr.aria-label]="'POLICIES.READER.VIEW_FILE' | translate:{ name: selected.attachment_name }">
           <mat-icon>visibility</mat-icon>
         </button>
-        <button class="link-btn" (click)="downloadAttachment(selected)">Download</button>
+        <button class="link-btn" (click)="downloadAttachment(selected)">{{ 'COMMON.DOWNLOAD' | translate }}</button>
       </div>
       <div class="reader-attach" *ngIf="selected.has_attachment && !isManager && canDownloadAttachment(selected)">
         <mat-icon>description</mat-icon>
-        <span>{{ selected.attachment_name }}</span>
-        <button class="link-btn" (click)="downloadAttachment(selected)">Download Form</button>
+        <span class="attach-name" dir="auto">{{ selected.attachment_name }}</span>
+        <button class="link-btn" (click)="downloadAttachment(selected)">{{ 'POLICIES.READER.DOWNLOAD_FORM' | translate }}</button>
       </div>
-      <div class="policy-preview-wrap" *ngIf="!isManager && selected.has_attachment && selected.attachment_mime === 'application/pdf'">
-        <div class="pdf-loading" *ngIf="pdfLoading"><mat-spinner diameter="32"></mat-spinner> Preparing secure preview...</div>
-        <div class="pdf-error" *ngIf="pdfError"><mat-icon>error_outline</mat-icon> {{ pdfError }}</div>
-        <div #pdfPages class="policy-pdf-pages" [attr.aria-label]="pdfPageCount ? 'Policy document, ' + pdfPageCount + ' pages' : 'Policy document'"></div>
+      <div class="policy-preview-wrap" dir="ltr" *ngIf="!isManager && selected.has_attachment && selected.attachment_mime === 'application/pdf'">
+        <div class="pdf-loading" *ngIf="pdfLoading"><mat-spinner diameter="32"></mat-spinner> <span dir="auto">{{ 'POLICIES.READER.PREPARING' | translate }}</span></div>
+        <div class="pdf-error" *ngIf="pdfError"><mat-icon>error_outline</mat-icon> <span dir="auto">{{ pdfError }}</span></div>
+        <div #pdfPages class="policy-pdf-pages" [attr.aria-label]="pdfPageCount ? ('POLICIES.READER.DOC_LABEL_PAGES' | translate:{ count: pdfPageCount }) : ('POLICIES.READER.DOC_LABEL' | translate)"></div>
       </div>
       <div class="reader-empty" *ngIf="!isManager && selected.has_attachment && selected.attachment_mime !== 'application/pdf'">
-        This legacy attachment is not available in secure preview format. Please contact Human Resources.
+        {{ 'POLICIES.READER.LEGACY_ATTACHMENT' | translate }}
       </div>
     </div>
     <div class="reader-foot">
       <div class="ack-done" *ngIf="selected.acknowledged">
-        <mat-icon>check_circle</mat-icon> You acknowledged this policy.
+        <mat-icon>check_circle</mat-icon> {{ 'POLICIES.READER.ACKNOWLEDGED_DONE' | translate }}
       </div>
       <button class="btn btn-primary"
               *ngIf="selected.requires_acknowledgement && !selected.acknowledged"
               (click)="acknowledge()" [disabled]="acknowledging">
         <mat-icon>{{ acknowledging ? 'hourglass_empty' : 'task_alt' }}</mat-icon>
-        {{ acknowledging ? 'Saving…' : 'I have read & acknowledge' }}
+        {{ (acknowledging ? 'COMMON.SAVING' : 'POLICIES.READER.ACKNOWLEDGE') | translate }}
       </button>
     </div>
   </ng-container>
@@ -140,58 +140,58 @@
 <div class="modal-backdrop" *ngIf="showForm" (click)="closeForm()"></div>
 <div class="modal-panel" *ngIf="showForm">
   <div class="modal-hdr">
-    <h3><mat-icon>{{ editId ? 'edit' : 'policy' }}</mat-icon> {{ editId ? 'Edit Policy' : 'New Policy' }}</h3>
-    <button class="icon-btn" (click)="closeForm()"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>{{ editId ? 'edit' : 'policy' }}</mat-icon> {{ (editId ? 'POLICIES.EDIT' : 'POLICIES.NEW') | translate }}</h3>
+    <button class="icon-btn" (click)="closeForm()" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
-    <div class="fg"><label>Title <span class="req">*</span></label><input [(ngModel)]="form.title" placeholder="Policy title"></div>
+    <div class="fg"><label>{{ 'POLICIES.FORM.TITLE' | translate }} <span class="req">*</span></label><input dir="auto" [(ngModel)]="form.title" [placeholder]="'POLICIES.FORM.TITLE_PLACEHOLDER' | translate"></div>
     <div class="two-col">
-      <div class="fg"><label>Category</label>
+      <div class="fg"><label>{{ 'POLICIES.FORM.CATEGORY' | translate }}</label>
         <select [(ngModel)]="form.category_id">
-          <option [ngValue]="null">— None —</option>
-          <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.name }}</option>
+          <option [ngValue]="null">{{ 'POLICIES.NONE_OPTION' | translate }}</option>
+          <option *ngFor="let c of categories" [ngValue]="c.id">{{ c | locName }}</option>
         </select>
       </div>
-      <div class="fg"><label>Version</label><input [(ngModel)]="form.version" placeholder="1.0"></div>
+      <div class="fg"><label>{{ 'POLICIES.FORM.VERSION' | translate }}</label><input dir="ltr" class="ltr" [(ngModel)]="form.version" placeholder="1.0"></div>
     </div>
     <div class="fg">
-      <label>Policy visibility</label>
+      <label>{{ 'POLICIES.FORM.VISIBILITY' | translate }}</label>
         <select [(ngModel)]="form.audience_type">
-          <option value="all">All departments</option>
-          <option value="departments">Selected departments</option>
+          <option value="all">{{ 'POLICIES.ALL_DEPARTMENTS' | translate }}</option>
+          <option value="departments">{{ 'POLICIES.SELECTED_DEPARTMENTS' | translate }}</option>
         </select>
     </div>
     <div class="target-box" *ngIf="form.audience_type === 'departments'">
-      <span class="target-hint">Select departments:</span>
+      <span class="target-hint">{{ 'POLICIES.FORM.SELECT_DEPARTMENTS' | translate }}</span>
       <label class="chip-check" *ngFor="let d of departments"
              [class.on]="form.target_department_ids.includes(d.id)">
         <input type="checkbox" [checked]="form.target_department_ids.includes(d.id)" (change)="toggleDept(d.id)">
-        {{ d.name }}
+        {{ d | locName }}
       </label>
     </div>
-    <div class="fg"><label>Content</label>
-      <textarea rows="8" [(ngModel)]="form.content" placeholder="Policy text (or attach a document below)…"></textarea>
+    <div class="fg"><label>{{ 'POLICIES.FORM.CONTENT' | translate }}</label>
+      <textarea rows="8" dir="auto" [(ngModel)]="form.content" [placeholder]="'POLICIES.FORM.CONTENT_PLACEHOLDER' | translate"></textarea>
     </div>
     <div class="two-col">
-      <div class="fg"><label>Effective date</label><input type="date" [(ngModel)]="form.effective_date"></div>
-      <div class="fg"><label>Next review date</label><input type="date" [(ngModel)]="form.review_date"></div>
+      <div class="fg"><label>{{ 'POLICIES.FORM.EFFECTIVE_DATE' | translate }}</label><input type="date" [(ngModel)]="form.effective_date"></div>
+      <div class="fg"><label>{{ 'POLICIES.FORM.REVIEW_DATE' | translate }}</label><input type="date" [(ngModel)]="form.review_date"></div>
     </div>
-    <div class="fg"><label>Document (PDF, ≤10MB)</label>
+    <div class="fg"><label>{{ 'POLICIES.FORM.DOCUMENT' | translate }}</label>
       <input type="file" accept=".pdf" (change)="onFileSelected($event)">
-      <div class="file-hint" *ngIf="selectedFile">{{ selectedFile.name }}</div>
+      <div class="file-hint" dir="auto" *ngIf="selectedFile">{{ selectedFile.name }}</div>
     </div>
     <div class="check-row">
-      <label><input type="checkbox" [(ngModel)]="form.requires_acknowledgement"> Require acknowledgement</label>
-      <label><input type="checkbox" [(ngModel)]="form.mandatory"> Mandatory</label>
-      <label><input type="checkbox" [(ngModel)]="form.is_published"> Publish</label>
+      <label><input type="checkbox" [(ngModel)]="form.requires_acknowledgement"> {{ 'POLICIES.FORM.REQUIRE_ACK' | translate }}</label>
+      <label><input type="checkbox" [(ngModel)]="form.mandatory"> {{ 'POLICIES.FORM.MANDATORY' | translate }}</label>
+      <label><input type="checkbox" [(ngModel)]="form.is_published"> {{ 'POLICIES.FORM.PUBLISH' | translate }}</label>
     </div>
     <div class="form-err" *ngIf="formError"><mat-icon>error_outline</mat-icon> {{ formError }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="closeForm()">Cancel</button>
+    <button class="btn-outline" (click)="closeForm()">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn btn-primary" (click)="savePolicy()" [disabled]="submitting">
       <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ submitting ? 'Saving…' : (editId ? 'Update' : 'Create') }}
+      {{ (submitting ? 'COMMON.SAVING' : (editId ? 'COMMON.UPDATE' : 'COMMON.CREATE')) | translate }}
     </button>
   </div>
 </div>
@@ -200,41 +200,41 @@
 <div class="modal-backdrop" *ngIf="showCategories" (click)="closeCategories()"></div>
 <div class="modal-panel" *ngIf="showCategories">
   <div class="modal-hdr">
-    <h3><mat-icon>sell</mat-icon> Policy Categories</h3>
-    <button class="icon-btn" (click)="closeCategories()"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>sell</mat-icon> {{ 'POLICIES.CATEGORIES_TITLE' | translate }}</h3>
+    <button class="icon-btn" (click)="closeCategories()" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="cat-row" *ngFor="let c of categories">
       <mat-icon class="cat-ic">{{ c.icon || 'policy' }}</mat-icon>
-      <span class="cat-name">{{ c.name }}</span>
-      <span class="cat-count">{{ c.policies_count }} policies</span>
-      <span class="cat-order">Order {{ c.sort_order || 0 }}</span>
-      <button class="icon-btn" (click)="editCategory(c)"><mat-icon>edit</mat-icon></button>
-      <button class="icon-btn danger" (click)="deleteCategory(c)"><mat-icon>delete_outline</mat-icon></button>
+      <span class="cat-name">{{ c | locName }}</span>
+      <span class="cat-count">{{ 'POLICIES.CATEGORY_FORM.POLICY_COUNT' | translate:{ count: c.policies_count || 0 } }}</span>
+      <span class="cat-order">{{ 'POLICIES.CATEGORY_FORM.ORDER' | translate:{ order: c.sort_order || 0 } }}</span>
+      <button class="icon-btn" (click)="editCategory(c)" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate"><mat-icon>edit</mat-icon></button>
+      <button class="icon-btn danger" (click)="deleteCategory(c)" [matTooltip]="'COMMON.DELETE' | translate" [attr.aria-label]="'COMMON.DELETE' | translate"><mat-icon>delete_outline</mat-icon></button>
     </div>
 
     <div class="cat-editor">
       <div class="two-col">
-        <div class="fg"><label>Name</label><input [(ngModel)]="catForm.name" placeholder="e.g. HR Policies"></div>
-        <div class="fg"><label>Icon</label><input [(ngModel)]="catForm.icon" placeholder="material icon"></div>
+        <div class="fg"><label>{{ 'POLICIES.CATEGORY_FORM.NAME' | translate }}</label><input [(ngModel)]="catForm.name" [placeholder]="'POLICIES.CATEGORY_FORM.NAME_PLACEHOLDER' | translate"></div>
+        <div class="fg"><label>{{ 'POLICIES.CATEGORY_FORM.ICON' | translate }}</label><input dir="ltr" [(ngModel)]="catForm.icon" [placeholder]="'POLICIES.CATEGORY_FORM.ICON_PLACEHOLDER' | translate"></div>
       </div>
-      <div class="fg"><label>Sort order</label><input type="number" min="0" [(ngModel)]="catForm.sort_order"></div>
-      <div class="fg"><label>Category visibility</label>
+      <div class="fg"><label>{{ 'POLICIES.CATEGORY_FORM.SORT_ORDER' | translate }}</label><input type="number" min="0" [(ngModel)]="catForm.sort_order"></div>
+      <div class="fg"><label>{{ 'POLICIES.CATEGORY_FORM.VISIBILITY' | translate }}</label>
         <select [(ngModel)]="catForm.audience_type">
-          <option value="all">All departments</option>
-          <option value="departments">Selected departments</option>
+          <option value="all">{{ 'POLICIES.ALL_DEPARTMENTS' | translate }}</option>
+          <option value="departments">{{ 'POLICIES.SELECTED_DEPARTMENTS' | translate }}</option>
         </select>
       </div>
       <div class="target-box" *ngIf="catForm.audience_type === 'departments'">
-        <span class="target-hint">Select departments:</span>
+        <span class="target-hint">{{ 'POLICIES.FORM.SELECT_DEPARTMENTS' | translate }}</span>
         <label class="chip-check" *ngFor="let d of departments"
                [class.on]="catForm.target_department_ids.includes(d.id)">
           <input type="checkbox" [checked]="catForm.target_department_ids.includes(d.id)" (change)="toggleCategoryDept(d.id)">
-          {{ d.name }}
+          {{ d | locName }}
         </label>
       </div>
       <button class="btn btn-primary sm" (click)="saveCategory()">
-        <mat-icon>{{ catEditId ? 'save' : 'add' }}</mat-icon> {{ catEditId ? 'Update' : 'Add' }} Category
+        <mat-icon>{{ catEditId ? 'save' : 'add' }}</mat-icon> {{ (catEditId ? 'POLICIES.CATEGORY_FORM.UPDATE' : 'POLICIES.CATEGORY_FORM.ADD') | translate }}
       </button>
       <div class="form-err" *ngIf="catError"><mat-icon>error_outline</mat-icon> {{ catError }}</div>
     </div>
@@ -244,52 +244,52 @@
 <div class="modal-backdrop" *ngIf="showReport" (click)="closeReport()"></div>
 <div class="modal-panel wide" *ngIf="showReport">
   <div class="modal-hdr">
-    <h3><mat-icon>fact_check</mat-icon> Acknowledgements</h3>
+    <h3><mat-icon>fact_check</mat-icon> {{ 'POLICIES.ACK_REPORT.TITLE' | translate }}</h3>
     <div class="hdr-right">
       <button class="btn-outline sm" *ngIf="report && !reportLoading" (click)="exportReport()">
-        <mat-icon>download</mat-icon> CSV
+        <mat-icon>download</mat-icon> {{ 'POLICIES.ACK_REPORT.CSV' | translate }}
       </button>
       <button class="btn-outline sm" *ngIf="report && report.pending_count && !reportLoading"
               (click)="remindPending()" [disabled]="reminding">
-        <mat-icon>notifications_active</mat-icon> {{ reminding ? 'Sending…' : 'Remind pending' }}
+        <mat-icon>notifications_active</mat-icon> {{ (reminding ? 'POLICIES.ACK_REPORT.SENDING' : 'POLICIES.ACK_REPORT.REMIND_PENDING') | translate }}
       </button>
-      <button class="icon-btn" (click)="closeReport()"><mat-icon>close</mat-icon></button>
+      <button class="icon-btn" (click)="closeReport()" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
     </div>
   </div>
   <div class="modal-body">
     <div class="loading-wrap" *ngIf="reportLoading"><mat-spinner diameter="28"></mat-spinner></div>
     <ng-container *ngIf="report && !reportLoading">
       <div class="report-summary">
-        <div class="rs-box ok"><div class="rs-num">{{ report.ack_count }}</div><div class="rs-lbl">Acknowledged</div></div>
-        <div class="rs-box pend"><div class="rs-num">{{ report.pending_count }}</div><div class="rs-lbl">Pending</div></div>
+        <div class="rs-box ok"><div class="rs-num">{{ report.ack_count }}</div><div class="rs-lbl">{{ 'POLICIES.ACK_REPORT.ACKNOWLEDGED' | translate }}</div></div>
+        <div class="rs-box pend"><div class="rs-num">{{ report.pending_count }}</div><div class="rs-lbl">{{ 'POLICIES.ACK_REPORT.PENDING' | translate }}</div></div>
       </div>
-      <h4 class="report-title">{{ report.policy.title }} (v{{ report.policy.version }})</h4>
+      <h4 class="report-title"><span dir="auto">{{ report.policy.title }}</span> <span dir="ltr">(v{{ report.policy.version }})</span></h4>
 
       <div class="dept-breakdown" *ngIf="report.by_department?.length">
-        <div class="db-head">By department</div>
+        <div class="db-head">{{ 'POLICIES.ACK_REPORT.BY_DEPARTMENT' | translate }}</div>
         <div class="db-row" *ngFor="let d of report.by_department">
           <span class="db-name">{{ d.department }}</span>
           <div class="db-bar"><div class="db-fill" [style.width.%]="d.rate"></div></div>
-          <span class="db-rate">{{ d.rate }}% ({{ d.acknowledged }}/{{ d.acknowledged + d.pending }})</span>
+          <span class="db-rate" dir="ltr">{{ d.rate }}% ({{ d.acknowledged }}/{{ d.acknowledged + d.pending }})</span>
         </div>
       </div>
 
       <div class="report-cols">
         <div class="report-col">
-          <div class="rc-head done">Acknowledged ({{ report.ack_count }})</div>
+          <div class="rc-head done">{{ 'POLICIES.ACK_REPORT.ACKNOWLEDGED_COUNT' | translate:{ count: report.ack_count } }}</div>
           <div class="rc-row" *ngFor="let a of report.acknowledged">
             <span>{{ a.employee_name }}</span>
-            <span class="rc-date">{{ a.acknowledged_at | date:'MMM d, y' }}</span>
+            <span class="rc-date">{{ a.acknowledged_at | locDate:'MMM d, y' }}</span>
           </div>
-          <div class="rc-empty" *ngIf="!report.acknowledged.length">None yet</div>
+          <div class="rc-empty" *ngIf="!report.acknowledged.length">{{ 'POLICIES.ACK_REPORT.NONE_YET' | translate }}</div>
         </div>
         <div class="report-col">
-          <div class="rc-head pend">Pending ({{ report.pending_count }})</div>
+          <div class="rc-head pend">{{ 'POLICIES.ACK_REPORT.PENDING_COUNT' | translate:{ count: report.pending_count } }}</div>
           <div class="rc-row" *ngFor="let e of report.pending">
             <span>{{ e.employee_name }}</span>
-            <span class="rc-code">{{ e.employee_code }}</span>
+            <span class="rc-code" dir="ltr">{{ e.employee_code }}</span>
           </div>
-          <div class="rc-empty" *ngIf="!report.pending.length">Everyone acknowledged 🎉</div>
+          <div class="rc-empty" *ngIf="!report.pending.length">{{ 'POLICIES.ACK_REPORT.ALL_ACKNOWLEDGED' | translate }}</div>
         </div>
       </div>
     </ng-container>

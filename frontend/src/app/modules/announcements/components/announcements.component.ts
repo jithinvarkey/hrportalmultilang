@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 
 interface Announcement {
   id: number;
@@ -96,6 +97,7 @@ export class AnnouncementsComponent implements OnInit {
     private readonly http: HttpClient,
     private readonly auth: AuthService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly lang: LanguageService,
   ) {}
 
   ngOnInit(): void {
@@ -181,7 +183,7 @@ export class AnnouncementsComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
     if (file && file.size > 10 * 1024 * 1024) {
-      this.formError = 'File must be 10 MB or smaller.';
+      this.formError = this.lang.t('ANNOUNCEMENTS.MSG.FILE_TOO_LARGE');
       input.value = ''; this.cdr.markForCheck(); return;
     }
     this.selectedFile = file;
@@ -190,7 +192,7 @@ export class AnnouncementsComponent implements OnInit {
 
   saveAnnouncement(): void {
     if (!this.form.title?.trim() || !this.form.body?.trim()) {
-      this.formError = 'Title and body are required.';
+      this.formError = this.lang.t('ANNOUNCEMENTS.MSG.TITLE_BODY_REQUIRED');
       this.cdr.markForCheck();
       return;
     }
@@ -227,22 +229,22 @@ export class AnnouncementsComponent implements OnInit {
       next: () => {
         this.submitting = false;
         this.showForm = false;
-        this.toast(this.editId ? 'Announcement updated.' : 'Announcement published.');
+        this.toast(this.lang.t(this.editId ? 'ANNOUNCEMENTS.MSG.UPDATED' : 'ANNOUNCEMENTS.MSG.PUBLISHED'));
         this.load();
       },
       error: err => {
         this.submitting = false;
-        this.formError = this.firstError(err) || 'Save failed.';
+        this.formError = this.firstError(err) || this.lang.t('MESSAGES.SAVE_FAILED');
         this.cdr.markForCheck();
       },
     });
   }
 
   deleteAnnouncement(a: Announcement): void {
-    if (!confirm(`Delete "${a.title}"?`)) return;
+    if (!confirm(this.lang.t('ANNOUNCEMENTS.MSG.CONFIRM_DELETE', { title: this.displayTitle(a) }))) return;
     this.http.delete(`${this.api}/${a.id}`).subscribe({
-      next: () => { this.toast('Announcement deleted.'); this.load(); },
-      error: err => this.toast(this.firstError(err) || 'Delete failed.'),
+      next: () => { this.toast(this.lang.t('ANNOUNCEMENTS.MSG.DELETED')); this.load(); },
+      error: err => this.toast(this.firstError(err) || this.lang.t('MESSAGES.DELETE_FAILED')),
     });
   }
 
@@ -266,7 +268,7 @@ export class AnnouncementsComponent implements OnInit {
       },
       error: () => {
         previewWindow?.close();
-        this.toast('Attachment preview is unavailable.');
+        this.toast(this.lang.t('ANNOUNCEMENTS.MSG.PREVIEW_UNAVAILABLE'));
       },
     });
   }
@@ -339,7 +341,7 @@ export class AnnouncementsComponent implements OnInit {
     return employee.full_name
       || `${employee.first_name || ''} ${employee.last_name || ''}`.trim()
       || employee.email
-      || `Employee #${employee.id}`;
+      || this.lang.t('ANNOUNCEMENTS.FORM.EMPLOYEE_FALLBACK', { id: employee.id });
   }
 
   // ── Category manager ────────────────────────────────────────────────────
@@ -355,21 +357,21 @@ export class AnnouncementsComponent implements OnInit {
   }
 
   saveCategory(): void {
-    if (!this.catForm.name?.trim()) { this.errorMsg = 'Category name is required.'; this.cdr.markForCheck(); return; }
+    if (!this.catForm.name?.trim()) { this.errorMsg = this.lang.t('ANNOUNCEMENTS.MSG.CATEGORY_NAME_REQUIRED'); this.cdr.markForCheck(); return; }
     const req = this.catEditId
       ? this.http.put<any>(`${this.api}/categories/${this.catEditId}`, this.catForm)
       : this.http.post<any>(`${this.api}/categories`, this.catForm);
     req.subscribe({
-      next: () => { this.resetCatForm(); this.loadCategories(); this.toast('Category saved.'); },
-      error: err => this.toast(this.firstError(err) || 'Save failed.'),
+      next: () => { this.resetCatForm(); this.loadCategories(); this.toast(this.lang.t('ANNOUNCEMENTS.MSG.CATEGORY_SAVED')); },
+      error: err => this.toast(this.firstError(err) || this.lang.t('MESSAGES.SAVE_FAILED')),
     });
   }
 
   deleteCategory(c: any): void {
-    if (!confirm(`Delete category "${c.name}"? Announcements keep their content but lose this category.`)) return;
+    if (!confirm(this.lang.t('ANNOUNCEMENTS.MSG.CONFIRM_DELETE_CATEGORY', { name: c.name }))) return;
     this.http.delete(`${this.api}/categories/${c.id}`).subscribe({
-      next: () => { this.loadCategories(); this.load(); this.toast('Category deleted.'); },
-      error: err => this.toast(this.firstError(err) || 'Delete failed.'),
+      next: () => { this.loadCategories(); this.load(); this.toast(this.lang.t('ANNOUNCEMENTS.MSG.CATEGORY_DELETED')); },
+      error: err => this.toast(this.firstError(err) || this.lang.t('MESSAGES.DELETE_FAILED')),
     });
   }
 
@@ -389,7 +391,7 @@ export class AnnouncementsComponent implements OnInit {
       },
       error: err => {
         this.birthdayLoading = false;
-        this.birthdayError = this.firstError(err) || 'Could not load birthday settings.';
+        this.birthdayError = this.firstError(err) || this.lang.t('ANNOUNCEMENTS.MSG.BIRTHDAY_LOAD_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -407,7 +409,7 @@ export class AnnouncementsComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] || null;
     if (file && file.size > 5 * 1024 * 1024) {
-      this.birthdayError = 'Background image must be 5 MB or smaller.';
+      this.birthdayError = this.lang.t('ANNOUNCEMENTS.MSG.BACKGROUND_TOO_LARGE');
       input.value = ''; return;
     }
     this.birthdayBackgroundFile = file;
@@ -427,7 +429,7 @@ export class AnnouncementsComponent implements OnInit {
 
   saveBirthdayWishes(): void {
     if (!this.birthdaySettings.subject?.trim() || !this.birthdaySettings.body?.trim()) {
-      this.birthdayError = 'Subject and message are required.';
+      this.birthdayError = this.lang.t('ANNOUNCEMENTS.MSG.SUBJECT_MESSAGE_REQUIRED');
       this.cdr.markForCheck(); return;
     }
     this.birthdaySaving = true; this.birthdayError = '';
@@ -447,12 +449,12 @@ export class AnnouncementsComponent implements OnInit {
         this.birthdayBackgroundPreview = r.settings.background_image_url || null;
         this.removeBirthdayBackground = false;
         this.birthdaySaving = false;
-        this.toast('Birthday wish template saved.');
+        this.toast(this.lang.t('ANNOUNCEMENTS.MSG.BIRTHDAY_SAVED'));
         this.cdr.markForCheck();
       },
       error: err => {
         this.birthdaySaving = false;
-        this.birthdayError = this.firstError(err) || 'Could not save birthday settings.';
+        this.birthdayError = this.firstError(err) || this.lang.t('ANNOUNCEMENTS.MSG.BIRTHDAY_SAVE_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -462,26 +464,40 @@ export class AnnouncementsComponent implements OnInit {
     const pending = this.todaysBirthdays.filter(b => b.status !== 'sent').length;
     const force = pending === 0;
     const count = force ? this.todaysBirthdays.length : pending;
-    const action = force ? 'Resend' : 'Send';
-    if (!count || !confirm(`${action} birthday wishes to ${count} employee(s) now? All other active employees will be CC'd.`)) return;
+    const confirmKey = force ? 'ANNOUNCEMENTS.MSG.CONFIRM_RESEND_BIRTHDAY' : 'ANNOUNCEMENTS.MSG.CONFIRM_SEND_BIRTHDAY';
+    if (!count || !confirm(this.lang.t(confirmKey, { count }))) return;
     this.birthdaySending = true; this.birthdayError = '';
     this.http.post<any>(`${this.api}/birthday-wishes/send`, { force }).subscribe({
       next: r => {
         this.todaysBirthdays = r.birthdays || [];
         this.birthdaySending = false;
         const result = r.result;
-        this.toast(`Birthday wishes sent: ${result.sent}; skipped: ${result.skipped}; failed: ${result.failed}.`);
+        this.toast(this.lang.t('ANNOUNCEMENTS.MSG.BIRTHDAY_SENT', { sent: result.sent, skipped: result.skipped, failed: result.failed }));
         this.cdr.markForCheck();
       },
       error: err => {
         this.birthdaySending = false;
-        this.birthdayError = this.firstError(err) || 'Could not send birthday wishes.';
+        this.birthdayError = this.firstError(err) || this.lang.t('ANNOUNCEMENTS.MSG.BIRTHDAY_SEND_FAILED');
         this.cdr.markForCheck();
       },
     });
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
+
+  /** True when the UI is Arabic and the announcement has an Arabic title or body to show instead. */
+  showArabic(a: { title_ar?: string | null; body_ar?: string | null }): boolean {
+    return this.lang.isRtl() && !!((a.title_ar || '').trim() || (a.body_ar || '').trim());
+  }
+
+  displayTitle(a: { title: string; title_ar?: string | null; body_ar?: string | null }): string {
+    return this.showArabic(a) && (a.title_ar || '').trim() ? a.title_ar! : a.title;
+  }
+
+  displayBody(a: { body: string; title_ar?: string | null; body_ar?: string | null }): string {
+    return this.showArabic(a) && (a.body_ar || '').trim() ? a.body_ar! : a.body;
+  }
+
 
   private toast(msg: string): void {
     this.successMsg = msg; this.cdr.markForCheck();

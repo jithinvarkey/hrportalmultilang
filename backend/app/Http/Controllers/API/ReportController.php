@@ -213,7 +213,7 @@ class ReportController extends Controller
         $data = collect($this->getReportData($request, $type));
 
         if ($data->isEmpty()) {
-            return response()->json(['message' => 'No data to export.'], 404);
+            return response()->json(['message' => __('No data to export.')], 404);
         }
 
         $filename = $type . '_report_' . now()->format('Ymd_His') . '.csv';

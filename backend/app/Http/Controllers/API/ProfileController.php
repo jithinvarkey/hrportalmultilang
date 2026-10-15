@@ -8,6 +8,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use App\Support\Locale\SupportedLocales;
+use App\Support\Locale\RecipientLocale;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -50,6 +53,7 @@ class ProfileController extends Controller
                 'first_name'              => $employee->first_name,
                 'last_name'               => $employee->last_name,
                 'arabic_name'             => $employee->arabic_name,
+                'preferred_communication_language' => SupportedLocales::normalize($employee->preferred_communication_language),
                 'full_name'               => $employee->full_name,
                 'email'                   => $employee->email,
                 'phone'                   => $employee->phone,
@@ -61,7 +65,9 @@ class ProfileController extends Controller
                 'employment_type'         => $employee->employment_type,
                 'status'                  => $employee->status,
                 'department'              => $employee->department?->name,
+                'department_ar'           => $employee->department?->name_ar,
                 'designation'             => $employee->designation?->title,
+                'designation_ar'          => $employee->designation?->title_ar,
                 'avatar_url'              => $employee->avatar_url,
                 'bank_name'               => $employee->bank_name,
                 'national_id'             => $employee->national_id,
@@ -69,6 +75,31 @@ class ProfileController extends Controller
                 'city'                    => $employee->city,
                 'country'                 => $employee->country,
             ] : null,
+        ]);
+    }
+
+    // ── Communication language ────────────────────────────────────────────
+
+    /**
+     * Language of the emails/notifications the employee receives (independent of the screen language).
+     */
+    public function updateCommunicationLanguage(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'language' => ['required', 'string', Rule::in(SupportedLocales::ALL)],
+        ]);
+
+        $employee = Employee::where('user_id', $request->user()->id)->first();
+        if (!$employee) {
+            return response()->json(['message' => __('No employee record linked to this account.')], 404);
+        }
+
+        $employee->update(['preferred_communication_language' => $data['language']]);
+        RecipientLocale::flush();
+
+        return response()->json([
+            'message' => __('Communication language updated.'),
+            'preferred_communication_language' => $data['language'],
         ]);
     }
 
@@ -114,7 +145,7 @@ class ProfileController extends Controller
         }
 
         return response()->json([
-            'message' => 'Profile updated successfully.',
+            'message' => __('Profile updated successfully.'),
             'user'    => [
                 'id'    => $user->id,
                 'name'  => $user->fresh()->name,
@@ -139,7 +170,7 @@ class ProfileController extends Controller
         $employee = Employee::where('user_id', $user->id)->first();
 
         if (!$employee) {
-            return response()->json(['message' => 'No employee record linked to this account.'], 404);
+            return response()->json(['message' => __('No employee record linked to this account.')], 404);
         }
 
         // Delete old avatar
@@ -151,7 +182,7 @@ class ProfileController extends Controller
         $employee->update(['avatar' => $path]);
 
         return response()->json([
-            'message'    => 'Avatar updated successfully.',
+            'message'    => __('Avatar updated successfully.'),
             'avatar_url' => asset('storage/' . $path),
         ]);
     }
@@ -173,7 +204,7 @@ class ProfileController extends Controller
 
         if (!Hash::check($request->current_password, $user->password)) {
             throw ValidationException::withMessages([
-                'current_password' => ['The current password is incorrect.'],
+                'current_password' => [__('The current password is incorrect.')],
             ]);
         }
 
@@ -182,6 +213,6 @@ class ProfileController extends Controller
         // Revoke all other tokens so other sessions are logged out
         $user->tokens()->where('id', '!=', $user->currentAccessToken()->id)->delete();
 
-        return response()->json(['message' => 'Password changed successfully.']);
+        return response()->json(['message' => __('Password changed successfully.')]);
     }
 }

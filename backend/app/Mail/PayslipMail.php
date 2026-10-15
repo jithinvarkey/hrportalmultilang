@@ -1,14 +1,14 @@
 <?php
 namespace App\Mail;
+use App\Mail\Support\MailFormat;
 use App\Models\Payslip;
 use App\Services\PayrollService;
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Attachment;
 
-class PayslipMail extends Mailable
+class PayslipMail extends BaseMailable
 {
     use Queueable;
 
@@ -17,7 +17,10 @@ class PayslipMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Payslip for ' . $this->payslip->payroll?->month . ' – Diamond Insurance Broker'
+            subject: __('mail_payroll.payslip.subject', [
+                'month' => MailFormat::month($this->payslip->payroll?->month),
+                'company' => __('mail.company'),
+            ])
         );
     }
 

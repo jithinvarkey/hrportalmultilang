@@ -3,10 +3,13 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class BirthdayWishMail extends Mailable
+/**
+ * Subject and bodies are authored by HR in both languages (BirthdayWishService) and are shown as written;
+ * only the surrounding chrome follows the recipient's language.
+ */
+class BirthdayWishMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 

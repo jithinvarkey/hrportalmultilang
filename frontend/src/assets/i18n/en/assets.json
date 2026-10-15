@@ -1,0 +1,131 @@
+{
+  "ASSETS": {
+    "TITLE_MANAGER": "Asset Management",
+    "TITLE_MINE": "My Assets",
+    "SUBTITLE_MANAGER": "Track and manage company assets across all employees",
+    "SUBTITLE_MINE": "View the company assets currently assigned to you",
+    "REPORT": {
+      "ASSETS": "Assets",
+      "ASSIGNMENTS": "Assignments",
+      "MAINTENANCE": "Maintenance"
+    },
+    "CATEGORIES": "Categories",
+    "ADD_ASSET": "Add Asset",
+    "STATS": {
+      "TOTAL": "Total Assets",
+      "MAINTENANCE": "Maintenance",
+      "DISPOSED_LOST": "Disposed/Lost"
+    },
+    "FILTER": {
+      "SEARCH_PLACEHOLDER": "Search asset, assignee or employee code…",
+      "ALL_STATUSES": "All statuses",
+      "ALL_CATEGORIES": "All categories"
+    },
+    "TABLE": {
+      "ASSET": "Asset",
+      "CATEGORY": "Category",
+      "CONDITION": "Condition",
+      "LOCATION": "Location",
+      "ASSIGNED_TO": "Assigned To",
+      "ASSIGN_DATE": "Assign Date",
+      "RETURN_DATE": "Return Date"
+    },
+    "CURRENT": "Current",
+    "ACTION": {
+      "ASSIGN": "Assign",
+      "RETURN": "Return",
+      "MAINTENANCE": "Maintenance"
+    },
+    "PAGINATOR_ARIA": "Select asset page",
+    "EMPTY": "No assets found.",
+    "DETAIL": {
+      "LOADING_FULL": "Loading full details...",
+      "BRAND_MODEL": "Brand / Model",
+      "SERIAL_NUMBER": "Serial Number",
+      "CUSTODIAN": "Custodian",
+      "PURCHASE_DATE": "Purchase Date",
+      "PURCHASE_PRICE": "Purchase Price",
+      "WARRANTY": "Warranty",
+      "VENDOR": "Vendor",
+      "DOWNLOAD_DOCUMENT": "Download document",
+      "ASSIGNMENT_HISTORY": "Assignment History",
+      "NO_ASSIGNMENT_HISTORY": "No assignment history.",
+      "MAINTENANCE_LOG": "Maintenance Log",
+      "NO_MAINTENANCE": "No maintenance records."
+    },
+    "FORM": {
+      "EDIT_TITLE": "Edit Asset",
+      "NEW_TITLE": "New Asset",
+      "ASSET_CODE": "Asset Code",
+      "BRAND": "Brand",
+      "MODEL": "Model",
+      "PURCHASE_PRICE_SAR": "Purchase Price (SAR)",
+      "WARRANTY_EXPIRY": "Warranty Expiry",
+      "DOCUMENT": "Document (PDF/Image ≤10MB)",
+      "NONE_OPTION": "— None —",
+      "CREATE_ASSET": "Create Asset",
+      "PH_LOCATION": "Office A, Desk 12",
+      "PH_VENDOR": "Vendor name",
+      "PH_NOTES": "Optional notes…"
+    },
+    "ASSIGN": {
+      "TITLE": "Assign \"{{name}}\"",
+      "SELECT_EMPLOYEE": "Select employee…",
+      "ASSIGNING": "Assigning…"
+    },
+    "RETURN": {
+      "TITLE": "Return \"{{name}}\"",
+      "CONDITION_ON_RETURN": "Condition on Return",
+      "PROCESSING": "Processing…",
+      "CONFIRM": "Confirm Return"
+    },
+    "MAINT": {
+      "TITLE": "Log Maintenance for \"{{name}}\"",
+      "TITLE_FIELD": "Title",
+      "PH_TITLE": "Annual service",
+      "SCHEDULED_DATE": "Scheduled Date",
+      "COST_SAR": "Cost (SAR)",
+      "VENDOR_TECH": "Vendor / Technician",
+      "SUBMIT": "Log Maintenance"
+    },
+    "CAT": {
+      "TITLE": "Asset Categories",
+      "ICON": "Icon",
+      "PH_NAME": "IT Equipment",
+      "ADD": "Add Category",
+      "UPDATE": "Update Category"
+    },
+    "CONDITION": {
+      "new": "New",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor"
+    },
+    "MAINT_TYPE": {
+      "repair": "Repair",
+      "service": "Service",
+      "inspection": "Inspection",
+      "upgrade": "Upgrade"
+    },
+    "MSG": {
+      "DETAIL_LOAD_FAILED": "Full asset details could not be loaded.",
+      "FILE_TOO_LARGE": "File must be ≤10 MB.",
+      "NAME_CODE_REQUIRED": "Name and asset code are required.",
+      "CREATED": "Asset created.",
+      "UPDATED": "Asset updated.",
+      "CONFIRM_DELETE": "Delete asset \"{{name}}\"?",
+      "DELETED": "Asset deleted.",
+      "REPORT_FAILED": "Report download failed.",
+      "EMPLOYEE_DATE_REQUIRED": "Employee and date are required.",
+      "ASSIGNED": "Asset assigned.",
+      "ASSIGN_FAILED": "Assign failed.",
+      "RETURNED": "Asset returned.",
+      "RETURN_FAILED": "Return failed.",
+      "TITLE_REQUIRED": "Title is required.",
+      "MAINT_LOGGED": "Maintenance logged.",
+      "CAT_SAVED": "Category saved.",
+      "CAT_CONFIRM_DELETE": "Delete category \"{{name}}\"?",
+      "CAT_DELETED": "Category deleted."
+    }
+  }
+}

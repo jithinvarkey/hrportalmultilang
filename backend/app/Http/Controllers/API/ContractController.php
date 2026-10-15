@@ -97,7 +97,7 @@ class ContractController extends Controller {
     
     public function downloadActiveEmployeeContractsReport(Request $request, XlsxReportService $xlsxReports) {
         if (!$this->canManageContracts()) {
-            return response()->json(['message' => 'You do not have permission to download this report.'], 403);
+            return response()->json(['message' => __('You do not have permission to download this report.')], 403);
         }
 
         $today = now()->toDateString();
@@ -260,7 +260,7 @@ class ContractController extends Controller {
      */
     public function store(Request $request): JsonResponse {
         if (!$this->canManageContracts()) {
-            return response()->json(['message' => 'You do not have permission to manage contracts.'], 403);
+            return response()->json(['message' => __('You do not have permission to manage contracts.')], 403);
         }
 
         $request->validate([
@@ -295,7 +295,7 @@ class ContractController extends Controller {
         ]);
 
         return response()->json([
-                    'message' => 'Contract created successfully.',
+                    'message' => __('Contract created successfully.'),
                     'contract' => new ContractResource($contract->load(['employee.department', 'department', 'createdBy'])),
                         ], 201);
     }
@@ -326,7 +326,7 @@ class ContractController extends Controller {
      */
     public function update(Request $request, int $id): JsonResponse {
         if (!$this->canManageContracts()) {
-            return response()->json(['message' => 'You do not have permission to manage contracts.'], 403);
+            return response()->json(['message' => __('You do not have permission to manage contracts.')], 403);
         }
 
         $contract = Contract::findOrFail($id);
@@ -360,7 +360,7 @@ class ContractController extends Controller {
         $contract->update($data);
 
         return response()->json([
-                    'message' => 'Contract updated.',
+                    'message' => __('Contract updated.'),
                     'contract' => new ContractResource($contract->fresh(['employee.department', 'department'])),
         ]);
     }
@@ -375,13 +375,13 @@ class ContractController extends Controller {
      */
     public function approve(int $id): JsonResponse {
         if (!$this->canManageContracts()) {
-            return response()->json(['message' => 'You do not have permission to manage contracts.'], 403);
+            return response()->json(['message' => __('You do not have permission to manage contracts.')], 403);
         }
 
         $contract = Contract::findOrFail($id);
 
         if ($contract->status !== 'draft') {
-            return response()->json(['message' => 'Only draft contracts can be approved.'], 422);
+            return response()->json(['message' => __('Only draft contracts can be approved.')], 422);
         }
 
         $contract->update([
@@ -391,7 +391,7 @@ class ContractController extends Controller {
         ]);
 
         return response()->json([
-                    'message' => 'Contract approved and activated.',
+                    'message' => __('Contract approved and activated.'),
                     'contract' => new ContractResource($contract->fresh(['employee', 'approvedBy'])),
         ]);
     }
@@ -406,12 +406,12 @@ class ContractController extends Controller {
      */
     public function destroy(int $id): JsonResponse {
         if (!$this->canManageContracts()) {
-            return response()->json(['message' => 'You do not have permission to manage contracts.'], 403);
+            return response()->json(['message' => __('You do not have permission to manage contracts.')], 403);
         }
 
         $contract = Contract::findOrFail($id);
         $contract->delete();
-        return response()->json(['message' => 'Contract deleted.']);
+        return response()->json(['message' => __('Contract deleted.')]);
     }
 
     // ── Employee contracts ────────────────────────────────────────────────
@@ -428,7 +428,7 @@ class ContractController extends Controller {
     public function uploadDocument(Request $request, int $id): JsonResponse
     {
         if (!$this->canManageContracts()) {
-            return response()->json(['message' => 'You do not have permission to manage contracts.'], 403);
+            return response()->json(['message' => __('You do not have permission to manage contracts.')], 403);
         }
 
         $request->validate([
@@ -446,7 +446,7 @@ class ContractController extends Controller {
         $contract->update(['pdf_path' => $path]);
 
         return response()->json([
-            'message'  => 'Contract document uploaded.',
+            'message'  => __('Contract document uploaded.'),
             'pdf_path' => $path,
             'pdf_url'  => Storage::disk('public')->url($path),
             'contract' => new ContractResource($contract->fresh(['employee.department', 'department'])),
@@ -464,7 +464,7 @@ class ContractController extends Controller {
         $contract = Contract::findOrFail($id);
 
         if (!$contract->pdf_path || !Storage::disk('public')->exists($contract->pdf_path)) {
-            return response()->json(['message' => 'No document attached to this contract.'], 404);
+            return response()->json(['message' => __('No document attached to this contract.')], 404);
         }
 
         $filename = "{$contract->reference}." . pathinfo($contract->pdf_path, PATHINFO_EXTENSION);
@@ -481,7 +481,7 @@ class ContractController extends Controller {
     public function deleteDocument(int $id): JsonResponse
     {
         if (!$this->canManageContracts()) {
-            return response()->json(['message' => 'You do not have permission to manage contracts.'], 403);
+            return response()->json(['message' => __('You do not have permission to manage contracts.')], 403);
         }
 
         $contract = Contract::findOrFail($id);
@@ -491,7 +491,7 @@ class ContractController extends Controller {
             $contract->update(['pdf_path' => null]);
         }
 
-        return response()->json(['message' => 'Contract document removed.']);
+        return response()->json(['message' => __('Contract document removed.')]);
     }
 
     // â”€â”€ Employee contracts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

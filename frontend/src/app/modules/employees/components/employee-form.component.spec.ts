@@ -1,3 +1,5 @@
+import { TranslateModule } from '@ngx-translate/core';
+import { I18N_PIPES } from '../../../shared/pipes/i18n.pipes';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -25,7 +27,7 @@ describe('EmployeeFormComponent — edit data load', () => {
   function configure(routeId: string | null): void {
     TestBed.configureTestingModule({
       declarations: [EmployeeFormComponent],
-      imports: [HttpClientTestingModule, RouterTestingModule, ReactiveFormsModule],
+      imports: [HttpClientTestingModule, RouterTestingModule, ReactiveFormsModule, TranslateModule.forRoot(), ...I18N_PIPES],
       providers: [
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => routeId } } } },
       ],

@@ -15,7 +15,7 @@ class XlsxReportService
         $zip = new \ZipArchive();
 
         if ($zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            abort(500, 'Could not create report file.');
+            abort(500, __('Could not create report file.'));
         }
 
         $zip->addFromString('[Content_Types].xml', $this->contentTypesXml());

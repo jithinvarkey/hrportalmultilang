@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 import { PageEvent } from '@angular/material/paginator';
 
 interface Asset {
@@ -109,19 +110,18 @@ export class AssetsComponent implements OnInit {
   readonly maintTypes = ['repair', 'service', 'inspection', 'upgrade'];
 
   get pageTitle(): string {
-    return this.isManager ? 'Asset Management' : 'My Assets';
+    return this.lang.t(this.isManager ? 'ASSETS.TITLE_MANAGER' : 'ASSETS.TITLE_MINE');
   }
 
   get pageSubtitle(): string {
-    return this.isManager
-      ? 'Track and manage company assets across all employees'
-      : 'View the company assets currently assigned to you';
+    return this.lang.t(this.isManager ? 'ASSETS.SUBTITLE_MANAGER' : 'ASSETS.SUBTITLE_MINE');
   }
 
   constructor(
     private readonly http: HttpClient,
     private readonly auth: AuthService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly lang: LanguageService,
   ) {}
 
   ngOnInit(): void {
@@ -214,7 +214,7 @@ export class AssetsComponent implements OnInit {
       next: r => { this.selectedDetail = r?.asset || r; this.detailLoading = false; this.cdr.markForCheck(); },
       error: err => {
         this.detailLoading = false;
-        this.detailError = this.firstError(err) || 'Full asset details could not be loaded.';
+        this.detailError = this.firstError(err) || this.lang.t('ASSETS.MSG.DETAIL_LOAD_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -248,14 +248,14 @@ export class AssetsComponent implements OnInit {
 
   onFileSelected(event: Event): void {
     const f = (event.target as HTMLInputElement).files?.[0] ?? null;
-    if (f && f.size > 10 * 1024 * 1024) { this.formError = 'File must be ≤10 MB.'; this.cdr.markForCheck(); return; }
+    if (f && f.size > 10 * 1024 * 1024) { this.formError = this.lang.t('ASSETS.MSG.FILE_TOO_LARGE'); this.cdr.markForCheck(); return; }
     this.selectedFile = f;
     this.cdr.markForCheck();
   }
 
   saveAsset(): void {
     if (!this.form.name?.trim() || !this.form.asset_code?.trim()) {
-      this.formError = 'Name and asset code are required.';
+      this.formError = this.lang.t('ASSETS.MSG.NAME_CODE_REQUIRED');
       this.cdr.markForCheck();
       return;
     }
@@ -270,18 +270,18 @@ export class AssetsComponent implements OnInit {
     this.http.post<any>(url, fd).subscribe({
       next: () => {
         this.submitting = false; this.showForm = false;
-        this.toast(this.editId ? 'Asset updated.' : 'Asset created.');
+        this.toast(this.lang.t(this.editId ? 'ASSETS.MSG.UPDATED' : 'ASSETS.MSG.CREATED'));
         this.load(); this.loadStats();
       },
-      error: err => { this.submitting = false; this.formError = this.firstError(err) || 'Save failed.'; this.cdr.markForCheck(); },
+      error: err => { this.submitting = false; this.formError = this.firstError(err) || this.lang.t('MESSAGES.SAVE_FAILED'); this.cdr.markForCheck(); },
     });
   }
 
   deleteAsset(a: Asset): void {
-    if (!confirm(`Delete asset "${a.name}"?`)) return;
+    if (!confirm(this.lang.t('ASSETS.MSG.CONFIRM_DELETE', { name: a.name }))) return;
     this.http.delete(`${this.api}/${a.id}`).subscribe({
-      next: () => { this.toast('Asset deleted.'); this.load(); this.loadStats(); },
-      error: err => this.toast(this.firstError(err) || 'Delete failed.'),
+      next: () => { this.toast(this.lang.t('ASSETS.MSG.DELETED')); this.load(); this.loadStats(); },
+      error: err => this.toast(this.firstError(err) || this.lang.t('MESSAGES.DELETE_FAILED')),
     });
   }
 
@@ -303,7 +303,7 @@ export class AssetsComponent implements OnInit {
         link.click();
         URL.revokeObjectURL(url);
       },
-      error: err => this.toast(this.firstError(err) || 'Report download failed.'),
+      error: err => this.toast(this.firstError(err) || this.lang.t('ASSETS.MSG.REPORT_FAILED')),
     });
   }
 
@@ -320,12 +320,12 @@ export class AssetsComponent implements OnInit {
 
   doAssign(): void {
     if (!this.assignForm.employee_id || !this.assignForm.assigned_date) {
-      this.errorMsg = 'Employee and date are required.'; this.cdr.markForCheck(); return;
+      this.errorMsg = this.lang.t('ASSETS.MSG.EMPLOYEE_DATE_REQUIRED'); this.cdr.markForCheck(); return;
     }
     this.assigning = true;
     this.http.post<any>(`${this.api}/${this.selected!.id}/assign`, this.assignForm).subscribe({
-      next: () => { this.assigning = false; this.showAssign = false; this.toast('Asset assigned.'); this.load(); this.loadStats(); },
-      error: err => { this.assigning = false; this.toast(this.firstError(err) || 'Assign failed.'); },
+      next: () => { this.assigning = false; this.showAssign = false; this.toast(this.lang.t('ASSETS.MSG.ASSIGNED')); this.load(); this.loadStats(); },
+      error: err => { this.assigning = false; this.toast(this.firstError(err) || this.lang.t('ASSETS.MSG.ASSIGN_FAILED')); },
     });
   }
 
@@ -343,8 +343,8 @@ export class AssetsComponent implements OnInit {
   doReturn(): void {
     this.returning = true;
     this.http.post<any>(`${this.api}/${this.selected!.id}/return`, this.returnForm).subscribe({
-      next: () => { this.returning = false; this.showReturn = false; this.toast('Asset returned.'); this.load(); this.loadStats(); },
-      error: err => { this.returning = false; this.toast(this.firstError(err) || 'Return failed.'); },
+      next: () => { this.returning = false; this.showReturn = false; this.toast(this.lang.t('ASSETS.MSG.RETURNED')); this.load(); this.loadStats(); },
+      error: err => { this.returning = false; this.toast(this.firstError(err) || this.lang.t('ASSETS.MSG.RETURN_FAILED')); },
     });
   }
 
@@ -360,11 +360,11 @@ export class AssetsComponent implements OnInit {
   closeMaintenance(): void { this.showMaintenance = false; this.cdr.markForCheck(); }
 
   saveMaintenance(): void {
-    if (!this.maintenanceForm.title?.trim()) { this.errorMsg = 'Title is required.'; this.cdr.markForCheck(); return; }
+    if (!this.maintenanceForm.title?.trim()) { this.errorMsg = this.lang.t('ASSETS.MSG.TITLE_REQUIRED'); this.cdr.markForCheck(); return; }
     this.maintenanceSaving = true;
     this.http.post<any>(`${this.api}/${this.selected!.id}/maintenance`, this.maintenanceForm).subscribe({
-      next: () => { this.maintenanceSaving = false; this.showMaintenance = false; this.toast('Maintenance logged.'); this.load(); this.loadStats(); },
-      error: err => { this.maintenanceSaving = false; this.toast(this.firstError(err) || 'Save failed.'); },
+      next: () => { this.maintenanceSaving = false; this.showMaintenance = false; this.toast(this.lang.t('ASSETS.MSG.MAINT_LOGGED')); this.load(); this.loadStats(); },
+      error: err => { this.maintenanceSaving = false; this.toast(this.firstError(err) || this.lang.t('MESSAGES.SAVE_FAILED')); },
     });
   }
 
@@ -380,12 +380,12 @@ export class AssetsComponent implements OnInit {
     const req = this.catEditId
       ? this.http.put<any>(`${this.api}/categories/${this.catEditId}`, this.catForm)
       : this.http.post<any>(`${this.api}/categories`, this.catForm);
-    req.subscribe({ next: () => { this.catEditId = null; this.catForm = { name: '', icon: 'devices' }; this.loadCategories(); this.toast('Category saved.'); }, error: () => {} });
+    req.subscribe({ next: () => { this.catEditId = null; this.catForm = { name: '', icon: 'devices' }; this.loadCategories(); this.toast(this.lang.t('ASSETS.MSG.CAT_SAVED')); }, error: () => {} });
   }
 
   deleteCategory(c: any): void {
-    if (!confirm(`Delete category "${c.name}"?`)) return;
-    this.http.delete(`${this.api}/categories/${c.id}`).subscribe({ next: () => { this.loadCategories(); this.toast('Category deleted.'); }, error: () => {} });
+    if (!confirm(this.lang.t('ASSETS.MSG.CAT_CONFIRM_DELETE', { name: c.name }))) return;
+    this.http.delete(`${this.api}/categories/${c.id}`).subscribe({ next: () => { this.loadCategories(); this.toast(this.lang.t('ASSETS.MSG.CAT_DELETED')); }, error: () => {} });
   }
 
   // ── Status helpers ──────────────────────────────────────────────────────

@@ -18,7 +18,8 @@ class AppServiceProvider extends ServiceProvider {
      * Bootstrap any application services.
      */
     public function boot(): void {
-        if (config('mail.force_test_email') && config('mail.test_email')) {
+        // Local development never emails real people: every message (To, CC and BCC) goes to MAIL_TEST_EMAIL.
+        if ((config('mail.force_test_email') || $this->app->environment('local')) && config('mail.test_email')) {
             Mail::alwaysTo(config('mail.test_email'));
         }
     }

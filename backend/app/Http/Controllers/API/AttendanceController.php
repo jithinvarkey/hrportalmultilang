@@ -37,7 +37,7 @@ class AttendanceController extends Controller
 
         if ($existing && $existing->check_in) {
             return response()->json([
-                'message' => 'Already checked in today at ' . $existing->check_in,
+                'message' => __('Already checked in today at :time', ['time' => $existing->check_in]),
                 'log'     => $existing,
             ], 422);
         }
@@ -53,7 +53,7 @@ class AttendanceController extends Controller
             ]
         );
 
-        return response()->json(['message' => 'Check-in recorded', 'log' => $log]);
+        return response()->json(['message' => __('Check-in recorded'), 'log' => $log]);
     }
 
     // ── Check-out ─────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ class AttendanceController extends Controller
             'total_minutes' => (int) $checkInCarbon->diffInMinutes($checkOutCarbon),
         ]);
 
-        return response()->json(['message' => 'Check-out recorded', 'log' => $log->fresh()]);
+        return response()->json(['message' => __('Check-out recorded'), 'log' => $log->fresh()]);
     }
 
     // ── Today ─────────────────────────────────────────────────────────────
@@ -193,7 +193,7 @@ class AttendanceController extends Controller
     public function monthlyReport(Request $request)
     {
         if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff'])) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => __('Unauthorized.')], 403);
         }
 
         return $this->monthlyReportService->download($request);
@@ -334,6 +334,7 @@ class AttendanceController extends Controller
             ->map(fn ($log) => [
                 'name'       => $log->employee?->full_name,
                 'department' => $log->employee?->department?->name,
+                'department_ar' => $log->employee?->department?->name_ar,
                 'status'     => $log->status,
                 'check_in'   => $log->check_in,
             ]);
@@ -486,7 +487,7 @@ class AttendanceController extends Controller
 
         $log->update(array_merge($data, ['source' => 'manual']));
 
-        return response()->json(['message' => 'Attendance record updated.', 'log' => $log->fresh()]);
+        return response()->json(['message' => __('Attendance record updated.'), 'log' => $log->fresh()]);
     }
 
     // ── Settings ─────────────────────────────────────────────────────────
@@ -527,7 +528,7 @@ class AttendanceController extends Controller
         $reclassified = $this->attendancePolicy->reclassifyAutomaticLogsForDate(now(), $settings);
 
         return response()->json([
-            'message' => 'Settings saved.',
+            'message' => __('Settings saved.'),
             'settings' => $settings,
             'reclassified_today' => $reclassified,
         ]);

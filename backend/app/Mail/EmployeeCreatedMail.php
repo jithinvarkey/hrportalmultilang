@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class EmployeeCreatedMail extends Mailable
+class EmployeeCreatedMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
@@ -27,7 +27,7 @@ class EmployeeCreatedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Employee Created Mail',
+            subject: __('mail_people.employee_created_subject'),
         );
     }
 

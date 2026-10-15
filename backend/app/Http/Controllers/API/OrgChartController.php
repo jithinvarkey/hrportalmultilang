@@ -56,6 +56,7 @@ class OrgChartController extends Controller
                 ->map(fn($d) => [
                     'id'             => $d->id,
                     'name'           => $d->name,
+                    'name_ar'        => $d->name_ar,
                     'code'           => $d->code,
                     'employees_count'=> $d->employees_count,
                     'active_employees_count'=> $d->active_employees_count,
@@ -87,7 +88,9 @@ class OrgChartController extends Controller
                 'code'       => $e->employee_code,
                 'avatar_url' => $e->avatar_url,
                 'designation'=> $e->designation?->title,
+                'designation_ar' => $e->designation?->title_ar,
                 'department' => $e->department?->name,
+                'department_ar' => $e->department?->name_ar,
                 'department_id' => $e->department_id,
             ]);
 
@@ -99,17 +102,18 @@ class OrgChartController extends Controller
     {
         $request->validate([
             'name'      => 'required|string|max:100',
+            'name_ar'   => 'nullable|string|max:150',
             'code'      => 'required|string|max:20|unique:departments',
             'parent_id' => 'nullable|exists:departments,id',
         ]);
-        $dept = Department::create($request->only('name','code','description','parent_id','manager_id','headcount_budget','is_active'));
+        $dept = Department::create($request->only('name','name_ar','code','description','parent_id','manager_id','headcount_budget','is_active'));
         return response()->json(['department' => $dept->load('manager','parent')], 201);
     }
 
     public function updateDepartment(Request $request, $id)
     {
         $dept = Department::findOrFail($id);
-        $dept->update($request->only('name','code','description','parent_id','manager_id','headcount_budget','is_active'));
+        $dept->update($request->only('name','name_ar','code','description','parent_id','manager_id','headcount_budget','is_active'));
         return response()->json(['department' => $dept->fresh('manager','parent','children')]);
     }
 
@@ -119,6 +123,7 @@ class OrgChartController extends Controller
         return [
             'id'              => $dept->id,
             'name'            => $dept->name,
+            'name_ar'         => $dept->name_ar,
             'code'            => $dept->code,
             'description'     => $dept->description,
             'employees_count' => $dept->employees_count,
@@ -130,6 +135,7 @@ class OrgChartController extends Controller
                 'name'       => trim("{$dept->manager->first_name} {$dept->manager->last_name}"),
                 'avatar_url' => $dept->manager->avatar_url,
                 'designation'=> $dept->manager->designation?->title,
+                'designation_ar' => $dept->manager->designation?->title_ar,
             ] : null,
             'children' => ($dept->allChildren ?? collect())->map(fn($c) => $this->formatDept($this->ensureEmployeeCounts($c)))->values(),
         ];

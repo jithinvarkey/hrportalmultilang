@@ -5,7 +5,10 @@ import { FormsModule } from '@angular/forms';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 import { AdminComponent } from './admin.component';
+import { TranslateModule } from '@ngx-translate/core';
+
 import { AuthService } from '../../../core/services/auth.service';
+import { I18N_PIPES } from '../../../shared/pipes/i18n.pipes';
 
 /**
  * Unit tests for the Department & Designation management features added to
@@ -27,7 +30,7 @@ describe('AdminComponent — Departments & Designations', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       declarations: [AdminComponent],
-      imports: [HttpClientTestingModule, RouterTestingModule, FormsModule],
+      imports: [HttpClientTestingModule, RouterTestingModule, FormsModule, TranslateModule.forRoot(), ...I18N_PIPES],
       providers: [{ provide: AuthService, useValue: authStub }],
       schemas: [NO_ERRORS_SCHEMA], // ignore <mat-*> template elements
     }).compileComponents();
@@ -113,7 +116,7 @@ describe('AdminComponent — Departments & Designations', () => {
     component.desigForm.min_salary = 10000;
     component.desigForm.max_salary = 5000;
     component.saveDesig();
-    expect(component.desigError).toContain('Max salary');
+    expect(component.desigError).toBe('ADMIN.MSG.SALARY_RANGE_INVALID'); // no translations loaded in tests
     httpMock.expectNone('/api/v1/designations');
   });
 

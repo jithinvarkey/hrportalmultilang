@@ -1,0 +1,211 @@
+{
+  "SEPARATIONS": {
+    "TITLE": "إنهاء الخدمة وإخلاء الطرف",
+    "SUBTITLE": "الاستقالات · إنهاء الخدمة · انتهاء العقد · التقاعد",
+    "NEW_REQUEST": "طلب جديد",
+    "STATS": {
+      "PENDING_MANAGER": "بانتظار المدير",
+      "PENDING_HR": "بانتظار الموارد البشرية",
+      "OFFBOARDING": "قيد إخلاء الطرف",
+      "COMPLETED_YTD": "مكتملة منذ بداية العام"
+    },
+    "TABS": {
+      "ALL": "الكل",
+      "PENDING": "قيد الانتظار",
+      "OFFBOARDING": "إخلاء الطرف",
+      "COMPLETED": "مكتملة",
+      "TEMPLATES": "إعداد قائمة إخلاء الطرف"
+    },
+    "TYPES": {
+      "resignation": "استقالة",
+      "termination": "إنهاء الخدمة",
+      "end_of_contract": "انتهاء العقد",
+      "retirement": "تقاعد",
+      "abandonment": "الانقطاع عن العمل",
+      "mutual_agreement": "إنهاء باتفاق الطرفين"
+    },
+    "REASONS": {
+      "personal": "أسباب شخصية",
+      "better_opportunity": "فرصة عمل أفضل",
+      "relocation": "الانتقال إلى مدينة أخرى",
+      "health": "أسباب صحية",
+      "misconduct": "مخالفة سلوكية",
+      "performance": "ضعف الأداء",
+      "restructuring": "إعادة الهيكلة",
+      "contract_end": "انتهاء مدة العقد",
+      "other": "أخرى"
+    },
+    "CATEGORIES": {
+      "it": "تقنية المعلومات",
+      "hr": "الموارد البشرية",
+      "finance": "المالية",
+      "admin": "الشؤون الإدارية",
+      "general": "عام"
+    },
+    "FILTER": {
+      "SEARCH_PLACEHOLDER": "ابحث عن موظف…",
+      "ALL_TYPES": "جميع الأنواع"
+    },
+    "COL": {
+      "LAST_WORKING_DAY": "تاريخ آخر يوم عمل",
+      "NOTICE": "فترة الإشعار"
+    },
+    "DAYS_LEFT": "متبقٍ {{count}} يوم",
+    "DAYS_REMAINING": "متبقٍ {{count}} يوم",
+    "WAIVED": "تم الإعفاء",
+    "EMPTY": "لا توجد طلبات إنهاء خدمة",
+    "ACTION": {
+      "APPROVE": "اعتماد",
+      "START_OFFBOARDING": "بدء إخلاء الطرف",
+      "CANCEL": "إلغاء الطلب",
+      "CANCEL_SEPARATION": "إلغاء طلب إنهاء الخدمة",
+      "REJECT": "رفض",
+      "COMPLETE": "إكمال",
+      "COMPLETE_SEPARATION": "إكمال إنهاء الخدمة",
+      "RESOLVE_TASKS_FIRST": "يجب إنجاز جميع مهام إخلاء الطرف أولًا",
+      "PRINT_CLEARANCE": "طباعة إخلاء الطرف"
+    },
+    "TEMPLATES": {
+      "COUNT": "{{count}} بند في قائمة إخلاء الطرف",
+      "ADD_ITEM": "إضافة بند",
+      "TASK": "المهمة",
+      "CATEGORY": "الجهة",
+      "REQUIRED": "إلزامي"
+    },
+    "DETAIL": {
+      "TAB_OVERVIEW": "نظرة عامة",
+      "TAB_IT": "أصول تقنية المعلومات",
+      "TAB_FINANCE": "المستحقات المالية",
+      "TAB_TASKS": "المهام",
+      "PENDING_TASKS_ARIA": "{{count}} مهام إخلاء طرف معلقة",
+      "REQUEST_DATE": "تاريخ الطلب",
+      "LAST_WORKING_DAY": "تاريخ آخر يوم عمل",
+      "NOTICE_PERIOD": "فترة الإشعار",
+      "APPROVAL_FLOW": "مسار الاعتماد"
+    },
+    "STEPS": {
+      "REQUEST": "الطلب",
+      "MANAGER": "المدير",
+      "HR": "الموارد البشرية",
+      "OFFBOARDING": "إخلاء الطرف",
+      "COMPLETED": "مكتمل"
+    },
+    "CLEARANCE": {
+      "ASSETS_HEADING": "الأصول المسلّمة لهذا الموظف",
+      "RETURNED": "تم الإرجاع",
+      "NOT_RETURNED": "لم يُرجع",
+      "SERIAL": "الرقم التسلسلي {{sn}}",
+      "NO_ASSETS": "لا توجد أصول تقنية مسلّمة لهذا الموظف.",
+      "LOANS_HEADING": "سلف الموظف القائمة",
+      "EMPLOYEE_LOAN": "سلفة موظف",
+      "BALANCE_DUE": "الرصيد المستحق",
+      "INSTALLMENT": "القسط {{no}}",
+      "NO_LOANS": "لا يوجد رصيد سلف مستحق على هذا الموظف."
+    },
+    "SETTLEMENT": {
+      "TITLE": "التسوية النهائية",
+      "PAID": "مدفوعة",
+      "GRATUITY": "مكافأة نهاية الخدمة",
+      "LEAVE_ENCASHMENT": "بدل رصيد الإجازات",
+      "OTHER_ADDITIONS": "إضافات أخرى",
+      "DEDUCTIONS": "الاستقطاعات",
+      "TOTAL": "إجمالي التسوية"
+    },
+    "EXIT": {
+      "TITLE": "المقابلة الختامية",
+      "DONE": "تمت",
+      "RECORD": "تسجيل المقابلة الختامية",
+      "DATE": "تاريخ المقابلة",
+      "NOTES": "الملاحظات / الملخص",
+      "NOTES_PLACEHOLDER": "سجّل أبرز النقاط من المقابلة الختامية…",
+      "SAVE": "حفظ المقابلة الختامية"
+    },
+    "CHECKLIST": {
+      "TITLE": "قائمة إخلاء الطرف",
+      "COMPLETED_ON": "أُنجزت في {{date}}",
+      "SKIP": "تخطي",
+      "NA": "لا ينطبق",
+      "RESET": "إعادة تعيين",
+      "EMPTY": "لا توجد مهام إخلاء طرف مسندة إلى إدارتك."
+    },
+    "FORM": {
+      "TITLE": "طلب إنهاء خدمة جديد",
+      "TYPE": "نوع إنهاء الخدمة",
+      "EMPLOYEE": "الموظف",
+      "SELECT_EMPLOYEE": "اختر الموظف…",
+      "LAST_WORKING_DAY": "تاريخ آخر يوم عمل",
+      "REASON_CATEGORY": "تصنيف السبب",
+      "NOTICE_WAIVED": "الإعفاء من فترة الإشعار",
+      "WAIVE_REASON": "سبب الإعفاء من فترة الإشعار",
+      "WAIVE_PLACEHOLDER": "وضّح سبب الإعفاء من فترة الإشعار…",
+      "REASON_DETAILS": "السبب / التفاصيل",
+      "REASON_PLACEHOLDER": "اذكر السبب بالتفصيل (10 أحرف على الأقل)…",
+      "HR_NOTES": "ملاحظات الموارد البشرية",
+      "HR_NOTES_PLACEHOLDER": "ملاحظات داخلية للموارد البشرية…",
+      "PREVIEW_TITLE": "معاينة تقديرية للتسوية النهائية",
+      "YEARS_OF_SERVICE": "سنوات الخدمة",
+      "ESTIMATED_TOTAL": "الإجمالي التقديري",
+      "SUBMIT": "إرسال الطلب"
+    },
+    "HR_APPROVAL": {
+      "TITLE": "اعتماد الموارد البشرية والتسوية",
+      "INFO": "سيتم <strong>احتساب</strong> مكافأة نهاية الخدمة وبدل رصيد الإجازات تلقائيًا بناءً على الراتب ورصيد الإجازات. يمكنك إضافة التعديلات أدناه.",
+      "ADDITIONAL_PAYMENT": "مبالغ إضافية (ريال)",
+      "ADDITIONAL_HINT": "مكافآت، مصروفات، وغيرها.",
+      "DEDUCTIONS": "الاستقطاعات (ريال)",
+      "DEDUCTIONS_HINT": "استرداد السلف، الدفعات المقدمة، وغيرها.",
+      "SUBMIT": "اعتماد واحتساب التسوية"
+    },
+    "REJECT": {
+      "TITLE": "رفض الطلب",
+      "REASON": "سبب الرفض",
+      "PLACEHOLDER": "اذكر سببًا واضحًا…"
+    },
+    "COMPLETE": {
+      "TITLE": "إكمال إخلاء الطرف",
+      "INFO": "عند إكمال إخلاء الطرف ستُسجَّل حالة الموظف في النظام على أنها <strong>منتهية خدمته</strong>.",
+      "SETTLEMENT_PAID": "تم صرف التسوية النهائية",
+      "NOTES": "ملاحظات التسوية",
+      "NOTES_PLACEHOLDER": "مرجع التحويل البنكي، التاريخ، وغيرها.",
+      "SUBMIT": "إكمال وإنهاء الخدمة"
+    },
+    "TEMPLATE_FORM": {
+      "ADD_TITLE": "إضافة بند إلى قائمة إخلاء الطرف",
+      "EDIT_TITLE": "تعديل بند في قائمة إخلاء الطرف",
+      "TASK_TITLE": "عنوان المهمة",
+      "TASK_PLACEHOLDER": "مثال: تسليم الحاسب المحمول",
+      "SORT_ORDER": "ترتيب العرض",
+      "ACTIVE": "مفعّل"
+    },
+    "MSG": {
+      "REQUIRED_FIELDS": "الموظف والسبب وتاريخ آخر يوم عمل حقول إلزامية.",
+      "SUBMIT_FAILED": "تعذّر إرسال الطلب.",
+      "CONFIRM_CANCEL": "هل تريد إلغاء طلب إنهاء الخدمة هذا؟",
+      "CHECKLIST_FAILED": "تعذّر تحديث مهمة إخلاء الطرف هذه.",
+      "COMPLETE_FAILED": "تعذّر إكمال إنهاء الخدمة.",
+      "CONFIRM_DELETE_TEMPLATE": "هل تريد حذف هذا البند؟",
+      "ALLOW_POPUPS": "يرجى السماح بالنوافذ المنبثقة لطباعة تقرير إخلاء الطرف."
+    },
+    "PRINT": {
+      "WINDOW_TITLE": "إخلاء طرف - {{ref}}",
+      "TITLE": "تقرير إخلاء طرف موظف",
+      "SUBTITLE": "إنهاء الخدمة وإخلاء الطرف",
+      "CATEGORY_CLEARANCE": "إخلاء طرف {{category}}",
+      "TASK": "المهمة",
+      "STATUS": "الحالة",
+      "COMPLETED_BY": "أنجزها",
+      "DATE": "التاريخ",
+      "DEPT_SIGNATURE": "توقيع مدير الإدارة",
+      "EMPLOYEE": "الموظف",
+      "DEPARTMENT": "الإدارة",
+      "DESIGNATION": "المسمى الوظيفي",
+      "SEPARATION_TYPE": "نوع إنهاء الخدمة",
+      "LAST_WORKING_DAY": "تاريخ آخر يوم عمل",
+      "COMPLETED": "تاريخ الإكمال",
+      "NO_TASKS": "لا توجد مهام إخلاء طرف.",
+      "HR_FINAL_APPROVAL": "الاعتماد النهائي لمدير الموارد البشرية",
+      "GENERATED_ON": "صدر من نظام إدارة الموارد البشرية بتاريخ {{date}}",
+      "PRINT": "طباعة"
+    }
+  }
+}

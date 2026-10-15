@@ -50,11 +50,11 @@ class OtpService
     public function resend(LoginOtp $challenge): LoginOtp
     {
         if ($challenge->consumed_at !== null) {
-            throw ValidationException::withMessages(['otp' => ['This OTP has already been used.']]);
+            throw ValidationException::withMessages(['otp' => [__('This OTP has already been used.')]]);
         }
 
         if ($challenge->last_sent_at && $challenge->last_sent_at->gt(now()->subSeconds(30))) {
-            throw ValidationException::withMessages(['otp' => ['Please wait before requesting another OTP.']]);
+            throw ValidationException::withMessages(['otp' => [__('Please wait before requesting another OTP.')]]);
         }
 
         $otp = (string) random_int(100000, 999999);
@@ -80,17 +80,17 @@ class OtpService
             ->first();
 
         if (!$challenge || !$challenge->isActive()) {
-            throw ValidationException::withMessages(['otp' => ['This OTP is invalid or has expired.']]);
+            throw ValidationException::withMessages(['otp' => [__('This OTP is invalid or has expired.')]]);
         }
 
         if ($challenge->attempts >= self::MAX_ATTEMPTS) {
             $challenge->forceFill(['consumed_at' => now()])->save();
-            throw ValidationException::withMessages(['otp' => ['Too many incorrect attempts. Please request a new OTP.']]);
+            throw ValidationException::withMessages(['otp' => [__('Too many incorrect attempts. Please request a new OTP.')]]);
         }
 
         if (!Hash::check($otp, $challenge->otp_hash)) {
             $challenge->increment('attempts');
-            throw ValidationException::withMessages(['otp' => ['The OTP is incorrect.']]);
+            throw ValidationException::withMessages(['otp' => [__('The OTP is incorrect.')]]);
         }
 
         $challenge->forceFill(['consumed_at' => now()])->save();
@@ -116,11 +116,13 @@ class OtpService
     {
         $label = $purpose === LoginOtp::PURPOSE_PASSWORD_RESET ? 'Password Reset' : 'Login';
 
+        // The mail gets the purpose code; its wording is translated into the recipient's language.
         Mail::to($user->email)->send(new OtpMail(
             $user->name ?: $user->email,
             $otp,
-            $label,
-            self::EXPIRES_IN_MINUTES
+            $purpose,
+            self::EXPIRES_IN_MINUTES,
+            $user->employee?->arabic_name
         ));
 
         $phone = $user->employee ? ($user->employee->phone ?: $user->employee->work_phone) : null;

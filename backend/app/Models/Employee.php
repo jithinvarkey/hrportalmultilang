@@ -18,7 +18,7 @@ class Employee extends Model
 
     protected $fillable = [
         'user_id','department_id','unit_id','designation_id','manager_id',
-        'employee_code','prefix','first_name','last_name','arabic_name','email',
+        'employee_code','prefix','first_name','last_name','arabic_name','email','preferred_communication_language',
         'phone','work_phone','extension',
         'dob','gender','marital_status','nationality','hire_date','confirmation_date',
         'joining_announcement_sent_at',

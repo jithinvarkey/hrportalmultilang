@@ -1,15 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { LanguageService } from '../../../core/services/language.service';
 
 interface ReportDef {
   id:          string;
-  label:       string;
+  key:         string;    // REPORTS.DEFS.<key>.LABEL / .DESC
   icon:        string;
   color:       string;
-  description: string;
   filters:     string[];  // which filter fields apply
   columns:     string[];  // preview column keys
-  headers:     string[];  // human-readable headers
+  headers:     string[];  // header translation keys (REPORTS.COL.<header>)
 }
 
 @Component({
@@ -50,63 +50,57 @@ export class ReportsComponent implements OnInit {
   readonly REPORTS: ReportDef[] = [
     {
       id:          'employees',
-      label:       'Employee Report',
+      key:         'EMPLOYEES',
       icon:        'people',
       color:       '#3b82f6',
-      description: 'Full employee roster with department, designation, hire date, nationality and salary details.',
       filters:     ['department', 'status', 'from', 'to'],
       columns:     ['code','name','department','designation','hire_date','nationality','status','salary'],
-      headers:     ['Code','Name','Department','Designation','Hire Date','Nationality','Status','Basic Salary'],
+      headers:     ['CODE','NAME','DEPARTMENT','DESIGNATION','HIRE_DATE','NATIONALITY','STATUS','BASIC_SALARY'],
     },
     {
       id:          'payroll',
-      label:       'Payroll Report',
+      key:         'PAYROLL',
       icon:        'payments',
       color:       '#10b981',
-      description: 'Monthly salary register with breakdown of basic, allowances, GOSI and net pay.',
       filters:     ['month', 'department'],
       columns:     ['code','name','department','basic','housing','transport','gross','gosi','deductions','net'],
-      headers:     ['Code','Name','Dept','Basic','Housing','Transport','Gross','GOSI','Deductions','Net'],
+      headers:     ['CODE','NAME','DEPT','BASIC','HOUSING','TRANSPORT','GROSS','GOSI','DEDUCTIONS','NET'],
     },
     {
       id:          'leave-balance',
-      label:       'Leave Balance Report',
+      key:         'LEAVE_BALANCE',
       icon:        'event_available',
       color:       '#6366f1',
-      description: 'Annual Leave balance per employee — entitlement, days used, pending and remaining.',
       filters:     ['year', 'department'],
       columns:     ['code','name','department','entitlement','used','pending','remaining'],
-      headers:     ['Code','Name','Department','Entitlement','Used','Pending','Remaining'],
+      headers:     ['CODE','NAME','DEPARTMENT','ENTITLEMENT','USED','PENDING','REMAINING'],
     },
     {
       id:          'leave-requests',
-      label:       'Leave Requests Report',
+      key:         'LEAVE_REQUESTS',
       icon:        'event_note',
       color:       '#f59e0b',
-      description: 'All leave requests in the selected period, filterable by status, type and department.',
       filters:     ['from', 'to', 'department', 'status', 'leave_type'],
       columns:     ['code','name','department','leave_type','from','to','days','status'],
-      headers:     ['Code','Name','Dept','Type','From','To','Days','Status'],
+      headers:     ['CODE','NAME','DEPT','TYPE','FROM','TO','DAYS','STATUS'],
     },
     {
       id:          'attendance',
-      label:       'Attendance Report',
+      key:         'ATTENDANCE',
       icon:        'fingerprint',
       color:       '#0ea5e9',
-      description: 'Daily attendance log for the selected month or date range - check-in/out times, hours worked and status.',
       filters:     ['month', 'from', 'to', 'department', 'status'],
       columns:     ['code','name','department','date','check_in','check_out','hours','status'],
-      headers:     ['Code','Name','Dept','Date','In','Out','Hours','Status'],
+      headers:     ['CODE','NAME','DEPT','DATE','IN','OUT','HOURS','STATUS'],
     },
     {
       id:          'loans',
-      label:       'Loan Report',
+      key:         'LOANS',
       icon:        'account_balance',
       color:       '#f97316',
-      description: 'Active and historical employee loans — principal, outstanding balance and repayment progress.',
       filters:     ['department', 'status', 'from', 'to'],
       columns:     ['code','name','department','loan_type','amount','outstanding','installment','installments','status'],
-      headers:     ['Code','Name','Dept','Type','Amount','Outstanding','Installment','Progress','Status'],
+      headers:     ['CODE','NAME','DEPT','TYPE','AMOUNT','OUTSTANDING','INSTALLMENT','PROGRESS','STATUS'],
     },
   ];
 
@@ -115,7 +109,7 @@ export class ReportsComponent implements OnInit {
   readonly ATT_STATUSES    = ['present','absent','late','holiday','off'];
   readonly LOAN_STATUSES   = ['pending','active','settled','rejected'];
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private lang: LanguageService) {}
 
   ngOnInit() {
     this.loadDepts();
@@ -155,7 +149,7 @@ export class ReportsComponent implements OnInit {
       },
       error: err => {
         this.loading = false;
-        this.error   = err?.error?.message || 'Failed to load report. Please check filters.';
+        this.error   = err?.error?.message || this.lang.t('REPORTS.LOAD_FAILED');
       },
     });
   }
@@ -185,7 +179,7 @@ export class ReportsComponent implements OnInit {
         URL.revokeObjectURL(a.href);
         this.downloading = false;
       },
-      error: () => { this.downloading = false; this.error = 'Download failed. Try again.'; },
+      error: () => { this.downloading = false; this.error = this.lang.t('REPORTS.DOWNLOAD_FAILED'); },
     });
   }
 
@@ -237,6 +231,17 @@ export class ReportsComponent implements OnInit {
   }
 
   get currentYear() { return new Date().getFullYear(); }
+
+  /** Display label for a status code: STATUS.<code>, report-specific extras, or a humanised fallback. */
+  statusText(code: any): string {
+    if (code === null || code === undefined || code === '') return '';
+    const norm = String(code).trim().toLowerCase().replace(/[\s-]+/g, '_');
+    for (const key of [`STATUS.${norm}`, `REPORTS.STATUS_EXTRA.${norm}`]) {
+      const label = this.lang.t(key);
+      if (label !== key) return label;
+    }
+    return String(code).replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
 
   getCellValue(row: any, col: string): any {
     const keys = Object.keys(row);

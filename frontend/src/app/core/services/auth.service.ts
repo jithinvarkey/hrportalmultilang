@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { LanguageService } from './language.service';
 
 export const ROLES = {
   SUPER_ADMIN: 'super_admin',
@@ -18,6 +19,7 @@ export const ROLES = {
 
 export interface NavItem {
   path: string;
+  /** Translation key (NAV.*) */
   label: string;
   icon: string;
   group?: string;
@@ -32,7 +34,7 @@ export class AuthService {
   private tokenKey = 'hrms_token';
   private userKey = 'hrms_user';
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private lang: LanguageService) { }
 
   login(login: string, password: string): Observable<any> {
     const identifier = login.trim();
@@ -46,6 +48,7 @@ export class AuthService {
       tap(res => {
         if (res.token) sessionStorage.setItem(this.tokenKey, res.token);
         if (res.user) sessionStorage.setItem(this.userKey, JSON.stringify(res.user));
+        if (res.user) this.lang.syncFromUser(res.user, true);
       })
     );
   }
@@ -58,6 +61,7 @@ export class AuthService {
       tap(res => {
         if (res.token) sessionStorage.setItem(this.tokenKey, res.token);
         if (res.user) sessionStorage.setItem(this.userKey, JSON.stringify(res.user));
+        if (res.user) this.lang.syncFromUser(res.user, true);
       })
     );
   }
@@ -111,7 +115,10 @@ export class AuthService {
 
   refreshUser(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/auth/me`).pipe(
-      tap(res => { if (res.user) sessionStorage.setItem(this.userKey, JSON.stringify(res.user)); })
+      tap(res => {
+        if (res.user) sessionStorage.setItem(this.userKey, JSON.stringify(res.user));
+        if (res.user) this.lang.syncFromUser(res.user);
+      })
     );
   }
 
@@ -198,69 +205,69 @@ export class AuthService {
     const all: NavItem[] = [
       // ── Overview ──────────────────────────────────────────────────────
       {
-        group: 'Overview',
-        path: '/dashboard', label: 'Dashboard', icon: 'dashboard',
+        group: 'NAV.GROUP.OVERVIEW',
+        path: '/dashboard', label: 'NAV.DASHBOARD', icon: 'dashboard',
         roles: []
       },
 
       // ── People ────────────────────────────────────────────────────────
       {
-        group: 'People',
-        path: '/employees', label: 'Employees', icon: 'people',
+        group: 'NAV.GROUP.PEOPLE',
+        path: '/employees', label: 'NAV.EMPLOYEES', icon: 'people',
         perms: ['employees.view']
       },
       {
-        path: '/org-chart', label: 'Org Chart', icon: 'account_tree',
+        path: '/org-chart', label: 'NAV.ORG_CHART', icon: 'account_tree',
         perms: ['orgchart.view']
       },
       // ── HR & Workforce ────────────────────────────────────────────────
       {
-        group: 'HR & Workforce',
-        path: '/attendance', label: 'Attendance', icon: 'fingerprint',
+        group: 'NAV.GROUP.HR_WORKFORCE',
+        path: '/attendance', label: 'NAV.ATTENDANCE', icon: 'fingerprint',
         roles: [ROLES.SUPER_ADMIN, ROLES.HR_MANAGER, ROLES.HR_STAFF,
         ROLES.FINANCE_MANAGER, ROLES.DEPT_MANAGER, ROLES.EMPLOYEE]
       },
       {
-        path: '/attendance/log', label: 'Attendance Log', icon: 'list_alt',
+        path: '/attendance/log', label: 'NAV.ATTENDANCE_LOG', icon: 'list_alt',
         roles: [ROLES.SUPER_ADMIN, ROLES.HR_MANAGER, ROLES.HR_STAFF,
         ROLES.DEPT_MANAGER]
       },
       {
-        path: '/attendance/biotime', label: 'BioTime Sync', icon: 'fingerprint',
+        path: '/attendance/biotime', label: 'NAV.BIOTIME_SYNC', icon: 'fingerprint',
         roles: [ROLES.SUPER_ADMIN, ROLES.HR_MANAGER, ROLES.HR_STAFF]
       },
       {
-        path: '/leave', label: 'Leave', icon: 'event_available',
+        path: '/leave', label: 'NAV.LEAVE', icon: 'event_available',
         roles: [ROLES.FINANCE_MANAGER],
         perms: ['leave.view_all', 'leave.view_own', 'leave.request']
       },
       {
-        path: '/contracts', label: 'Contracts', icon: 'description',
+        path: '/contracts', label: 'NAV.CONTRACTS', icon: 'description',
         roles: [ROLES.SUPER_ADMIN, ROLES.HR_MANAGER, ROLES.HR_STAFF,
         ROLES.FINANCE_MANAGER, ROLES.DEPT_MANAGER, ROLES.EMPLOYEE]
       },
       {
-        path: '/separations', label: 'Separations', icon: 'exit_to_app',
+        path: '/separations', label: 'NAV.SEPARATIONS', icon: 'exit_to_app',
         roles: [ROLES.SUPER_ADMIN, ROLES.CEO, ROLES.HR_MANAGER, ROLES.HR_STAFF,
         ROLES.FINANCE_MANAGER, ROLES.DEPT_MANAGER, ROLES.EMPLOYEE]
       },
       {
-        path: '/recruitment', label: 'Recruitment', icon: 'work',
+        path: '/recruitment', label: 'NAV.RECRUITMENT', icon: 'work',
         roles: [ROLES.SUPER_ADMIN, ROLES.HR_MANAGER, ROLES.HR_STAFF, ROLES.DEPT_MANAGER, ROLES.EMPLOYEE]
       },
       {
-        path: '/performance', label: 'Performance', icon: 'leaderboard',
+        path: '/performance', label: 'NAV.PERFORMANCE', icon: 'leaderboard',
         perms: ['performance.view']
       },
 
       // ── Finance ───────────────────────────────────────────────────────
       {
-        group: 'Finance',
-        path: '/payroll', label: 'Payroll', icon: 'payments',
+        group: 'NAV.GROUP.FINANCE',
+        path: '/payroll', label: 'NAV.PAYROLL', icon: 'payments',
         roles: [ROLES.SUPER_ADMIN, ROLES.HR_MANAGER]
       },
       {
-        path: '/loans', label: 'Loans', icon: 'account_balance',
+        path: '/loans', label: 'NAV.LOANS', icon: 'account_balance',
         perms: ['loans.view_all', 'loans.view_own', 'loans.request']
       },
 
@@ -268,28 +275,28 @@ export class AuthService {
       // Single entry — the module itself shows "My Requests" tab for employees
       // and "All Requests" tab for HR/managers via internal role detection.
       {
-        group: 'Requests',
-        path: '/requests', label: 'Requests', icon: 'inbox',
+        group: 'NAV.GROUP.REQUESTS',
+        path: '/requests', label: 'NAV.REQUESTS', icon: 'inbox',
         perms: ['requests.view_own', 'requests.submit', 'requests.view_all']
       },
 
       // ── Administration ────────────────────────────────────────────────
       {
-        group: 'Communications',
-        path: '/announcements', label: 'Announcements', icon: 'campaign',
+        group: 'NAV.GROUP.COMMUNICATIONS',
+        path: '/announcements', label: 'NAV.ANNOUNCEMENTS', icon: 'campaign',
         roles: []
       },
       {
-        path: '/policies', label: 'Policies', icon: 'policy',
+        path: '/policies', label: 'NAV.POLICIES', icon: 'policy',
         roles: []
       },
       {
-        group: 'Administration',
-        path: '/admin', label: 'Admin', icon: 'admin_panel_settings',
+        group: 'NAV.GROUP.ADMINISTRATION',
+        path: '/admin', label: 'NAV.ADMIN', icon: 'admin_panel_settings',
         perms: ['admin.manage_users', 'admin.manage_roles']
       },
       {
-        path: '/assets', label: 'Asset Management', icon: 'inventory_2',
+        path: '/assets', label: 'NAV.ASSET_MANAGEMENT', icon: 'inventory_2',
         roles: [
           ROLES.SUPER_ADMIN,
           ROLES.HR_MANAGER,

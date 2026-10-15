@@ -7,7 +7,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormControl } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { formatDate as ngFormatDate } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 
 export interface RenewalRequest {
   id:                  number;
@@ -82,18 +84,18 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
   isMgr    = false;
 
   readonly statTiles = [
-    { label: 'Total',            key: 'total',            color: '#3b82f6', icon: 'description',      status: '' },
-    { label: 'Awaiting Manager', key: 'pending',          color: '#f59e0b', icon: 'person',            status: 'pending' },
-    { label: 'Awaiting HR',      key: 'manager_approved', color: '#6366f1', icon: 'manage_accounts',   status: 'manager_approved' },
-    { label: 'Awaiting CEO',     key: 'hr_approved',      color: '#0ea5e9', icon: 'shield',            status: 'hr_approved' },
-    { label: 'Fully Approved',   key: 'approved',         color: '#10b981', icon: 'check_circle',      status: 'approved' },
-    { label: 'Rejected',         key: 'rejected',         color: '#ef4444', icon: 'cancel',            status: 'rejected' },
+    { labelKey: 'CONTRACTS.RENEWALS.STATS.TOTAL',            key: 'total',            color: '#3b82f6', icon: 'description',      status: '' },
+    { labelKey: 'CONTRACTS.RENEWALS.STATS.AWAITING_MANAGER', key: 'pending',          color: '#f59e0b', icon: 'person',            status: 'pending' },
+    { labelKey: 'CONTRACTS.RENEWALS.STATS.AWAITING_HR',      key: 'manager_approved', color: '#6366f1', icon: 'manage_accounts',   status: 'manager_approved' },
+    { labelKey: 'CONTRACTS.RENEWALS.STATS.AWAITING_CEO',     key: 'hr_approved',      color: '#0ea5e9', icon: 'shield',            status: 'hr_approved' },
+    { labelKey: 'CONTRACTS.RENEWALS.STATS.FULLY_APPROVED',   key: 'approved',         color: '#10b981', icon: 'check_circle',      status: 'approved' },
+    { labelKey: 'CONTRACTS.RENEWALS.STATS.REJECTED',         key: 'rejected',         color: '#ef4444', icon: 'cancel',            status: 'rejected' },
   ];
 
   readonly stages = [
-    { key: 'manager', label: 'Manager',  icon: 'person',          color: '#f59e0b' },
-    { key: 'hr',      label: 'HR',       icon: 'manage_accounts', color: '#6366f1' },
-    { key: 'ceo',     label: 'CEO',      icon: 'shield',          color: '#10b981' },
+    { key: 'manager', labelKey: 'CONTRACTS.RENEWALS.STAGES.MANAGER', icon: 'person',          color: '#f59e0b' },
+    { key: 'hr',      labelKey: 'CONTRACTS.RENEWALS.STAGES.HR',      icon: 'manage_accounts', color: '#6366f1' },
+    { key: 'ceo',     labelKey: 'CONTRACTS.RENEWALS.STAGES.CEO',     icon: 'shield',          color: '#10b981' },
   ];
 
   private readonly api      = '/api/v1/contracts/renewals';
@@ -104,6 +106,7 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
     private readonly fb:   FormBuilder,
     private readonly auth: AuthService,
     private readonly cdr:  ChangeDetectorRef,
+    private readonly lang: LanguageService,
   ) {}
 
   ngOnInit(): void {
@@ -202,14 +205,14 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
             this.cdr.markForCheck();
           },
           error: (err) => {
-            this.errorMsg      = err?.error?.message ?? 'Approval failed.';
+            this.errorMsg      = err?.error?.message ?? this.lang.t('CONTRACTS.RENEWALS.MSG.APPROVAL_FAILED');
             this.actionLoading = null;
             this.cdr.markForCheck();
           },
         });
     } else {
       if (!this.actionRejectionReason.trim()) {
-        this.errorMsg = 'Please enter a rejection reason.';
+        this.errorMsg = this.lang.t('CONTRACTS.RENEWALS.MSG.ENTER_REASON');
         this.cdr.markForCheck();
         return;
       }
@@ -226,7 +229,7 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
             this.cdr.markForCheck();
           },
           error: (err) => {
-            this.errorMsg      = err?.error?.message ?? 'Rejection failed.';
+            this.errorMsg      = err?.error?.message ?? this.lang.t('CONTRACTS.RENEWALS.MSG.REJECTION_FAILED');
             this.actionLoading = null;
             this.cdr.markForCheck();
           },
@@ -247,8 +250,8 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
     const okExt = /\.(pdf|doc|docx)$/i.test(file.name);
-    if (!allowed.includes(file.type) && !okExt) return 'Only PDF, DOC, or DOCX files are allowed.';
-    if (file.size > 10 * 1024 * 1024) return 'File must be 10 MB or smaller.';
+    if (!allowed.includes(file.type) && !okExt) return this.lang.t('CONTRACTS.MSG.FILE_TYPE');
+    if (file.size > 10 * 1024 * 1024) return this.lang.t('CONTRACTS.MSG.FILE_SIZE');
     return null;
   }
 
@@ -280,7 +283,7 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => {
-        this.errorMsg   = err?.error?.message ?? 'Create failed.';
+        this.errorMsg   = err?.error?.message ?? this.lang.t('CONTRACTS.RENEWALS.MSG.CREATE_FAILED');
         this.submitting = false;
         this.cdr.markForCheck();
       },
@@ -292,7 +295,7 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
     this.submitting     = false;
     this.showCreateForm = false;
     this.selectedFile   = null;
-    this.successMsg     = 'Renewal request created.';
+    this.successMsg     = this.lang.t('CONTRACTS.RENEWALS.MSG.CREATED');
     this.createForm.reset();
     this.loadRenewals();
     this.loadStats();
@@ -315,7 +318,7 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => { if (done) done(); },
         error: (err) => {
-          this.errorMsg   = err?.error?.message ?? 'Renewal created, but the document upload failed.';
+          this.errorMsg   = err?.error?.message ?? this.lang.t('CONTRACTS.RENEWALS.MSG.UPLOAD_AFTER_CREATE_FAILED');
           this.submitting = false;
           this.cdr.markForCheck();
         },
@@ -339,7 +342,7 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (r) => {
           this.uploadingDocId = null;
-          this.successMsg = 'Document uploaded.';
+          this.successMsg = this.lang.t('CONTRACTS.MSG.DOCUMENT_UPLOADED');
           if (this.showDetail && this.selectedRenewal?.id === renewal.id) {
             this.selectedRenewal = r.renewal;
           }
@@ -349,7 +352,7 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
         },
         error: (e) => {
           this.uploadingDocId = null;
-          this.errorMsg = e?.error?.message ?? 'Upload failed.';
+          this.errorMsg = e?.error?.message ?? this.lang.t('CONTRACTS.MSG.UPLOAD_FAILED');
           this.cdr.markForCheck();
         },
       });
@@ -381,14 +384,17 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
   }
 
   stageLabel(status: string): string {
-    return ({
-      pending:          'Awaiting Manager Approval',
-      manager_approved: 'Awaiting HR Approval',
-      hr_approved:      'Awaiting CEO Approval',
-      approved:         'Fully Approved',
-      rejected:         'Rejected',
-      cancelled:        'Cancelled',
-    } as any)[status] ?? status;
+    const key = `CONTRACTS.RENEWALS.STAGE_LABEL.${status}`;
+    const label = this.lang.t(key);
+    return label !== key ? label : status;
+  }
+
+  /** Approval stage code from the API (manager / hr / ceo) as display text. */
+  stageName(stage: string | null | undefined): string {
+    if (!stage) return '';
+    const key = `CONTRACTS.RENEWALS.STAGES.${String(stage).toUpperCase()}`;
+    const label = this.lang.t(key);
+    return label !== key ? label : stage;
   }
 
   statusClass(status: string): string {
@@ -404,18 +410,12 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
 
   formatDate(d: string | null): string {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    try { return ngFormatDate(d, 'dd MMM yyyy', this.lang.locale()); } catch { return d; }
   }
 
   formatDateTime(d: string | null): string {
-    if (!d) return 'â€”';
-    return new Date(d).toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    if (!d) return '—';
+    try { return ngFormatDate(d, 'dd MMM yyyy, HH:mm', this.lang.locale()); } catch { return d; }
   }
 
   formatSalary(s: number | null): string {

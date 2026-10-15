@@ -1,0 +1,89 @@
+{
+  "REPORTS": {
+    "TITLE": "Reports",
+    "SUBTITLE": "Generate, preview and export reports as Excel (CSV) or PDF",
+    "EXPORTING": "Exporting…",
+    "EXPORT_CSV_EXCEL": "Export CSV / Excel",
+    "MONTHLY_XLSX": "Monthly XLSX",
+    "EXPORT_PDF": "Export PDF",
+    "FETCH_XLSX": "Fetch XLSX Report",
+    "CSV_EXCEL": "CSV / Excel",
+    "PDF": "PDF",
+    "RUN": "Run Report",
+    "RECORDS": "records",
+    "ALL_DEPARTMENTS": "All Departments",
+    "ALL_STATUSES": "All Statuses",
+    "ALL_TYPES": "All Types",
+    "LEAVE_TYPE": "Leave Type",
+    "EMPTY": "No records match the selected filters.",
+    "SHOWING_FIRST": "Showing first 50 of {{total}} records. Download CSV/PDF for full data.",
+    "IDLE": "Set filters above and click <strong>Run Report</strong> to preview data.",
+    "IDLE_SUB": "The full dataset will be included in CSV/PDF exports.",
+    "LOAD_FAILED": "Failed to load report. Please check filters.",
+    "DOWNLOAD_FAILED": "Download failed. Try again.",
+    "DEFS": {
+      "EMPLOYEES": {
+        "LABEL": "Employee Report",
+        "DESC": "Full employee roster with department, designation, hire date, nationality and salary details."
+      },
+      "PAYROLL": {
+        "LABEL": "Payroll Report",
+        "DESC": "Monthly salary register with breakdown of basic, allowances, GOSI and net pay."
+      },
+      "LEAVE_BALANCE": {
+        "LABEL": "Leave Balance Report",
+        "DESC": "Annual Leave balance per employee — entitlement, days used, pending and remaining."
+      },
+      "LEAVE_REQUESTS": {
+        "LABEL": "Leave Requests Report",
+        "DESC": "All leave requests in the selected period, filterable by status, type and department."
+      },
+      "ATTENDANCE": {
+        "LABEL": "Attendance Report",
+        "DESC": "Daily attendance log for the selected month or date range - check-in/out times, hours worked and status."
+      },
+      "LOANS": {
+        "LABEL": "Loan Report",
+        "DESC": "Active and historical employee loans — principal, outstanding balance and repayment progress."
+      }
+    },
+    "COL": {
+      "CODE": "Code",
+      "NAME": "Name",
+      "DEPARTMENT": "Department",
+      "DEPT": "Dept",
+      "DESIGNATION": "Designation",
+      "HIRE_DATE": "Hire Date",
+      "NATIONALITY": "Nationality",
+      "STATUS": "Status",
+      "BASIC_SALARY": "Basic Salary",
+      "BASIC": "Basic",
+      "HOUSING": "Housing",
+      "TRANSPORT": "Transport",
+      "GROSS": "Gross",
+      "GOSI": "GOSI",
+      "DEDUCTIONS": "Deductions",
+      "NET": "Net",
+      "ENTITLEMENT": "Entitlement",
+      "USED": "Used",
+      "PENDING": "Pending",
+      "REMAINING": "Remaining",
+      "TYPE": "Type",
+      "FROM": "From",
+      "TO": "To",
+      "DAYS": "Days",
+      "DATE": "Date",
+      "IN": "In",
+      "OUT": "Out",
+      "HOURS": "Hours",
+      "AMOUNT": "Amount",
+      "OUTSTANDING": "Outstanding",
+      "INSTALLMENT": "Installment",
+      "PROGRESS": "Progress"
+    },
+    "STATUS_EXTRA": {
+      "settled": "Settled",
+      "off": "Off"
+    }
+  }
+}

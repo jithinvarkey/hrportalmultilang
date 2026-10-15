@@ -4,6 +4,8 @@ import {
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
+import { TranslateService } from '@ngx-translate/core';
 import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -76,7 +78,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
 
   // ── Type form ─────────────────────────────────────────────────────────────
   typeForm: any = {
-    name: '', code: '', category: 'documents', description: '', instructions: '',
+    name: '', name_ar: '', code: '', category: 'documents', description: '', instructions: '',
     sla_days: 3, requires_attachment: false, requires_manager_approval: false,
     is_active: true, sort_order: 0, icon: 'description', color: '#6366f1', handling_department_id: ''
   };
@@ -90,29 +92,30 @@ export class RequestListComponent implements OnInit, OnDestroy {
   mineColumns = ['ref', 'type', 'details', 'required_by', 'status', 'sla', 'actions'];
   typeColumns = ['name', 'category', 'sla', 'approval', 'actions'];
 
+  // Labels below are translation keys, translated in the template.
   tabs = [
-    { id: 'mine', label: 'My Requests', icon: 'person' },
-    { id: 'all', label: 'All Requests', icon: 'list_alt' },
-    { id: 'types', label: 'Request Types', icon: 'tune' },
+    { id: 'mine', label: 'REQUESTS.TABS.MINE', icon: 'person' },
+    { id: 'all', label: 'REQUESTS.TABS.ALL', icon: 'list_alt' },
+    { id: 'types', label: 'REQUESTS.TABS.TYPES', icon: 'tune' },
   ];
 
   statusTabs = [
-    { id: '', label: 'All' },
-    { id: 'pending', label: 'Pending' },
-    { id: 'in_progress', label: 'In Progress' },
-    { id: 'completed', label: 'Completed' },
-    { id: 'rejected', label: 'Rejected' },
+    { id: '', label: 'COMMON.ALL' },
+    { id: 'pending', label: 'STATUS.pending' },
+    { id: 'in_progress', label: 'STATUS.in_progress' },
+    { id: 'completed', label: 'STATUS.completed' },
+    { id: 'rejected', label: 'STATUS.rejected' },
   ];
 
   categories = [
-    { id: 'visa', label: 'Visa', icon: 'flight_takeoff', color: '#3b82f6' },
-    { id: 'travel', label: 'Travel', icon: 'airplane_ticket', color: '#f59e0b' },
-    { id: 'documents', label: 'Documents', icon: 'description', color: '#10b981' },
-    { id: 'hr', label: 'HR', icon: 'badge', color: '#8b5cf6' },
-    { id: 'it', label: 'IT', icon: 'computer', color: '#ef4444' },
-    { id: 'admin', label: 'Admin', icon: 'admin_panel_settings', color: '#ec4899' },
-    { id: 'finance', label: 'Finance', icon: 'payments', color: '#0ea5e9' },
-    { id: 'other', label: 'Other', icon: 'help_outline', color: '#6b7280' },
+    { id: 'visa', label: 'REQUESTS.CATEGORY.visa', icon: 'flight_takeoff', color: '#3b82f6' },
+    { id: 'travel', label: 'REQUESTS.CATEGORY.travel', icon: 'airplane_ticket', color: '#f59e0b' },
+    { id: 'documents', label: 'REQUESTS.CATEGORY.documents', icon: 'description', color: '#10b981' },
+    { id: 'hr', label: 'REQUESTS.CATEGORY.hr', icon: 'badge', color: '#8b5cf6' },
+    { id: 'it', label: 'REQUESTS.CATEGORY.it', icon: 'computer', color: '#ef4444' },
+    { id: 'admin', label: 'REQUESTS.CATEGORY.admin', icon: 'admin_panel_settings', color: '#ec4899' },
+    { id: 'finance', label: 'REQUESTS.CATEGORY.finance', icon: 'payments', color: '#0ea5e9' },
+    { id: 'other', label: 'REQUESTS.CATEGORY.other', icon: 'help_outline', color: '#6b7280' },
   ];
 
   materialIcons = [
@@ -142,6 +145,8 @@ export class RequestListComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private auth: AuthService,
     private cdr: ChangeDetectorRef,
+    private lang: LanguageService,
+    private translate: TranslateService,
   ) { }
 
   ngOnInit(): void {
@@ -149,6 +154,8 @@ export class RequestListComponent implements OnInit, OnDestroy {
     this.isMgr = this.auth.isManagerRole();
     this.currentUserId = this.auth.getUser()?.id ?? null;
     this.currentUserdepartment = this.auth.getUser()?.employee?.departmentId ?? null;
+    // OnPush: re-render labels built in code (SLA chips, names) when the language changes
+    this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.cdr.markForCheck());
     this.loadStats();
     this.loadRequestTypes();
     this.load();
@@ -162,10 +169,10 @@ export class RequestListComponent implements OnInit, OnDestroy {
       next: r => {
         this.stats = r;
         this.statItems = [
-          { label: 'Pending', value: r.pending, icon: 'hourglass_empty', color: '#f59e0b' },
-          { label: 'In Progress', value: r.in_progress, icon: 'sync', color: '#3b82f6' },
-          { label: 'Completed', value: r.completed, icon: 'check_circle', color: '#10b981' },
-          { label: 'Overdue', value: r.overdue, icon: 'warning', color: '#ef4444' },
+          { label: 'STATUS.pending', value: r.pending, icon: 'hourglass_empty', color: '#f59e0b' },
+          { label: 'STATUS.in_progress', value: r.in_progress, icon: 'sync', color: '#3b82f6' },
+          { label: 'STATUS.completed', value: r.completed, icon: 'check_circle', color: '#10b981' },
+          { label: 'STATUS.overdue', value: r.overdue, icon: 'warning', color: '#ef4444' },
         ];
         this.cdr.markForCheck();
       },
@@ -266,10 +273,10 @@ export class RequestListComponent implements OnInit, OnDestroy {
 
   submitRequest(): void {
     if (!this.form.request_type_id || !this.form.details) {
-      this.formError = 'Request type and details are required.'; return;
+      this.formError = this.lang.t('REQUESTS.MSG.REQUIRED_FIELDS'); return;
     }
     if (this.selectedType?.requires_attachment && !this.selectedFile) {
-      this.formError = 'A supporting document is required.'; return;
+      this.formError = this.lang.t('REQUESTS.MSG.ATTACHMENT_REQUIRED'); return;
     }
     this.submitting = true;
     this.formError = '';
@@ -288,7 +295,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.submitting = false;
-        this.formError = err?.error?.message || 'Failed to submit.';
+        this.formError = err?.error?.message || this.lang.t('REQUESTS.MSG.SUBMIT_FAILED');
         this.cdr.markForCheck();
       },
     });
@@ -298,7 +305,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
     const f = (event.target as HTMLInputElement).files?.[0] ?? null;
     this.fileError = '';
     if (!f) { this.selectedFile = null; return; }
-    if (f.size > 10 * 1024 * 1024) { this.fileError = 'Max 10 MB.'; return; }
+    if (f.size > 10 * 1024 * 1024) { this.fileError = this.lang.t('REQUESTS.MSG.FILE_TOO_LARGE'); return; }
     this.selectedFile = f;
   }
 
@@ -316,7 +323,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
         if (this.showDetail) this.reloadDetail();
         this.cdr.markForCheck();
       },
-      error: (e: any) => alert('Could not approve: ' + (e?.error?.message || 'Server error.')),
+      error: (e: any) => alert(this.lang.t('REQUESTS.MSG.APPROVE_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') })),
     });
   }
 
@@ -348,7 +355,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
       error: (e: any) => {
         this.assigning = false;
         this.cdr.markForCheck();
-        alert('Could not assign: ' + (e?.error?.message || 'Server error.'));
+        alert(this.lang.t('REQUESTS.MSG.ASSIGN_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') }));
       },
     });
   }
@@ -389,7 +396,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
       error: (e: any) => {
-        alert('Could not complete: ' + (e?.error?.message || 'Server error.'));
+        alert(this.lang.t('REQUESTS.MSG.COMPLETE_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') }));
         this.cdr.markForCheck();
       },
     });
@@ -419,7 +426,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
         a.click();
         window.URL.revokeObjectURL(url);
       },
-      error: (e: any) => alert('Could not download file: ' + (e?.error?.message || 'Server error.')),
+      error: (e: any) => alert(this.lang.t('REQUESTS.MSG.DOWNLOAD_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') })),
     });
   }
 
@@ -442,14 +449,14 @@ export class RequestListComponent implements OnInit, OnDestroy {
         if (this.showDetail) this.showDetail = false;
         this.cdr.markForCheck();
       },
-      error: (e: any) => alert('Could not reject: ' + (e?.error?.message || 'Server error.')),
+      error: (e: any) => alert(this.lang.t('REQUESTS.MSG.REJECT_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') })),
     });
   }
 
   // ── Cancel ──────────────────────────────────────────────────────────────
 
   cancelReq(req: any): void {
-    if (!confirm('Cancel this request?')) return;
+    if (!confirm(this.lang.t('REQUESTS.MSG.CONFIRM_CANCEL'))) return;
     this.http.post(`/api/v1/requests/${req.id}/cancel`, {}).subscribe({
       next: () => {
         this.load(this.currentPage);
@@ -457,7 +464,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
         if (this.showDetail) this.showDetail = false;
         this.cdr.markForCheck();
       },
-      error: (e: any) => alert('Could not cancel: ' + (e?.error?.message || 'Server error.')),
+      error: (e: any) => alert(this.lang.t('REQUESTS.MSG.CANCEL_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') })),
     });
   }
 
@@ -486,7 +493,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
     } else {
       this.typeEditId = null;
       this.typeForm = {
-        name: '', code: '', category: 'documents', description: '', instructions: '',
+        name: '', name_ar: '', code: '', category: 'documents', description: '', instructions: '',
         sla_days: 3, requires_attachment: false, requires_manager_approval: false,
         is_active: true, sort_order: 0, icon: 'description', color: '#6366f1', handling_department_id: ''
       };
@@ -511,7 +518,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
       },
       error: (e: any) => {
         this.typeSaving = false;
-        alert('Could not save: ' + (e?.error?.message || e?.error?.errors?.code?.[0] || 'Server error.'));
+        alert(this.lang.t('REQUESTS.MSG.SAVE_FAILED', { error: e?.error?.message || e?.error?.errors?.code?.[0] || this.lang.t('REQUESTS.MSG.SERVER_ERROR') }));
         this.cdr.markForCheck();
       },
     });
@@ -536,7 +543,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
       error: (e: any) => {
         this.typeDeleting = false;
         this.typeToDelete = null;
-        alert('Cannot delete: ' + (e?.error?.message || 'The type may have existing requests.'));
+        alert(this.lang.t('REQUESTS.MSG.DELETE_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.TYPE_IN_USE') }));
         this.cdr.markForCheck();
       },
     });
@@ -569,13 +576,11 @@ export class RequestListComponent implements OnInit, OnDestroy {
     return Object.values(grouped);
   }
 
-  statusLabel(s: string): string {
-    const map: any = {
-      pending: 'Pending', pending_manager: 'Pending Manager',
-      in_progress: 'In Progress', completed: 'Completed',
-      rejected: 'Rejected', cancelled: 'Cancelled',
-    };
-    return map[s] || s;
+  /** Employee display name: Arabic name when Arabic is active and one is recorded. */
+  empName(e: any): string {
+    if (!e) return '';
+    if (this.lang.current() === 'ar' && e.arabic_name) return e.arabic_name;
+    return `${e.first_name ?? ''} ${e.last_name ?? ''}`.trim();
   }
 
   statusCls(s: string): string {
@@ -599,10 +604,10 @@ export class RequestListComponent implements OnInit, OnDestroy {
   slaStatus(req: any): { label: string; cls: string } | null {
     if (!req.due_date || ['completed', 'rejected', 'cancelled'].includes(req.status)) return null;
     const days = Math.ceil((new Date(req.due_date).getTime() - Date.now()) / 86400000);
-    if (days < 0) return { label: Math.abs(days) + 'd overdue', cls: 'sla-red' };
-    if (days === 0) return { label: 'Due today', cls: 'sla-red' };
-    if (days <= 1) return { label: days + 'd left', cls: 'sla-orange' };
-    return { label: days + 'd left', cls: 'sla-green' };
+    if (days < 0) return { label: this.lang.t('REQUESTS.SLA_STATE.OVERDUE', { days: Math.abs(days) }), cls: 'sla-red' };
+    if (days === 0) return { label: this.lang.t('REQUESTS.SLA_STATE.DUE_TODAY'), cls: 'sla-red' };
+    if (days <= 1) return { label: this.lang.t('REQUESTS.SLA_STATE.LEFT', { days }), cls: 'sla-orange' };
+    return { label: this.lang.t('REQUESTS.SLA_STATE.LEFT', { days }), cls: 'sla-green' };
   }
 
   avatarColor(name: string): string {

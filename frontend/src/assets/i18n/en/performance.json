@@ -1,0 +1,121 @@
+{
+  "PERFORMANCE": {
+    "TITLE": "Performance",
+    "SUBTITLE": "Evaluation cycles · Self assessments · Manager reviews · KPIs",
+    "NEW_CYCLE": "New Cycle",
+    "STATS": {
+      "TOTAL_CYCLES": "Total Cycles",
+      "ACTIVE": "Active",
+      "PENDING_SELF": "Pending Self",
+      "PENDING_MANAGER": "Pending Manager",
+      "FINALIZED": "Finalized",
+      "AVG_RATING": "Avg Rating"
+    },
+    "TABS": {
+      "CYCLES": "Cycles",
+      "REVIEWS": "Reviews",
+      "KPIS": "KPIs"
+    },
+    "COLS": {
+      "CYCLE": "Cycle",
+      "TYPE": "Type",
+      "PERIOD": "Period",
+      "REVIEWS": "Reviews",
+      "SELF": "Self",
+      "MANAGER": "Manager",
+      "FINAL": "Final",
+      "BAND": "Band",
+      "KPI_TITLE": "KPI Title",
+      "CATEGORY": "Category",
+      "TARGET": "Target",
+      "WEIGHT": "Weight"
+    },
+    "DONE_COUNT": "{{count}} done",
+    "TOOLTIP": {
+      "VIEW_REVIEWS": "View reviews",
+      "INITIATE": "Initiate — create review records",
+      "CLOSE_CYCLE": "Close cycle",
+      "SELF_ASSESS": "Submit Self Assessment",
+      "MANAGER_REVIEW": "Manager Review",
+      "FINALIZE": "Finalize"
+    },
+    "EMPTY": {
+      "NO_CYCLES": "No performance cycles",
+      "NO_REVIEWS": "No reviews found",
+      "NO_KPIS": "No KPIs defined",
+      "NO_CYCLE_REVIEWS": "No reviews yet. Initiate the cycle to create review records."
+    },
+    "SEARCH_EMPLOYEE": "Search employee…",
+    "FILTER": {
+      "ALL_STATUS": "All Status",
+      "PENDING_SELF": "Pending Self",
+      "PENDING_MANAGER": "Pending Manager",
+      "PENDING_FINALIZE": "Pending Finalize",
+      "FINALIZED": "Finalized"
+    },
+    "KPI_LIBRARY": "KPI Library",
+    "ADD_KPI": "Add KPI",
+    "CYCLE_TYPES": {
+      "annual": "Annual",
+      "mid_year": "Mid-Year",
+      "quarterly": "Quarterly",
+      "probation": "Probation"
+    },
+    "BANDS": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "average": "Average",
+      "below_average": "Below Average",
+      "poor": "Poor"
+    },
+    "INITIATE_CYCLE": "Initiate Cycle",
+    "FORM": {
+      "EDIT_CYCLE": "Edit Cycle",
+      "NEW_CYCLE_TITLE": "New Performance Cycle",
+      "CYCLE_NAME": "Cycle Name",
+      "CYCLE_NAME_PH": "e.g. Annual Review 2025",
+      "SELF_DEADLINE": "Self Assessment Deadline",
+      "MANAGER_DEADLINE": "Manager Review Deadline",
+      "SAVE_CYCLE": "Save Cycle",
+      "SELF_ASSESSMENT_TITLE": "Self Assessment — {{cycle}}",
+      "RATING": "Rating (1–5)",
+      "SELF_COMMENTS_PH": "Describe your achievements and areas of improvement…",
+      "MANAGER_REVIEW_TITLE": "Manager Review — {{name}}",
+      "MANAGER_COMMENTS_PH": "Evaluation of performance against objectives…",
+      "SUBMIT_REVIEW": "Submit Review",
+      "FINALIZE_TITLE": "Finalize Review — {{name}}",
+      "SELF_RATING": "Self Rating",
+      "MANAGER_RATING": "Manager Rating",
+      "FINAL_RATING": "Final Rating (1–5)",
+      "PERFORMANCE_BAND": "Performance Band",
+      "DEVELOPMENT_PLAN": "Development Plan",
+      "DEVELOPMENT_PLAN_PH": "Goals and development actions for next period…",
+      "HR_NOTES": "HR Notes",
+      "FINALIZE": "Finalize",
+      "FINALIZING": "Finalizing…",
+      "EDIT_KPI": "Edit KPI",
+      "NEW_KPI": "New KPI",
+      "KPI_TITLE": "Title",
+      "KPI_TITLE_PH": "e.g. Customer Satisfaction Score",
+      "CATEGORY": "Category",
+      "CATEGORY_PH": "e.g. Quality, Sales, Leadership",
+      "TARGET_VALUE": "Target Value",
+      "TARGET_PH": "e.g. 95",
+      "UNIT": "Unit",
+      "UNIT_PH": "e.g. %, score, calls",
+      "WEIGHT_PCT": "Weight (%)",
+      "WEIGHT_PH": "0–100",
+      "SAVE_KPI": "Save KPI"
+    },
+    "MSG": {
+      "CYCLE_CREATED": "Cycle created.",
+      "CYCLE_UPDATED": "Cycle updated.",
+      "CONFIRM_INITIATE": "Initiate \"{{name}}\"? This will create review records for all active employees.",
+      "INITIATE_FAILED": "Initiation failed.",
+      "SELF_SUBMITTED": "Self assessment submitted.",
+      "MANAGER_SUBMITTED": "Manager review submitted.",
+      "FINALIZED": "Review finalized.",
+      "CONFIRM_DELETE_KPI": "Delete this KPI?"
+    }
+  }
+}

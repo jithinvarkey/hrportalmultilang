@@ -66,7 +66,7 @@ class NewHireOnboardingService
                 $url,
                 $loginEmail,
                 $tempPassword,
-                $expiresAt->format('d M Y h:i A'),
+                $expiresAt->toIso8601String(), // formatted in the recipient's language by the template
                 $attachments
             ));
 

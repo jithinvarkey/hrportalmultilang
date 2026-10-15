@@ -105,7 +105,7 @@
 
 .av-upload-btn {
   position: absolute;
-  right: -5px;
+  inset-inline-end: -5px;
   bottom: -5px;
   width: 38px;
   height: 38px;
@@ -147,7 +147,7 @@
 }
 
 .identity-meta {
-  text-align: left;
+  text-align: start;
   margin-top: 10px;
 }
 
@@ -270,6 +270,7 @@
 }
 
 .info-row {
+  gap: 12px;
   background: rgba(255,255,255,.03);
   border: 1px solid rgba(255,255,255,.08);
   border-radius: 14px;
@@ -287,7 +288,9 @@
 .info-val {
   color: white;
   font-weight: 600;
-  text-align: right;
+  text-align: end;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -369,10 +372,14 @@ select.inp option {
   position: relative;
 }
 
+.pw-wrap .inp {
+  padding-inline-end: 44px;
+}
+
 .pw-eye {
   position: absolute;
   top: 50%;
-  right: 12px;
+  inset-inline-end: 12px;
   transform: translateY(-50%);
   background: transparent;
   border: none;
@@ -646,6 +653,94 @@ select.inp option {
 }
 
 /* ──────────────────────────────────────────────────────────
+   LANGUAGE TAB
+────────────────────────────────────────────────────────── */
+
+.lang-section {
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.lang-section .section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.lang-section .section-title .material-icons {
+  font-size: 20px;
+  color: #60a5fa;
+}
+
+.lang-section .section-hint {
+  margin-bottom: 14px;
+}
+
+.lang-choice {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lang-choice.disabled {
+  opacity: .55;
+}
+
+.lang-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  min-width: 130px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,.28);
+  background: rgba(15,23,42,.78);
+  color: #e2e8f0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.lang-option input {
+  accent-color: #2563eb;
+  margin: 0;
+}
+
+.lang-option[lang=ar] span {
+  font-family: 'IBM Plex Sans Arabic', 'Tajawal', sans-serif;
+  font-size: 15px;
+}
+
+.lang-option.active {
+  border-color: #2563eb;
+  background: rgba(37,99,235,.18);
+  color: #fff;
+}
+
+.lang-choice.disabled .lang-option {
+  cursor: not-allowed;
+}
+
+.lang-spinner {
+  margin: 0;
+}
+
+.lang-warning {
+  color: #fbbf24;
+  margin: 12px 0 0;
+}
+
+.screen-lang-switcher {
+  min-width: 240px;
+}
+
+/* ──────────────────────────────────────────────────────────
    MOBILE
 ────────────────────────────────────────────────────────── */
 
@@ -677,3 +772,92 @@ select.inp option {
   }
 
 }
+
+@media (max-width: 1024px) {
+  .module-page { padding: 20px; }
+  .profile-layout { gap: 18px; }
+}
+
+@media (max-width: 768px) {
+  .module-page { padding: 16px 12px 32px; }
+  .page-title { font-size: 22px; }
+
+  /* Header card stacks; avatar + name centred */
+  .identity-card { padding: 18px; border-radius: 16px; }
+  .av-circle { width: 96px; height: 96px; font-size: 34px; }
+  .identity-name { font-size: 21px; overflow-wrap: anywhere; }
+  .identity-email { overflow-wrap: anywhere; }
+
+  .profile-content { padding: 14px; border-radius: 16px; min-width: 0; }
+
+  /* Tabs scroll sideways instead of wrapping into many rows */
+  .tab-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding-bottom: 4px;
+  }
+  .tab-btn { flex: 0 0 auto; white-space: nowrap; padding: 10px 14px; min-height: 40px; }
+
+  .info-row { flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px; }
+  .info-val { text-align: start; }
+
+  .form-grid { gap: 14px; }
+  .form-actions { flex-wrap: wrap; }
+  .form-actions > button { flex: 1 1 auto; justify-content: center; min-height: 42px; }
+  .btn-primary:not(.no-margin) { width: 100%; }
+  .section-head .btn-primary { width: 100%; justify-content: center; }
+
+  .dependent-text { min-width: 0; overflow-wrap: anywhere; }
+  .icon-action { width: 38px; height: 38px; }
+  .doc-actions button { min-height: 36px; }
+
+  .lang-section { padding: 14px; }
+  .lang-choice { display: flex; }
+  .lang-option { flex: 1 1 0; justify-content: center; }
+  .screen-lang-switcher { display: flex; width: 100%; min-width: 0; }
+}
+
+@media (max-width: 480px) {
+  .info-section { margin-bottom: 20px; }
+  .section-title { font-size: 16px; }
+  .dependent-card, .document-card { padding: 12px; }
+  .dependent-main, .document-main { gap: 10px; }
+  .dependent-icon { width: 36px; height: 36px; }
+}
+
+/* ── Phone app look: header card with avatar beside the name, compact info list ── */
+@media (max-width: 768px) {
+  .profile-layout { gap: 12px; }
+  .identity-card {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; row-gap: 2px;
+    align-items: center; text-align: start; padding: 16px; border-radius: 18px;
+  }
+  .av-wrap { grid-row: 1 / span 3; margin: 0; }
+  .av-circle { width: 76px; height: 76px; font-size: 28px; border-width: 3px; }
+  .av-upload-btn { width: 30px; height: 30px; border-width: 2px; .material-icons { font-size: 16px; } }
+  .identity-name, .identity-email, .identity-role { grid-column: 2; margin: 0; justify-self: start; }
+  .identity-name { font-size: 18px; line-height: 1.25; }
+  .identity-email { font-size: 12.5px; }
+  .identity-role { margin-top: 4px; }
+  .field-err, .identity-meta { grid-column: 1 / -1; }
+  .identity-meta {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; text-align: start;
+  }
+  .meta-row { min-width: 0; font-size: 12px; overflow-wrap: anywhere; }
+
+  .profile-content { padding: 12px; border-radius: 18px; }
+
+  /* Info: one card per section, rows divided by a line, label above value */
+  .info-grid { gap: 0; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; overflow: hidden; }
+  .info-row {
+    border: none; border-radius: 0; background: transparent; padding: 11px 14px; gap: 2px;
+    & + .info-row { border-top: 1px solid rgba(255,255,255,.08); }
+  }
+  .info-label { font-size: 12px; }
+  .info-val { font-size: 14px; }
+}
+

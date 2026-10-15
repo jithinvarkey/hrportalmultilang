@@ -60,7 +60,7 @@ class AnnouncementController extends Controller
             if ($data['background_image_path']) Storage::disk('public')->delete($data['background_image_path']);
             $data['background_image_path'] = $request->file('background_image')->store('birthday-wishes', 'public');
         }
-        return response()->json(['settings' => $this->birthdayWishes->updateSettings($data), 'message' => 'Birthday wish settings saved.']);
+        return response()->json(['settings' => $this->birthdayWishes->updateSettings($data), 'message' => __('Birthday wish settings saved.')]);
     }
 
     public function sendBirthdayWishes(Request $request): JsonResponse
@@ -93,7 +93,7 @@ class AnnouncementController extends Controller
     {
         return $this->isManager()
             ? null
-            : response()->json(['message' => 'You are not allowed to manage announcements.'], 403);
+            : response()->json(['message' => __('You are not allowed to manage announcements.')], 403);
     }
 
     // ── Categories ────────────────────────────────────────────────────────
@@ -140,7 +140,7 @@ class AnnouncementController extends Controller
     {
         if ($deny = $this->ensureManager()) return $deny;
         AnnouncementCategory::findOrFail($id)->delete();
-        return response()->json(['message' => 'Category deleted.']);
+        return response()->json(['message' => __('Category deleted.')]);
     }
 
     // ── Announcements ─────────────────────────────────────────────────────
@@ -212,7 +212,7 @@ class AnnouncementController extends Controller
             !$this->isVisible($announcement)
             || !$this->announcementVisibleToEmployee($announcement, auth()->user()->employee, $this->userRoles())
         )) {
-            return response()->json(['message' => 'Not found.'], 404);
+            return response()->json(['message' => __('Not found.')], 404);
         }
 
         // Opening the detail counts as a read.
@@ -226,7 +226,7 @@ class AnnouncementController extends Controller
     {
         Announcement::findOrFail($id);
         $this->recordRead($id);
-        return response()->json(['message' => 'Marked as read.']);
+        return response()->json(['message' => __('Marked as read.')]);
     }
 
     private function recordRead(int $announcementId): void
@@ -243,7 +243,7 @@ class AnnouncementController extends Controller
     public function react(Request $request, int $id): JsonResponse
     {
         $empId = $this->employeeId();
-        if (!$empId) return response()->json(['message' => 'Only employees can react.'], 422);
+        if (!$empId) return response()->json(['message' => __('Only employees can react.')], 422);
 
         Announcement::findOrFail($id);
         $emoji = $request->input('emoji', '👍');
@@ -342,7 +342,7 @@ class AnnouncementController extends Controller
         $targetEmployeeIds = $this->arr($request->input('target_employee_ids'));
         if (($data['audience_type'] ?? 'all') === 'employees' && empty($targetEmployeeIds)) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'target_employee_ids' => ['Select at least one employee.'],
+                'target_employee_ids' => [__('Select at least one employee.')],
             ]);
         }
         // A scheduled announcement starts unpublished; the cron flips it on.
@@ -379,7 +379,7 @@ class AnnouncementController extends Controller
         }
 
         return response()->json([
-            'message'      => $scheduled ? 'Announcement scheduled.' : 'Announcement published.',
+            'message'      => $scheduled ? __('Announcement scheduled.') : __('Announcement published.'),
             'announcement' => $announcement->load(['category', 'creator:id,name']),
         ], 201);
     }
@@ -456,7 +456,7 @@ class AnnouncementController extends Controller
 
         if ($announcement->audience_type === 'employees' && empty($announcement->target_employee_ids)) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'target_employee_ids' => ['Select at least one employee.'],
+                'target_employee_ids' => [__('Select at least one employee.')],
             ]);
         }
 
@@ -477,7 +477,7 @@ class AnnouncementController extends Controller
         }
 
         return response()->json([
-            'message'      => 'Announcement updated.',
+            'message'      => __('Announcement updated.'),
             'announcement' => $announcement->load(['category', 'creator:id,name']),
         ]);
     }
@@ -492,7 +492,7 @@ class AnnouncementController extends Controller
         }
         $announcement->delete();
 
-        return response()->json(['message' => 'Announcement deleted.']);
+        return response()->json(['message' => __('Announcement deleted.')]);
     }
 
     public function downloadAttachment(Request $request, int $id): StreamedResponse|JsonResponse
@@ -500,7 +500,7 @@ class AnnouncementController extends Controller
         $announcement = Announcement::findOrFail($id);
 
         if (!$announcement->attachment_path || !Storage::disk('public')->exists($announcement->attachment_path)) {
-            return response()->json(['message' => 'No attachment.'], 404);
+            return response()->json(['message' => __('No attachment.')], 404);
         }
 
         $mime = $announcement->attachment_mime

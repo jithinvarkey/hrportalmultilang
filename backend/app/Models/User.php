@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -9,13 +10,13 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Spatie\Permission\Traits\HasPermissions;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasLocalePreference
 {
     use HasApiTokens, HasFactory, Notifiable, HasRoles {
         HasRoles::hasRole as private spatieHasRole;
     }
 
-    protected $fillable = ['name', 'email', 'password', 'legacy_password_md5', 'otp_exempt'];
+    protected $fillable = ['name', 'email', 'preferred_language', 'password', 'legacy_password_md5', 'otp_exempt'];
 
     protected $hidden = ['password', 'legacy_password_md5', 'remember_token'];
 
@@ -55,5 +56,15 @@ class User extends Authenticatable
     public function employee()
     {
         return $this->hasOne(Employee::class);
+    }
+
+    /**
+     * Language for notifications and mail sent with Mail::to($user): the linked employee's
+     * communication language (English by default). Not the UI language in preferred_language.
+     * Mail addressed to a plain email string is resolved by App\Support\Locale\RecipientLocale.
+     */
+    public function preferredLocale(): string
+    {
+        return \App\Support\Locale\SupportedLocales::normalize($this->employee?->preferred_communication_language);
     }
 }

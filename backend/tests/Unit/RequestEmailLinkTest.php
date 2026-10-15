@@ -103,12 +103,30 @@ class RequestEmailLinkTest extends TestCase
     public function test_general_leave_emails_link_to_employee_leave_page(): void
     {
         $annualReminder = new AnnualLeaveContractExpiryMail('Fahad', '30 Sep 2026', 12, 10);
-        $monthlyReminder = new MonthlyLeaveReminderMail('Leave reminder', 'Please submit your leave requests.');
+        $monthlyReminder = new MonthlyLeaveReminderMail(
+            'Leave reminder', 'Please submit your leave requests.', 'Fahad', 'Fahad Ali', '2026-09-01'
+        );
 
         $this->assertSame('https://hr.example.test/leave/my', $annualReminder->leaveUrl);
         $this->assertSame('https://hr.example.test/leave/my', $monthlyReminder->leaveUrl);
         $this->assertStringContainsString('View Leave Balance', $annualReminder->render());
         $this->assertStringContainsString('Open Leave Requests', $monthlyReminder->render());
+    }
+
+    public function test_leave_emails_render_in_arabic_right_to_left_when_locale_is_arabic(): void
+    {
+        $annualReminder = (new AnnualLeaveContractExpiryMail('Fahad', '30 Sep 2026', 12, 10))->locale('ar');
+        $monthlyReminder = (new MonthlyLeaveReminderMail(null, null, 'Fahad', 'Fahad Ali', '2026-09-01', 'فهد علي'))
+            ->locale('ar');
+
+        foreach ([$annualReminder, $monthlyReminder] as $mail) {
+            $html = $mail->render();
+            $this->assertStringContainsString('dir="rtl"', $html);
+            $this->assertStringContainsString('lang="ar"', $html);
+            $this->assertStringNotContainsString('mail_leave.', $html, 'untranslated key in Arabic email');
+        }
+        $this->assertStringContainsString('فهد علي', $monthlyReminder->render());
+        $this->assertStringContainsString('سبتمبر', $monthlyReminder->render(), 'Arabic month name');
     }
 
     public function test_offboarding_email_lists_only_the_assigned_department_tasks(): void

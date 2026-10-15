@@ -46,9 +46,9 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required_without' => 'An email address or employee number is required.',
-            'password.required' => 'A password is required.',
-            'password.min'      => 'Password must be at least 6 characters.',
+            'email.required_without' => __('An email address or employee number is required.'),
+            'password.required' => __('A password is required.'),
+            'password.min'      => __('Password must be at least 6 characters.'),
         ];
     }
 }

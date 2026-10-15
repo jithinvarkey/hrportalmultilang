@@ -156,11 +156,11 @@ class ManpowerRequestController extends Controller
             return response()->json([
                 'manpower_request' => $manpowerRequest->fresh(['requester','department','approver']),
                 'job_id'           => $jobId,
-                'message'          => 'Approved' . ($jobId ? " — job posting #$jobId created." : "."),
+                'message'          => $jobId ? __('Approved — job posting #:id created.', ['id' => $jobId]) : __('Approved.'),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Approval failed: ' . $e->getMessage()], 500);
+            return response()->json(['message' => __('Approval failed: :error', ['error' => $e->getMessage()])], 500);
         }
     }
 

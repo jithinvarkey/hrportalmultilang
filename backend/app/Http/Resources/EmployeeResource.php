@@ -37,6 +37,7 @@ class EmployeeResource extends JsonResource
             'last_name'           => $this->last_name,
             'full_name'           => $this->full_name,
             'arabic_name'         => $this->arabic_name,
+            'preferred_communication_language' => $this->preferred_communication_language,
             'email'               => $this->email,
             'phone'               => $this->phone,
             'work_phone'          => $this->work_phone,
@@ -88,10 +89,12 @@ class EmployeeResource extends JsonResource
             'department'          => $this->whenLoaded('department', fn () => [
                 'id'   => $this->department->id,
                 'name' => $this->department->name,
+                'name_ar' => $this->department->name_ar,
             ]),
             'designation'         => $this->whenLoaded('designation', fn () => [
                 'id'    => $this->designation->id,
                 'title' => $this->designation->title,
+                'title_ar' => $this->designation->title_ar,
             ]),
             'manager'             => $this->whenLoaded('manager', fn () => $this->manager ? [
                 'id'        => $this->manager->id,
@@ -101,6 +104,7 @@ class EmployeeResource extends JsonResource
                 'leaveAllocations',
                 fn () => $this->leaveAllocations->map(fn ($a) => [
                     'leave_type'     => $a->leaveType?->name,
+                    'leave_type_ar'  => $a->leaveType?->name_ar,
                     'allocated_days' => $a->allocated_days,
                     'used_days'      => $a->used_days,
                     'remaining_days' => $a->remaining_days,

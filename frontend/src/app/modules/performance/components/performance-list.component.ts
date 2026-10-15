@@ -7,7 +7,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormControl } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 
 @Component({
   standalone: false, selector: 'app-performance-list',
@@ -60,18 +62,19 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
   kpiForm!:   FormGroup;
 
   // ── Options ───────────────────────────────────────────────────────────
+  // Labels are translation keys, resolved in the template so a language switch updates them.
   readonly cycleTypes = [
-    { value: 'annual',     label: 'Annual'      },
-    { value: 'mid_year',   label: 'Mid-Year'    },
-    { value: 'quarterly',  label: 'Quarterly'   },
-    { value: 'probation',  label: 'Probation'   },
+    { value: 'annual',     label: 'PERFORMANCE.CYCLE_TYPES.annual'    },
+    { value: 'mid_year',   label: 'PERFORMANCE.CYCLE_TYPES.mid_year'  },
+    { value: 'quarterly',  label: 'PERFORMANCE.CYCLE_TYPES.quarterly' },
+    { value: 'probation',  label: 'PERFORMANCE.CYCLE_TYPES.probation' },
   ];
   readonly bands = [
-    { value: 'excellent',      label: 'Excellent',      color: '#10b981' },
-    { value: 'good',           label: 'Good',           color: '#3b82f6' },
-    { value: 'average',        label: 'Average',        color: '#f59e0b' },
-    { value: 'below_average',  label: 'Below Average',  color: '#f97316' },
-    { value: 'poor',           label: 'Poor',           color: '#ef4444' },
+    { value: 'excellent',      label: 'PERFORMANCE.BANDS.excellent',      color: '#10b981' },
+    { value: 'good',           label: 'PERFORMANCE.BANDS.good',           color: '#3b82f6' },
+    { value: 'average',        label: 'PERFORMANCE.BANDS.average',        color: '#f59e0b' },
+    { value: 'below_average',  label: 'PERFORMANCE.BANDS.below_average',  color: '#f97316' },
+    { value: 'poor',           label: 'PERFORMANCE.BANDS.poor',           color: '#ef4444' },
   ];
   readonly statuses = ['pending','self_submitted','manager_reviewed','finalized'];
   readonly reviewCols = ['employee','cycle','status','self_rating','manager_rating','final_rating','band','actions'];
@@ -86,6 +89,8 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
     private readonly fb:   FormBuilder,
     private readonly auth: AuthService,
     private readonly cdr:  ChangeDetectorRef,
+    private readonly lang: LanguageService,
+    private readonly translate: TranslateService,
   ) {}
 
   ngOnInit(): void {
@@ -128,6 +133,9 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
       weight:        [null],
       description:   [''],
     });
+
+    // OnPush: re-render labels, dates and names when the language changes.
+    this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.cdr.markForCheck());
 
     this.loadStats();
     this.loadCycles();
@@ -201,20 +209,20 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
     req.pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.submitting = false; this.showCycleForm = false;
-        this.successMsg = this.editCycleId ? 'Cycle updated.' : 'Cycle created.';
+        this.successMsg = this.lang.t(this.editCycleId ? 'PERFORMANCE.MSG.CYCLE_UPDATED' : 'PERFORMANCE.MSG.CYCLE_CREATED');
         this.loadCycles(); this.loadStats();
         this._clearSuccess();
         this.cdr.markForCheck();
       },
-      error: (e: any) => { this.submitting = false; this.errorMsg = e?.error?.message ?? 'Save failed.'; this.cdr.markForCheck(); },
+      error: (e: any) => { this.submitting = false; this.errorMsg = e?.error?.message ?? this.lang.t('MESSAGES.SAVE_FAILED'); this.cdr.markForCheck(); },
     });
   }
 
   initiateCycle(cycle: any): void {
-    if (!confirm(`Initiate "${cycle.name}"? This will create review records for all active employees.`)) return;
+    if (!confirm(this.lang.t('PERFORMANCE.MSG.CONFIRM_INITIATE', { name: cycle.name }))) return;
     this.http.post<any>(`${this.api}/${cycle.id}/initiate`, {}).pipe(takeUntil(this.destroy$)).subscribe({
       next: r => { this.successMsg = r.message; this.loadCycles(); this.loadStats(); this._clearSuccess(); this.cdr.markForCheck(); },
-      error: (e: any) => { this.errorMsg = e?.error?.message ?? 'Initiation failed.'; this.cdr.markForCheck(); },
+      error: (e: any) => { this.errorMsg = e?.error?.message ?? this.lang.t('PERFORMANCE.MSG.INITIATE_FAILED'); this.cdr.markForCheck(); },
     });
   }
 
@@ -250,8 +258,8 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
     this.submitting = true;
     this.http.post<any>(`${this.api}/review/${this.selectedReview.id}/self`, this.selfForm.value)
       .pipe(takeUntil(this.destroy$)).subscribe({
-        next: () => { this.submitting = false; this.showSelfForm = false; this.loadReviews(this.currentPage); this.loadStats(); this.successMsg = 'Self assessment submitted.'; this._clearSuccess(); this.cdr.markForCheck(); },
-        error: (e: any) => { this.submitting = false; this.errorMsg = e?.error?.message ?? 'Failed.'; this.cdr.markForCheck(); },
+        next: () => { this.submitting = false; this.showSelfForm = false; this.loadReviews(this.currentPage); this.loadStats(); this.successMsg = this.lang.t('PERFORMANCE.MSG.SELF_SUBMITTED'); this._clearSuccess(); this.cdr.markForCheck(); },
+        error: (e: any) => { this.submitting = false; this.errorMsg = e?.error?.message ?? this.lang.t('MESSAGES.GENERIC_ERROR'); this.cdr.markForCheck(); },
       });
   }
 
@@ -266,8 +274,8 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
     this.submitting = true;
     this.http.post<any>(`${this.api}/review/${this.selectedReview.id}/manager`, this.mgrForm.value)
       .pipe(takeUntil(this.destroy$)).subscribe({
-        next: () => { this.submitting = false; this.showManagerForm = false; this.loadReviews(this.currentPage); this.loadStats(); this.successMsg = 'Manager review submitted.'; this._clearSuccess(); this.cdr.markForCheck(); },
-        error: (e: any) => { this.submitting = false; this.errorMsg = e?.error?.message ?? 'Failed.'; this.cdr.markForCheck(); },
+        next: () => { this.submitting = false; this.showManagerForm = false; this.loadReviews(this.currentPage); this.loadStats(); this.successMsg = this.lang.t('PERFORMANCE.MSG.MANAGER_SUBMITTED'); this._clearSuccess(); this.cdr.markForCheck(); },
+        error: (e: any) => { this.submitting = false; this.errorMsg = e?.error?.message ?? this.lang.t('MESSAGES.GENERIC_ERROR'); this.cdr.markForCheck(); },
       });
   }
 
@@ -287,8 +295,8 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
     this.submitting = true;
     this.http.post<any>(`${this.api}/review/${this.selectedReview.id}/finalize`, this.finalForm.value)
       .pipe(takeUntil(this.destroy$)).subscribe({
-        next: () => { this.submitting = false; this.showFinalizeForm = false; this.loadReviews(this.currentPage); this.loadStats(); this.successMsg = 'Review finalized.'; this._clearSuccess(); this.cdr.markForCheck(); },
-        error: (e: any) => { this.submitting = false; this.errorMsg = e?.error?.message ?? 'Failed.'; this.cdr.markForCheck(); },
+        next: () => { this.submitting = false; this.showFinalizeForm = false; this.loadReviews(this.currentPage); this.loadStats(); this.successMsg = this.lang.t('PERFORMANCE.MSG.FINALIZED'); this._clearSuccess(); this.cdr.markForCheck(); },
+        error: (e: any) => { this.submitting = false; this.errorMsg = e?.error?.message ?? this.lang.t('MESSAGES.GENERIC_ERROR'); this.cdr.markForCheck(); },
       });
   }
 
@@ -315,7 +323,7 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
 
   deleteKpi(id: number, event: Event): void {
     event.stopPropagation();
-    if (!confirm('Delete this KPI?')) return;
+    if (!confirm(this.lang.t('PERFORMANCE.MSG.CONFIRM_DELETE_KPI'))) return;
     this.http.delete(`${this.api}/kpis/${id}`).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => { this.loadKpis(); this.cdr.markForCheck(); },
       error: () => {},
@@ -335,8 +343,14 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
   canMgrReview(r: any):     boolean { return ['pending','self_submitted'].includes(r.status) && (this.isMgr || this.isHR); }
   canFinalize(r: any):      boolean { return r.status === 'manager_reviewed' && this.isHR; }
 
-  statusLabel(s: string): string {
-    return ({ pending: 'Pending', self_submitted: 'Self Submitted', manager_reviewed: 'Manager Reviewed', finalized: 'Finalized' } as any)[s] ?? s;
+  /** Translation key for a cycle type / performance band code (unknown codes fall back to the raw code). */
+  cycleTypeKey(t: string): string { return this.cycleTypes.some(x => x.value === t) ? `PERFORMANCE.CYCLE_TYPES.${t}` : t; }
+  bandKey(b: string): string      { return this.bands.some(x => x.value === b) ? `PERFORMANCE.BANDS.${b}` : b; }
+  /** Employee display name — Arabic name when Arabic is active and one is recorded. */
+  empName(e: any): string {
+    if (!e) return '';
+    if (this.lang.current() === 'ar' && e.arabic_name) return e.arabic_name;
+    return `${e.first_name ?? ''} ${e.last_name ?? ''}`.trim();
   }
   statusCls(s: string): string {
     return ({ pending:'badge-gray', self_submitted:'badge-yellow', manager_reviewed:'badge-blue', finalized:'badge-green' } as any)[s] ?? 'badge-gray';

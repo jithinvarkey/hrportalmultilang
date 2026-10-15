@@ -1,10 +1,10 @@
 <div class="page-header">
   <div>
-    <h1><mat-icon>fingerprint</mat-icon> BioTime Devices</h1>
-    <p>Manage biometric attendance devices and sync records</p>
+    <h1><mat-icon>fingerprint</mat-icon> {{ 'ATTENDANCE.BIOTIME.TITLE' | translate }}</h1>
+    <p>{{ 'ATTENDANCE.BIOTIME.SUB' | translate }}</p>
   </div>
   <button class="btn btn-primary" (click)="openForm()">
-    <mat-icon>add</mat-icon> Add Device
+    <mat-icon>add</mat-icon> {{ 'ATTENDANCE.BIOTIME.ADD_DEVICE' | translate }}
   </button>
 </div>
 
@@ -18,8 +18,8 @@
 <!-- Empty -->
 <div class="empty-state" *ngIf="!loading && !devices.length">
   <mat-icon>device_hub</mat-icon>
-  <h3>No devices configured</h3>
-  <p>Add a BioTime or ZKTeco device to start syncing attendance records automatically.</p>
+  <h3>{{ 'ATTENDANCE.BIOTIME.EMPTY_TITLE' | translate }}</h3>
+  <p>{{ 'ATTENDANCE.BIOTIME.EMPTY_SUB' | translate }}</p>
 </div>
 
 <!-- Device grid -->
@@ -31,28 +31,28 @@
         <mat-icon>{{ d.is_active ? 'sensors' : 'sensors_off' }}</mat-icon>
         <div>
           <div class="dc-name">{{ d.name }}</div>
-          <div class="dc-addr">{{ d.protocol }}://{{ d.ip_address }}:{{ d.port }}</div>
+          <div class="dc-addr" dir="ltr">{{ d.protocol }}://{{ d.ip_address }}:{{ d.port }}</div>
         </div>
       </div>
       <span class="status-pill" [class.on]="d.is_active" [class.off]="!d.is_active">
-        {{ d.is_active ? 'Active' : 'Inactive' }}
+        {{ (d.is_active ? 'active' : 'inactive') | statusLabel }}
       </span>
     </div>
 
     <div class="dc-meta">
       <div class="dcm-item">
-        <span class="dcm-lbl">Last Sync</span>
-        <span class="dcm-val">{{ d.last_synced_at ? (d.last_synced_at | date:'MMM d, h:mm a') : 'Never' }}</span>
+        <span class="dcm-lbl">{{ 'ATTENDANCE.BIOTIME.LAST_SYNC' | translate }}</span>
+        <span class="dcm-val">{{ d.last_synced_at ? (d.last_synced_at | locDate:'d MMM, h:mm a') : ('ATTENDANCE.BIOTIME.NEVER' | translate) }}</span>
       </div>
       <div class="dcm-item">
-        <span class="dcm-lbl">Status</span>
+        <span class="dcm-lbl">{{ 'COMMON.STATUS' | translate }}</span>
         <span class="dcm-val" [class.txt-ok]="d.last_sync_status==='success' || d.last_sync_status==='connected'"
                               [class.txt-err]="d.last_sync_status==='failed'">
-          {{ d.last_sync_status || '—' }}
+          {{ d.last_sync_status ? (d.last_sync_status | statusLabel) : '—' }}
         </span>
       </div>
       <div class="dcm-item">
-        <span class="dcm-lbl">Last Count</span>
+        <span class="dcm-lbl">{{ 'ATTENDANCE.BIOTIME.LAST_COUNT' | translate }}</span>
         <span class="dcm-val">{{ d.last_sync_count ?? '—' }}</span>
       </div>
     </div>
@@ -67,13 +67,13 @@
     <div class="dc-actions">
       <button class="btn-sm" (click)="testConnection(d)" [disabled]="testing[d.id]">
         <mat-icon>{{ testing[d.id] ? 'hourglass_empty' : 'wifi_tethering' }}</mat-icon>
-        {{ testing[d.id] ? 'Testing…' : 'Test' }}
+        {{ (testing[d.id] ? 'ATTENDANCE.BIOTIME.TESTING' : 'ATTENDANCE.BIOTIME.TEST') | translate }}
       </button>
       <button class="btn-sm primary"
         (click)="openSyncModal(d)"
         [disabled]="syncing[d.id] || !d.is_active">
        <mat-icon>{{ syncing[d.id] ? 'hourglass_empty' : 'sync' }}</mat-icon>
-      {{ syncing[d.id] ? 'Syncing…' : 'Sync' }}
+      {{ (syncing[d.id] ? 'ATTENDANCE.BIOTIME.SYNCING' : 'ATTENDANCE.BIOTIME.SYNC') | translate }}
       
       </button>
       <!-- <button class="btn-sm primary" (click)="syncDevice(d)" [disabled]="syncing[d.id] || !d.is_active">
@@ -82,12 +82,12 @@
       </button> -->
 
       <button class="btn-sm" (click)="openStats(d)">
-        <mat-icon>insights</mat-icon> Stats
+        <mat-icon>insights</mat-icon> {{ 'ATTENDANCE.BIOTIME.STATS' | translate }}
       </button>
-      <button class="btn-sm" (click)="openForm(d)" matTooltip="Edit">
+      <button class="btn-sm" (click)="openForm(d)" [matTooltip]="'COMMON.EDIT' | translate" [attr.aria-label]="'COMMON.EDIT' | translate">
         <mat-icon>edit</mat-icon>
       </button>
-      <button class="btn-sm danger" (click)="deleteDevice(d)" matTooltip="Delete">
+      <button class="btn-sm danger" (click)="deleteDevice(d)" [matTooltip]="'COMMON.DELETE' | translate" [attr.aria-label]="'COMMON.DELETE' | translate">
         <mat-icon>delete_outline</mat-icon>
       </button>
     </div>
@@ -98,69 +98,69 @@
 <div class="modal-backdrop" *ngIf="showForm" (click)="closeForm()"></div>
 <div class="modal-panel" *ngIf="showForm">
   <div class="modal-hdr">
-    <h3><mat-icon>{{ editId ? 'edit' : 'add_box' }}</mat-icon> {{ editId ? 'Edit Device' : 'Add Device' }}</h3>
-    <button class="icon-btn" (click)="closeForm()"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>{{ editId ? 'edit' : 'add_box' }}</mat-icon> {{ (editId ? 'ATTENDANCE.BIOTIME.EDIT_DEVICE' : 'ATTENDANCE.BIOTIME.ADD_DEVICE') | translate }}</h3>
+    <button class="icon-btn" (click)="closeForm()" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="modal-body">
     <div class="fg">
-      <label>Device Name <span class="req">*</span></label>
-      <input [(ngModel)]="form.name" placeholder="e.g. Main Entrance">
+      <label>{{ 'ATTENDANCE.BIOTIME.DEVICE_NAME' | translate }} <span class="req">*</span></label>
+      <input [(ngModel)]="form.name" [placeholder]="'ATTENDANCE.BIOTIME.DEVICE_NAME_PH' | translate">
     </div>
     <div class="two-col">
       <div class="fg">
-        <label>Protocol</label>
-        <select [(ngModel)]="form.protocol">
+        <label>{{ 'ATTENDANCE.BIOTIME.PROTOCOL' | translate }}</label>
+        <select [(ngModel)]="form.protocol" dir="ltr">
           <option value="http">HTTP</option>
           <option value="https">HTTPS</option>
         </select>
       </div>
       <div class="fg">
-        <label>Port</label>
-        <input type="number" [(ngModel)]="form.port" placeholder="8088">
+        <label>{{ 'ATTENDANCE.BIOTIME.PORT' | translate }}</label>
+        <input type="number" dir="ltr" [(ngModel)]="form.port" placeholder="8088">
       </div>
     </div>
     <div class="fg">
-      <label>IP Address / Host <span class="req">*</span></label>
-      <input [(ngModel)]="form.ip_address" placeholder="192.168.1.50">
+      <label>{{ 'ATTENDANCE.BIOTIME.IP_HOST' | translate }} <span class="req">*</span></label>
+      <input dir="ltr" [(ngModel)]="form.ip_address" placeholder="192.168.1.50">
     </div>
 <div class="fg">
-  <label>API Path</label>
-  <input
+  <label>{{ 'ATTENDANCE.BIOTIME.API_PATH' | translate }}</label>
+  <input dir="ltr"
     [(ngModel)]="form.api_path"
     placeholder="/iclock/api/transactions/">
 </div>
 
     <div class="two-col">
       <div class="fg">
-        <label>Username <span class="req">*</span></label>
-        <input [(ngModel)]="form.username" autocomplete="off" placeholder="admin">
+        <label>{{ 'ATTENDANCE.BIOTIME.USERNAME' | translate }} <span class="req">*</span></label>
+        <input dir="ltr" [(ngModel)]="form.username" autocomplete="off" placeholder="admin">
       </div>
       <div class="fg">
-        <label>Password {{ editId ? '' : '*' }}</label>
-        <input type="password" [(ngModel)]="form.password" autocomplete="new-password"
-               [placeholder]="editId ? 'Leave blank to keep current' : '••••••••'">
+        <label>{{ 'ATTENDANCE.BIOTIME.PASSWORD' | translate }} {{ editId ? '' : '*' }}</label>
+        <input type="password" dir="ltr" [(ngModel)]="form.password" autocomplete="new-password"
+               [placeholder]="editId ? ('ATTENDANCE.BIOTIME.PASSWORD_KEEP' | translate) : '••••••••'">
       </div>
     </div>
     <div class="two-col">
       <div class="fg">
-        <label>Timeout (seconds)</label>
-        <input type="number" [(ngModel)]="form.timeout_seconds" placeholder="30">
+        <label>{{ 'ATTENDANCE.BIOTIME.TIMEOUT' | translate }}</label>
+        <input type="number" dir="ltr" [(ngModel)]="form.timeout_seconds" placeholder="30">
       </div>
       <div class="fg">
-        <label>Status</label>
+        <label>{{ 'COMMON.STATUS' | translate }}</label>
         <select [(ngModel)]="form.is_active">
-          <option [ngValue]="true">Active</option>
-          <option [ngValue]="false">Inactive</option>
+          <option [ngValue]="true">{{ 'active' | statusLabel }}</option>
+          <option [ngValue]="false">{{ 'inactive' | statusLabel }}</option>
         </select>
       </div>
     </div>
     <div class="form-err" *ngIf="formError"><mat-icon>error_outline</mat-icon> {{ formError }}</div>
   </div>
   <div class="modal-footer">
-    <button class="btn-outline" (click)="closeForm()">Cancel</button>
+    <button class="btn-outline" (click)="closeForm()">{{ 'COMMON.CANCEL' | translate }}</button>
     <button class="btn btn-primary" (click)="saveDevice()" [disabled]="submitting">
       <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
-      {{ submitting ? 'Saving…' : (editId ? 'Update Device' : 'Add Device') }}
+      {{ (submitting ? 'COMMON.SAVING' : (editId ? 'ATTENDANCE.BIOTIME.UPDATE_DEVICE' : 'ATTENDANCE.BIOTIME.ADD_DEVICE')) | translate }}
     </button>
   </div>
 </div>
@@ -169,19 +169,19 @@
 <div class="modal-backdrop" *ngIf="showStats" (click)="closeStats()"></div>
 <div class="stats-drawer" [class.open]="showStats">
   <div class="modal-hdr" *ngIf="statsDevice">
-    <h3><mat-icon>insights</mat-icon> {{ statsDevice.name }} — Stats</h3>
-    <button class="icon-btn" (click)="closeStats()"><mat-icon>close</mat-icon></button>
+    <h3><mat-icon>insights</mat-icon> {{ 'ATTENDANCE.BIOTIME.STATS_TITLE' | translate:{name: statsDevice.name} }}</h3>
+    <button class="icon-btn" (click)="closeStats()" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
   </div>
   <div class="drawer-body">
     <div class="loading-wrap" *ngIf="showStats && !stats"><mat-spinner diameter="28"></mat-spinner></div>
     <div *ngIf="stats && !stats.error" class="stat-grid">
-      <div class="stat-box"><div class="sb-num">{{ stats.total_punches }}</div><div class="sb-lbl">Total Punches</div></div>
-      <div class="stat-box"><div class="sb-num">{{ stats.today_punches }}</div><div class="sb-lbl">Today</div></div>
-      <div class="stat-box"><div class="sb-num">{{ stats.processed_punches }}</div><div class="sb-lbl">Processed</div></div>
-      <div class="stat-box"><div class="sb-num">{{ stats.pending_punches }}</div><div class="sb-lbl">Pending</div></div>
-      <div class="stat-box warn"><div class="sb-num">{{ stats.unmatched_punches }}</div><div class="sb-lbl">Unmatched</div></div>
+      <div class="stat-box"><div class="sb-num">{{ stats.total_punches }}</div><div class="sb-lbl">{{ 'ATTENDANCE.BIOTIME.TOTAL_PUNCHES' | translate }}</div></div>
+      <div class="stat-box"><div class="sb-num">{{ stats.today_punches }}</div><div class="sb-lbl">{{ 'ATTENDANCE.TODAY' | translate }}</div></div>
+      <div class="stat-box"><div class="sb-num">{{ stats.processed_punches }}</div><div class="sb-lbl">{{ 'ATTENDANCE.BIOTIME.PROCESSED' | translate }}</div></div>
+      <div class="stat-box"><div class="sb-num">{{ stats.pending_punches }}</div><div class="sb-lbl">{{ 'ATTENDANCE.BIOTIME.PENDING' | translate }}</div></div>
+      <div class="stat-box warn"><div class="sb-num">{{ stats.unmatched_punches }}</div><div class="sb-lbl">{{ 'ATTENDANCE.BIOTIME.UNMATCHED' | translate }}</div></div>
     </div>
-    <div *ngIf="stats?.error" class="form-err"><mat-icon>error_outline</mat-icon> Could not load stats.</div>
+    <div *ngIf="stats?.error" class="form-err"><mat-icon>error_outline</mat-icon> {{ 'ATTENDANCE.BIOTIME.STATS_FAILED' | translate }}</div>
   </div>
 </div>
 <!-- ── Sync specific ─────────────────────────────────────────────────────── -->
@@ -194,11 +194,11 @@
   <div class="modal-hdr">
     <h3>
       <mat-icon>sync</mat-icon>
-      Sync Attendance
+      {{ 'ATTENDANCE.BIOTIME.SYNC_TITLE' | translate }}
     </h3>
 
     <button class="icon-btn"
-            (click)="closeSyncModal()">
+            (click)="closeSyncModal()" [attr.aria-label]="'COMMON.CLOSE' | translate">
       <mat-icon>close</mat-icon>
     </button>
   </div>
@@ -206,40 +206,40 @@
   <div class="modal-body">
 
     <div class="fg">
-      <label>Sync Type</label>
+      <label>{{ 'ATTENDANCE.BIOTIME.SYNC_TYPE' | translate }}</label>
 
       <select [(ngModel)]="syncForm.type">
-        <option value="today">Today</option>
-        <option value="date">Specific Date</option>
-        <option value="range">Date Range</option>
+        <option value="today">{{ 'ATTENDANCE.BIOTIME.SYNC_TODAY' | translate }}</option>
+        <option value="date">{{ 'ATTENDANCE.BIOTIME.SYNC_DATE' | translate }}</option>
+        <option value="range">{{ 'ATTENDANCE.BIOTIME.SYNC_RANGE' | translate }}</option>
       </select>
     </div>
 
     <div class="fg" *ngIf="syncForm.type === 'date'">
-      <label>Date</label>
-      <input type="date"
+      <label>{{ 'COMMON.DATE' | translate }}</label>
+      <input type="date" dir="ltr"
              [(ngModel)]="syncForm.date">
     </div>
 
     <div *ngIf="syncForm.type === 'range'">
 
       <div class="fg">
-        <label>Start Date</label>
-        <input type="date"
+        <label>{{ 'COMMON.START_DATE' | translate }}</label>
+        <input type="date" dir="ltr"
                [(ngModel)]="syncForm.start_date">
       </div>
 
       <div class="fg">
-        <label>End Date</label>
-        <input type="date"
+        <label>{{ 'COMMON.END_DATE' | translate }}</label>
+        <input type="date" dir="ltr"
                [(ngModel)]="syncForm.end_date">
       </div>
 
     </div>
 
     <div class="fg">
-      <label>Employee Code (Optional)</label>
-      <input
+      <label>{{ 'ATTENDANCE.BIOTIME.EMP_CODE_OPT' | translate }}</label>
+      <input dir="ltr"
         [(ngModel)]="syncForm.employee_code"
         placeholder="158">
     </div>
@@ -251,7 +251,7 @@
     <button class="btn-outline"
             [disabled]="syncDeviceObj && syncing[syncDeviceObj.id]"
             (click)="closeSyncModal()">
-      Cancel
+      {{ 'COMMON.CANCEL' | translate }}
     </button>
 
     <button class="btn btn-primary"
@@ -260,7 +260,7 @@
 
       <span class="btn-spinner" *ngIf="syncDeviceObj && syncing[syncDeviceObj.id]"></span>
       <mat-icon *ngIf="!syncDeviceObj || !syncing[syncDeviceObj.id]">sync</mat-icon>
-      {{ syncDeviceObj && syncing[syncDeviceObj.id] ? 'Syncing...' : 'Start Sync' }}
+      {{ (syncDeviceObj && syncing[syncDeviceObj.id] ? 'ATTENDANCE.BIOTIME.SYNCING' : 'ATTENDANCE.BIOTIME.START_SYNC') | translate }}
 
     </button>
 

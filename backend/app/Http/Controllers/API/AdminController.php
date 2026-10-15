@@ -56,7 +56,7 @@ class AdminController extends Controller
     public function emailSettings(): JsonResponse
     {
         if (!$this->isSuperAdmin()) {
-            return response()->json(['message' => 'Only a super admin can manage email settings.'], 403);
+            return response()->json(['message' => __('Only a super admin can manage email settings.')], 403);
         }
 
         return response()->json(['settings' => $this->emailSettings->settings()]);
@@ -65,7 +65,7 @@ class AdminController extends Controller
     public function updateEmailSettings(Request $request): JsonResponse
     {
         if (!$this->isSuperAdmin()) {
-            return response()->json(['message' => 'Only a super admin can manage email settings.'], 403);
+            return response()->json(['message' => __('Only a super admin can manage email settings.')], 403);
         }
 
         $data = $request->validate([
@@ -73,7 +73,7 @@ class AdminController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Email notification settings updated.',
+            'message' => __('Email notification settings updated.'),
             'settings' => $this->emailSettings->updateSettings($data),
         ]);
     }
@@ -81,7 +81,7 @@ class AdminController extends Controller
     public function hdfTemplate(): JsonResponse
     {
         if (!$this->isSuperAdmin()) {
-            return response()->json(['message' => 'Only a super admin can manage the HDF template.'], 403);
+            return response()->json(['message' => __('Only a super admin can manage the HDF template.')], 403);
         }
 
         return response()->json(['template' => $this->hdfTemplates->info()]);
@@ -90,7 +90,7 @@ class AdminController extends Controller
     public function uploadHdfTemplate(Request $request): JsonResponse
     {
         if (!$this->isSuperAdmin()) {
-            return response()->json(['message' => 'Only a super admin can manage the HDF template.'], 403);
+            return response()->json(['message' => __('Only a super admin can manage the HDF template.')], 403);
         }
 
         $request->validate([
@@ -98,7 +98,7 @@ class AdminController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'HDF template uploaded successfully. The previous HDF file was replaced.',
+            'message' => __('HDF template uploaded successfully. The previous HDF file was replaced.'),
             'template' => $this->hdfTemplates->replace($request->file('file')),
         ]);
     }
@@ -106,7 +106,7 @@ class AdminController extends Controller
     public function unifonicSettings(): JsonResponse
     {
         if (!$this->isSuperAdmin()) {
-            return response()->json(['message' => 'Only a super admin can manage SMS settings.'], 403);
+            return response()->json(['message' => __('Only a super admin can manage SMS settings.')], 403);
         }
 
         return response()->json(['settings' => $this->unifonicSettingsService->settings()]);
@@ -115,7 +115,7 @@ class AdminController extends Controller
     public function updateUnifonicSettings(Request $request): JsonResponse
     {
         if (!$this->isSuperAdmin()) {
-            return response()->json(['message' => 'Only a super admin can manage SMS settings.'], 403);
+            return response()->json(['message' => __('Only a super admin can manage SMS settings.')], 403);
         }
 
         $data = $request->validate([
@@ -126,7 +126,7 @@ class AdminController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Unifonic SMS settings updated.',
+            'message' => __('Unifonic SMS settings updated.'),
             'settings' => $this->unifonicSettingsService->updateSettings($data),
         ]);
     }
@@ -134,7 +134,7 @@ class AdminController extends Controller
     public function monthlyLeaveReminderSettings(): JsonResponse
     {
         if (!$this->canManageLeaveReminderSettings()) {
-            return response()->json(['message' => 'Only HR Manager or Super Admin can manage monthly leave reminder settings.'], 403);
+            return response()->json(['message' => __('Only HR Manager or Super Admin can manage monthly leave reminder settings.')], 403);
         }
 
         return response()->json(['settings' => $this->monthlyLeaveReminderService->settings()]);
@@ -143,7 +143,7 @@ class AdminController extends Controller
     public function updateMonthlyLeaveReminderSettings(Request $request): JsonResponse
     {
         if (!$this->canManageLeaveReminderSettings()) {
-            return response()->json(['message' => 'Only HR Manager or Super Admin can manage monthly leave reminder settings.'], 403);
+            return response()->json(['message' => __('Only HR Manager or Super Admin can manage monthly leave reminder settings.')], 403);
         }
 
         $data = $request->validate([
@@ -154,32 +154,32 @@ class AdminController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Monthly leave reminder settings updated.',
+            'message' => __('Monthly leave reminder settings updated.'),
             'settings' => $this->monthlyLeaveReminderService->updateSettings($data),
         ]);
     }
 
     public function annualTicketSettings(): JsonResponse
     {
-        if (!$this->isSuperAdmin()) return response()->json(['message' => 'Only a super admin can manage system settings.'], 403);
+        if (!$this->isSuperAdmin()) return response()->json(['message' => __('Only a super admin can manage system settings.')], 403);
         return response()->json(['settings' => $this->annualTicketService->settings()]);
     }
 
     public function updateAnnualTicketSettings(Request $request): JsonResponse
     {
-        if (!$this->isSuperAdmin()) return response()->json(['message' => 'Only a super admin can manage system settings.'], 403);
+        if (!$this->isSuperAdmin()) return response()->json(['message' => __('Only a super admin can manage system settings.')], 403);
         $data = $request->validate([
             'saudi_employee_tickets' => 'required|integer|in:1',
             'non_saudi_employee_tickets' => 'required|integer|in:1',
             'non_saudi_max_dependents' => 'required|integer|min:0|max:3',
         ]);
-        return response()->json(['message' => 'Annual ticket policy updated.', 'settings' => $this->annualTicketService->updateSettings($data)]);
+        return response()->json(['message' => __('Annual ticket policy updated.'), 'settings' => $this->annualTicketService->updateSettings($data)]);
     }
 
     public function loanSettings(): JsonResponse
     {
         if (!$this->isSuperAdmin()) {
-            return response()->json(['message' => 'Only a super admin can manage system settings.'], 403);
+            return response()->json(['message' => __('Only a super admin can manage system settings.')], 403);
         }
 
         return response()->json([
@@ -190,7 +190,7 @@ class AdminController extends Controller
     public function updateLoanSettings(Request $request): JsonResponse
     {
         if (!$this->isSuperAdmin()) {
-            return response()->json(['message' => 'Only a super admin can manage system settings.'], 403);
+            return response()->json(['message' => __('Only a super admin can manage system settings.')], 403);
         }
 
         $validated = $request->validate([
@@ -200,7 +200,7 @@ class AdminController extends Controller
         $levels = $this->loanApprovalService->updateLevels((int) $validated['approval_levels']);
 
         return response()->json([
-            'message' => 'Loan approval workflow updated.',
+            'message' => __('Loan approval workflow updated.'),
             'settings' => ['approval_levels' => $levels],
         ]);
     }
@@ -304,20 +304,20 @@ class AdminController extends Controller
 
             // Attention items — things needing action
             'attention' => [
-                ['label' => 'Pending Leave Requests',   'value' => $pendingLeave,    'color' => '#f59e0b', 'icon' => 'event_available',    'route' => '/leave'],
-                ['label' => 'Pending Payroll',          'value' => $pendingPayroll,  'color' => '#10b981', 'icon' => 'payments',           'route' => '/payroll'],
-                ['label' => 'Payroll Errors',           'value' => $payrollErrors,   'color' => '#ef4444', 'icon' => 'error_outline',      'route' => '/payroll'],
-                ['label' => 'Loan Applications',        'value' => $pendingLoans,    'color' => '#3b82f6', 'icon' => 'account_balance',    'route' => '/loans'],
-                ['label' => 'Active Loans',             'value' => $activeLoans,     'color' => '#6366f1', 'icon' => 'monetization_on',    'route' => '/loans'],
-                ['label' => 'Overdue Loans',            'value' => $overdueLoans,    'color' => '#ef4444', 'icon' => 'warning',            'route' => '/loans'],
-                ['label' => 'Pending Separations',      'value' => $pendingSep,      'color' => '#f97316', 'icon' => 'exit_to_app',        'route' => '/separations'],
-                ['label' => 'Active Separations',       'value' => $activeSep,       'color' => '#f59e0b', 'icon' => 'transfer_within_a_station', 'route' => '/separations'],
-                ['label' => 'Pending Requests',         'value' => $pendingReq,      'color' => '#8b5cf6', 'icon' => 'inbox',              'route' => '/requests'],
-                ['label' => 'Open Requests',            'value' => $openReq,         'color' => '#0ea5e9', 'icon' => 'pending_actions',    'route' => '/requests'],
-                ['label' => 'Open Positions',           'value' => $openJobs,        'color' => '#10b981', 'icon' => 'work_outline',       'route' => '/recruitment'],
-                ['label' => 'New Applications (7d)',    'value' => $newApps,         'color' => '#3b82f6', 'icon' => 'person_add',         'route' => '/recruitment'],
-                ['label' => 'Overdue Reviews',          'value' => $overdueReviews,  'color' => '#ef4444', 'icon' => 'rate_review',        'route' => '/performance'],
-                ['label' => 'Unassigned Users',         'value' => $unassignedUsers, 'color' => '#ef4444', 'icon' => 'person_off',         'route' => '/admin'],
+                ['label' => __('Pending Leave Requests'),   'value' => $pendingLeave,    'color' => '#f59e0b', 'icon' => 'event_available',    'route' => '/leave'],
+                ['label' => __('Pending Payroll'),          'value' => $pendingPayroll,  'color' => '#10b981', 'icon' => 'payments',           'route' => '/payroll'],
+                ['label' => __('Payroll Errors'),           'value' => $payrollErrors,   'color' => '#ef4444', 'icon' => 'error_outline',      'route' => '/payroll'],
+                ['label' => __('Loan Applications'),        'value' => $pendingLoans,    'color' => '#3b82f6', 'icon' => 'account_balance',    'route' => '/loans'],
+                ['label' => __('Active Loans'),             'value' => $activeLoans,     'color' => '#6366f1', 'icon' => 'monetization_on',    'route' => '/loans'],
+                ['label' => __('Overdue Loans'),            'value' => $overdueLoans,    'color' => '#ef4444', 'icon' => 'warning',            'route' => '/loans'],
+                ['label' => __('Pending Separations'),      'value' => $pendingSep,      'color' => '#f97316', 'icon' => 'exit_to_app',        'route' => '/separations'],
+                ['label' => __('Active Separations'),       'value' => $activeSep,       'color' => '#f59e0b', 'icon' => 'transfer_within_a_station', 'route' => '/separations'],
+                ['label' => __('Pending Requests'),         'value' => $pendingReq,      'color' => '#8b5cf6', 'icon' => 'inbox',              'route' => '/requests'],
+                ['label' => __('Open Requests'),            'value' => $openReq,         'color' => '#0ea5e9', 'icon' => 'pending_actions',    'route' => '/requests'],
+                ['label' => __('Open Positions'),           'value' => $openJobs,        'color' => '#10b981', 'icon' => 'work_outline',       'route' => '/recruitment'],
+                ['label' => __('New Applications (7d)'),    'value' => $newApps,         'color' => '#3b82f6', 'icon' => 'person_add',         'route' => '/recruitment'],
+                ['label' => __('Overdue Reviews'),          'value' => $overdueReviews,  'color' => '#ef4444', 'icon' => 'rate_review',        'route' => '/performance'],
+                ['label' => __('Unassigned Users'),         'value' => $unassignedUsers, 'color' => '#ef4444', 'icon' => 'person_off',         'route' => '/admin'],
             ],
 
             // Attendance today
@@ -374,7 +374,7 @@ class AdminController extends Controller
             Employee::where('id', $request->employee_id)->update(['user_id' => $user->id]);
         }
 
-        return response()->json(['message' => 'User created.', 'user' => $user->load('roles', 'employee')], 201);
+        return response()->json(['message' => __('User created.'), 'user' => $user->load('roles', 'employee')], 201);
     }
 
     public function updateUser(Request $request, int $id): JsonResponse
@@ -401,7 +401,7 @@ class AdminController extends Controller
         $user = User::findOrFail($id);
         $user->syncRoles([$request->role]);
 
-        return response()->json(['message' => "Role '{$request->role}' assigned.", 'user' => $user->fresh('roles')]);
+        return response()->json(['message' => __('Role \':role\' assigned.', ['role' => $request->role]), 'user' => $user->fresh('roles')]);
     }
 
     public function toggleUserStatus(int $id): JsonResponse
@@ -409,13 +409,13 @@ class AdminController extends Controller
         $user = User::findOrFail($id);
         $user->tokens()->delete();
 
-        return response()->json(['message' => 'User tokens revoked. User must re-login.']);
+        return response()->json(['message' => __('User tokens revoked. User must re-login.')]);
     }
 
     public function updateUserOtpExemption(Request $request, int $id): JsonResponse
     {
         if (!$this->isSuperAdmin()) {
-            return response()->json(['message' => 'Only a super admin can manage OTP exemptions.'], 403);
+            return response()->json(['message' => __('Only a super admin can manage OTP exemptions.')], 403);
         }
 
         $data = $request->validate([
@@ -426,7 +426,7 @@ class AdminController extends Controller
         $user->forceFill(['otp_exempt' => (bool) $data['otp_exempt']])->save();
 
         return response()->json([
-            'message' => $user->otp_exempt ? 'User excluded from OTP login.' : 'User will be required to verify OTP.',
+            'message' => $user->otp_exempt ? __('User excluded from OTP login.') : __('User will be required to verify OTP.'),
             'user' => $user->fresh('roles', 'employee.department', 'employee.designation'),
         ]);
     }
@@ -434,7 +434,7 @@ class AdminController extends Controller
     public function loginActivities(Request $request): JsonResponse
     {
         if (!$this->canViewLoginActivities()) {
-            return response()->json(['message' => 'Only Super Admin or HR Manager can view login history.'], 403);
+            return response()->json(['message' => __('Only Super Admin or HR Manager can view login history.')], 403);
         }
 
         $data = $request->validate([
@@ -519,13 +519,13 @@ class AdminController extends Controller
         $role = Role::findOrFail($id);
 
         if ($role->name === 'super_admin') {
-            return response()->json(['message' => 'Super admin permissions cannot be modified.'], 403);
+            return response()->json(['message' => __('Super admin permissions cannot be modified.')], 403);
         }
 
         $request->validate(['permissions' => 'required|array']);
         $role->syncPermissions($request->permissions);
 
-        return response()->json(['message' => 'Permissions updated.', 'role' => $role->fresh('permissions')]);
+        return response()->json(['message' => __('Permissions updated.'), 'role' => $role->fresh('permissions')]);
     }
 
     // ── Permissions ───────────────────────────────────────────────────────

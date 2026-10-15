@@ -3,19 +3,19 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class SeparationWorkflowMail extends Mailable
+class SeparationWorkflowMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
     public string $separationUrl;
 
+    /** @param string|null $recipientName null = generic "Colleague" greeting in the recipient's language */
     public function __construct(
         public $separation,
         public string $event,
-        public string $recipientName,
+        public ?string $recipientName,
         public array $tasks = [],
         public ?string $taskCategory = null,
         public ?string $completedByName = null,
@@ -26,15 +26,11 @@ class SeparationWorkflowMail extends Mailable
 
     public function build()
     {
-        $subject = match ($this->event) {
-            'submitted' => "New Separation Request - {$this->separation->reference}",
-            'manager_approved' => "Separation Awaiting HR Approval - {$this->separation->reference}",
-            'hr_approved' => "Separation Awaiting Manager Approval - {$this->separation->reference}",
-            'offboarding_tasks' => "Offboarding Tasks Assigned - {$this->separation->reference}",
-            'department_tasks_completed' => "Offboarding Tasks Completed - {$this->separation->reference}",
-            default => "Separation Update - {$this->separation->reference}",
-        };
+        $event = in_array($this->event, ['submitted', 'manager_approved', 'hr_approved', 'offboarding_tasks', 'department_tasks_completed'], true)
+            ? $this->event
+            : 'default';
 
-        return $this->subject($subject)->view('emails.separation-workflow');
+        return $this->subject(__("mail_separation.subject.{$event}", ['reference' => $this->separation->reference]))
+            ->view('emails.separation-workflow');
     }
 }

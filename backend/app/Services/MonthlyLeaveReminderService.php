@@ -80,9 +80,15 @@ class MonthlyLeaveReminderService
         Employee::active()->whereNotNull('email')->orderBy('id')->chunkById(100, function ($employees) use (&$result, $settings, $date) {
             foreach ($employees as $employee) {
                 try {
+                    // Default wording → null, so the mail uses the translated default in the employee's language;
+                    // text customised by HR is sent as typed. Placeholders are filled by the mailable.
                     Mail::to($employee->email)->send(new MonthlyLeaveReminderMail(
-                        $this->render($settings['subject'], $employee, $date),
-                        $this->render($settings['body'], $employee, $date)
+                        $this->customOrNull($settings['subject'], self::DEFAULT_SUBJECT),
+                        $this->customOrNull($settings['body'], self::DEFAULT_BODY),
+                        (string) $employee->first_name,
+                        (string) $employee->full_name,
+                        $date->toDateString(),
+                        $employee->arabic_name
                     ));
                     $result['sent']++;
                 } catch (\Throwable $e) {
@@ -102,14 +108,10 @@ class MonthlyLeaveReminderService
         return $result;
     }
 
-    private function render(string $template, Employee $employee, CarbonInterface $date): string
+    private function customOrNull(?string $text, string $default): ?string
     {
-        return strtr($template, [
-            '{{employee_name}}' => $employee->full_name,
-            '{{first_name}}' => $employee->first_name,
-            '{{month_name}}' => $date->format('F'),
-            '{{year}}' => $date->format('Y'),
-            '{{company_name}}' => config('app.name', 'HRMS'),
-        ]);
+        $normalize = fn (?string $value) => trim(str_replace("\r\n", "\n", (string) $value));
+
+        return $normalize($text) === '' || $normalize($text) === $normalize($default) ? null : $text;
     }
 }

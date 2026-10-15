@@ -6,8 +6,8 @@ use App\Mail\AnnualLeaveContractExpiryMail;
 use App\Models\Contract;
 use App\Models\Employee;
 use App\Models\LeaveType;
+use App\Support\Locale\LocalizedMail;
 use Carbon\CarbonInterface;
-use Illuminate\Support\Facades\Mail;
 
 class AnnualLeaveContractExpiryNotificationService
 {
@@ -70,11 +70,13 @@ class AnnualLeaveContractExpiryNotificationService
             ->values()
             ->all();
 
-        Mail::to($employee->email)->cc($ccEmails)->send(new AnnualLeaveContractExpiryMail(
+        // One message per language group so the employee, manager and HR each get their own language.
+        LocalizedMail::send([$employee->email], $ccEmails, fn () => new AnnualLeaveContractExpiryMail(
             $employee->full_name,
-            $contract->end_date->format('F j, Y'),
+            $contract->end_date->toDateString(),
             $remainingDays,
             $limit,
+            $employee->arabic_name,
         ));
 
         $contract->update(['annual_leave_reminder_sent_at' => now()]);

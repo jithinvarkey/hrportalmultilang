@@ -35,6 +35,7 @@ import { Pagination } from '../store/employee.reducer';
 import * as EmployeeActions from '../store/employee.actions';
 import { selectAll } from '../store/employee.reducer';
 import { DepartmentRef } from '../../../shared/models/employee.model';
+import { LanguageService } from '../../../core/services/language.service';
 
 /** The slice of global state that contains the employee feature state. */
 interface AppState {
@@ -125,7 +126,8 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly http:   HttpClient,
     private readonly cdr:    ChangeDetectorRef,
-    private auth: AuthService
+    private auth: AuthService,
+    private readonly lang:   LanguageService,
   ) {
     this.employees$  = this.store.select((s) => selectAll(s.employees));
     this.loading$    = this.store.select((s) => s.employees.loading);
@@ -203,10 +205,10 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
 
   private buildTiles(s: EmpStats): void {
     this.statTiles = [
-      { label: 'Total',          value: s.total,          color: '#3b82f6', icon: 'people',          status: '' },
-      { label: 'Active',         value: s.active,          color: '#10b981', icon: 'how_to_reg',      status: 'active' },
-      { label: 'Probation',      value: s.probation,       color: '#f59e0b', icon: 'hourglass_top',   status: 'probation' },
-      { label: 'New This Month', value: s.new_this_month,  color: '#0ea5e9', icon: 'person_add_alt_1', status: '' },
+      { label: 'COMMON.TOTAL',        value: s.total,          color: '#3b82f6', icon: 'people',          status: '' },
+      { label: 'STATUS.active',        value: s.active,          color: '#10b981', icon: 'how_to_reg',      status: 'active' },
+      { label: 'STATUS.probation',      value: s.probation,       color: '#f59e0b', icon: 'hourglass_top',   status: 'probation' },
+      { label: 'EMPLOYEES.LIST.NEW_THIS_MONTH', value: s.new_this_month,  color: '#0ea5e9', icon: 'person_add_alt_1', status: '' },
     ];
   }
 
@@ -307,7 +309,7 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
    * @param id  Employee primary key
    */
   terminate(id: number): void {
-    if (confirm('Terminate this employee? This action cannot be undone.')) {
+    if (confirm(this.lang.t('EMPLOYEES.LIST.CONFIRM_TERMINATE'))) {
       this.store.dispatch(EmployeeActions.deleteEmployee({ id }));
     }
   }
@@ -335,6 +337,20 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
     return map[type] ?? 'badge-gray';
   }
 
+  /** Employment type code -> translated label (code kept as fallback). */
+  employmentTypeLabel(type?: string | null): string {
+    if (!type) return '';
+    const key = `EMPLOYEES.EMPLOYMENT_TYPE.${type}`;
+    const label = this.lang.t(key);
+    return label !== key ? label : type.replace(/_/g, ' ');
+  }
+
+  /** Arabic name when Arabic is active and one is recorded, otherwise the English full name. */
+  displayName(e: any): string {
+    if (this.lang.current() === 'ar' && e?.arabic_name) return e.arabic_name;
+    return e?.full_name ?? '';
+  }
+
   initial(name?: string | null): string {
     return name?.charAt(0)?.toUpperCase() ?? '?';
   }
@@ -357,7 +373,7 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
    */
   quickStatus(employee: any, status: string, event: MouseEvent): void {
     event.stopPropagation();
-    if (!confirm(`Set employee "${employee.full_name}" to ${status.replace('_', ' ')}?`)) return;
+    if (!confirm(this.lang.t('EMPLOYEES.LIST.CONFIRM_SET_STATUS', { name: this.displayName(employee), status: this.lang.t('STATUS.' + status) }))) return;
 
     this.http.put<any>(`/api/v1/employees/${employee.id}`, { status })
       .pipe(takeUntil(this.destroy$))

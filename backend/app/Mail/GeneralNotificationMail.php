@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class GeneralNotificationMail extends Mailable
+class GeneralNotificationMail extends BaseMailable
 {
     use Queueable, SerializesModels;
 
@@ -27,7 +27,7 @@ class GeneralNotificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'General Notification Mail',
+            subject: __('mail_request.general_notification.subject'),
         );
     }
 

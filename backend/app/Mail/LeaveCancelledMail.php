@@ -6,8 +6,8 @@ namespace App\Mail;
 
 class LeaveCancelledMail extends LeaveStatusMail
 {
-    public function __construct($leave, string $recipientName, ?string $remarks = null)
+    public function __construct($leave, string $recipientName, ?string $remarks = null, ?string $recipientNameAr = null)
     {
-        parent::__construct($leave, 'cancelled', $recipientName, $remarks);
+        parent::__construct($leave, 'cancelled', $recipientName, $remarks, null, $recipientNameAr);
     }
 }
