@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Support\Locale\LocalizedMail;
+
 use App\Mail\BirthdayWishMail;
 use App\Models\Employee;
 use Carbon\CarbonInterface;
@@ -106,7 +108,9 @@ class BirthdayWishService
             $renderedImage = $backgroundPath && is_file($backgroundPath)
                 ? $this->imageComposer->compose($backgroundPath, $body, $bodyAr) : null;
             try {
-                Mail::to($employee->email)->cc($cc)->send(new BirthdayWishMail($mailSubject, $body, $bodyAr, $renderedImage));
+                // One message per communication language: colleagues read the email frame in their own language
+                // (the HR-written greeting itself is shown in both languages as authored).
+                LocalizedMail::send([$employee->email], $cc, fn () => new BirthdayWishMail($mailSubject, $body, $bodyAr, $renderedImage));
             } finally {
                 if ($renderedImage && is_file($renderedImage)) @unlink($renderedImage);
             }

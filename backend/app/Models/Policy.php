@@ -29,8 +29,8 @@ class Policy extends Model
         'mandatory'                => 'boolean',
         'is_published'             => 'boolean',
         'target_department_ids'     => 'array',
-        'effective_date'           => 'date',
-        'review_date'              => 'date',
+        'effective_date'           => 'date:Y-m-d',
+        'review_date'              => 'date:Y-m-d',
         'approved_at'              => 'datetime',
     ];
 

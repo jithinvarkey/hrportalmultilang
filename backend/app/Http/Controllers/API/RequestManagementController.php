@@ -38,24 +38,46 @@ class RequestManagementController extends Controller {
     }
 
     public function storeType(Request $request) {
-        $request->validate([
+        if (!$this->isHRAdminUser()) {
+            return $this->forbidden();
+        }
+        $data = $request->validate(array_merge($this->typeRules(), [
             'name' => 'required|string|max:120',
-            'name_ar' => 'nullable|string|max:150',
             'code' => 'required|string|max:30|unique:request_types',
-            'handling_department_id' => 'required|exists:departments,id',
-        ]);
-        return response()->json(['type' => RequestType::create($request->all())], 201);
+        ]));
+        return response()->json(['type' => RequestType::create($data)], 201);
     }
 
     public function updateType(Request $request, $id) {
-        $request->validate([
+        if (!$this->isHRAdminUser()) {
+            return $this->forbidden();
+        }
+        $data = $request->validate(array_merge($this->typeRules(), [
             'name' => 'required|string|max:120',
-            'name_ar' => 'nullable|string|max:150',
-            'handling_department_id' => 'required|exists:departments,id',
-        ]);
+            'code' => 'sometimes|required|string|max:30|unique:request_types,code,' . (int) $id,
+        ]));
         $type = RequestType::findOrFail($id);
-        $type->update($request->all());
+        $type->update($data);
         return response()->json(['type' => $type]);
+    }
+
+    /** Validated, fillable request-type fields (never pass the raw request into create/update). */
+    private function typeRules(): array
+    {
+        return [
+            'name_ar' => 'nullable|string|max:150',
+            'category' => 'sometimes|required|string|max:60',
+            'description' => 'nullable|string',
+            'instructions' => 'nullable|string',
+            'sla_days' => 'sometimes|required|integer|min:0|max:365',
+            'requires_attachment' => 'sometimes|boolean',
+            'requires_manager_approval' => 'sometimes|boolean',
+            'is_active' => 'sometimes|boolean',
+            'sort_order' => 'sometimes|integer|min:0',
+            'icon' => 'sometimes|string|max:50',
+            'color' => 'sometimes|string|max:20',
+            'handling_department_id' => 'required|exists:departments,id',
+        ];
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -177,14 +199,16 @@ class RequestManagementController extends Controller {
                     'requestType',
                     'assignedTo'
                 ])
-                ->when(!$isHRAdmin && $user->employee, function ($q) use ($user, $deptId, $isMgr, $isMine) {
+                // "My requests" applies to everyone (HR included); other non-HR views are
+                // always scoped, even for accounts without a linked employee record.
+                ->when(!$isHRAdmin || $isMine, function ($q) use ($user, $deptId, $isMgr, $isMine) {
 
                     $q->where(function ($inner) use ($user, $deptId, $isMgr, $isMine) {
 
 
                         if ($isMine) {
                             // Own requests
-                            $inner->where('employee_id', $user->employee->id);
+                            $inner->where('employee_id', $user->employee?->id ?? 0);
                         } else {
 
                             // Assigned to me
@@ -259,16 +283,6 @@ class RequestManagementController extends Controller {
                 })
                 ->orderByDesc('created_at')
                 ->orderByDesc('id');
-        Log::info('SQL', [
-            'sql' => $query->toSql(),
-            'bindings' => $query->getBindings(),
-            'deptId' => $deptId,
-            'hradmin' => $isHRAdmin,
-            'isMgr' => $isMgr,
-            'isMine' => $isMine,
-            'scope' => $scopeToOwn
-        ]);
-
         try {
             return response()->json($query->paginate($perPage));
         } catch (\Exception $e) {
@@ -285,6 +299,16 @@ class RequestManagementController extends Controller {
                     'requestType', 'managerApprover', 'assignedTo.employee.department', 'completedBy', 'rejectedBy',
                     'comments.user',
                 ])->findOrFail($id);
+
+        if (!$this->canAccessRequestFile($req)) {
+            return $this->forbidden();
+        }
+
+        // Internal notes are for the people handling the request, not the requester.
+        if (!$this->isRequestStaff($req)) {
+            $req->setRelation('comments', $req->comments->reject(fn($c) => $c->is_internal)->values());
+        }
+
         return response()->json(['request' => $req]);
     }
 
@@ -355,6 +379,16 @@ class RequestManagementController extends Controller {
         if (!$canApprove) {
             return response()->json(['message' => __('Only managers can approve at this stage.')], 403);
         }
+        // A department manager may approve only requests of their own department's employees,
+        // and nobody (other than HR) approves their own request.
+        if (!$this->isHRAdminUser()) {
+            $me = auth()->user()->employee;
+            $req->loadMissing('employee');
+            if (!$me || $this->isOwnRequest($req)
+                || (int) $req->employee?->department_id !== (int) $me->department_id) {
+                return response()->json(['message' => __('Only managers can approve at this stage.')], 403);
+            }
+        }
         $req->update([
             'status' => 'pending',
             'manager_approved_by' => auth()->id(),
@@ -379,6 +413,10 @@ class RequestManagementController extends Controller {
         ]);
 
         $req = EmployeeRequest::findOrFail($id);
+
+        if (!$this->isHRAdminUser() && ($this->isOwnRequest($req) || !$this->isRequestStaff($req))) {
+            return $this->forbidden();
+        }
 
         if (!in_array($req->status, ['pending', 'in_progress'])) {
             return response()->json(['message' => __('Request cannot be assigned at this stage.')], 422);
@@ -427,6 +465,10 @@ class RequestManagementController extends Controller {
 
         if (!$isHRAdmin && !$isAssignee) {
             return response()->json(['message' => __('Only the assigned person or HR can complete this request.')], 403);
+        }
+
+        if (in_array($req->status, ['completed', 'rejected', 'cancelled'], true)) {
+            return response()->json(['message' => __('Request cannot be completed at this stage.')], 422);
         }
 
         $completionFile = $req->completion_file;
@@ -490,7 +532,11 @@ class RequestManagementController extends Controller {
         $request->validate(['reason' => 'required|string|min:5']);
         $req = EmployeeRequest::findOrFail($id);
 
-        if (in_array($req->status, ['completed', 'cancelled'])) {
+        if (!$this->isHRAdminUser() && ($this->isOwnRequest($req) || !$this->isRequestStaff($req))) {
+            return $this->forbidden();
+        }
+
+        if (in_array($req->status, ['completed', 'cancelled', 'rejected'])) {
             return response()->json(['message' => __('Cannot reject at this stage.')], 422);
         }
         $req->update([
@@ -512,6 +558,9 @@ class RequestManagementController extends Controller {
     // ══════════════════════════════════════════════════════════════════════
     public function cancel($id) {
         $req = EmployeeRequest::findOrFail($id);
+        if (!$this->isOwnRequest($req) && !$this->isHRAdminUser()) {
+            return $this->forbidden();
+        }
         if (!in_array($req->status, ['pending', 'pending_manager'])) {
             return response()->json(['message' => __('Request cannot be cancelled at this stage.')], 422);
         }
@@ -584,20 +633,36 @@ class RequestManagementController extends Controller {
             });
     }
 
-    private function canAccessRequestFile(EmployeeRequest $req): bool
+    private function currentRoles(): array
     {
-        $user = auth()->user();
-        $roles = rescue(fn() => DB::table('model_has_roles')
+        return rescue(fn() => DB::table('model_has_roles')
             ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-            ->where('model_has_roles.model_id', $user->id)
+            ->where('model_has_roles.model_id', auth()->id())
             ->pluck('roles.name')
             ->toArray(), [], false);
+    }
+
+    private function isHRAdminUser(): bool
+    {
+        return (bool) array_intersect($this->currentRoles(), ['super_admin', 'ceo', 'hr_manager', 'hr_staff']);
+    }
+
+    private function isOwnRequest(EmployeeRequest $req): bool
+    {
+        $employee = auth()->user()->employee;
+        return $employee && (int) $req->employee_id === (int) $employee->id;
+    }
+
+    /**
+     * True when the current user handles this request: HR, the assignee, or a department
+     * manager of the requester's department or of the type's handling department.
+     */
+    private function isRequestStaff(EmployeeRequest $req): bool
+    {
+        $user = auth()->user();
+        $roles = $this->currentRoles();
 
         if ((bool) array_intersect($roles, ['super_admin', 'ceo', 'hr_manager', 'hr_staff'])) {
-            return true;
-        }
-
-        if ($user->employee && (int) $req->employee_id === (int) $user->employee->id) {
             return true;
         }
 
@@ -605,12 +670,23 @@ class RequestManagementController extends Controller {
             return true;
         }
 
-        if (in_array('department_manager', $roles, true) && $user->employee) {
+        if (in_array('department_manager', $roles, true) && $user->employee?->department_id) {
+            $req->loadMissing(['employee', 'requestType']);
             return (int) $req->employee?->department_id === (int) $user->employee->department_id
                 || (int) $req->requestType?->handling_department_id === (int) $user->employee->department_id;
         }
 
         return false;
+    }
+
+    private function canAccessRequestFile(EmployeeRequest $req): bool
+    {
+        return $this->isOwnRequest($req) || $this->isRequestStaff($req);
+    }
+
+    private function forbidden(): JsonResponse
+    {
+        return response()->json(['message' => __('Insufficient permissions.')], 403);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -620,11 +696,15 @@ class RequestManagementController extends Controller {
         $request->validate(['comment' => 'required|string|min:1']);
         $req = EmployeeRequest::findOrFail($id);
 
+        if (!$this->canAccessRequestFile($req)) {
+            return $this->forbidden();
+        }
+
         $comment = RequestComment::create([
                     'request_id' => $req->id,
                     'user_id' => auth()->id(),
                     'comment' => $request->comment,
-                    'is_internal' => $request->is_internal ?? false,
+                    'is_internal' => $this->isRequestStaff($req) ? $request->boolean('is_internal') : false,
         ]);
 
         return response()->json(['comment' => $comment->load('user')], 201);
@@ -634,6 +714,9 @@ class RequestManagementController extends Controller {
     // DELETE REQUEST TYPE
     // ══════════════════════════════════════════════════════════════════════
     public function deleteType($id) {
+        if (!$this->isHRAdminUser()) {
+            return $this->forbidden();
+        }
         $type = RequestType::findOrFail($id);
 
         // Prevent deletion if requests exist for this type

@@ -6,10 +6,25 @@ use Illuminate\Support\Facades\DB;
 
 class AddExtraFieldsToEmployeesTable extends Migration
 {
+
+    /**
+     * MySQL re-defines the ENUM in place. SQLite (used by the test suite) has no MODIFY COLUMN and stores
+     * enums as CHECK constraints, so there the column is recreated as a plain string with the same default.
+     */
+    private function setStatusEnum(string $table, string $mysqlDefinition, string $default): void
+    {
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE {$table} MODIFY COLUMN status {$mysqlDefinition}");
+            return;
+        }
+
+        Schema::table($table, fn (Blueprint $t) => $t->dropColumn('status'));
+        Schema::table($table, fn (Blueprint $t) => $t->string('status', 30)->default($default));
+    }
     public function up()
     {
         // Fix status enum to include probation
-        DB::statement("ALTER TABLE employees MODIFY COLUMN status ENUM('active','inactive','terminated','on_leave','probation') DEFAULT 'active'");
+        $this->setStatusEnum('employees', "ENUM('active','inactive','terminated','on_leave','probation') DEFAULT 'active'", 'active');
 
         Schema::table('employees', function (Blueprint $table) {
             // Personal
@@ -40,6 +55,6 @@ class AddExtraFieldsToEmployeesTable extends Migration
                 'years_of_experience','emergency_contact_relation',
             ]);
         });
-        DB::statement("ALTER TABLE employees MODIFY COLUMN status ENUM('active','inactive','terminated','on_leave') DEFAULT 'active'");
+        $this->setStatusEnum('employees', "ENUM('active','inactive','terminated','on_leave') DEFAULT 'active'", 'active');
     }
 }

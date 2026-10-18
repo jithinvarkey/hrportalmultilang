@@ -191,6 +191,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
         department_id: contract.department?.id ?? '',
         terms:         contract.terms ?? '',
       });
+      this.contractForm.markAsPristine();
     } else {
       this.contractForm.reset({ type: 'full_time', status: 'draft', currency: 'SAR' });
     }
@@ -245,7 +246,10 @@ export class ContractListComponent implements OnInit, OnDestroy {
     this.submitting = true;
     this.formError  = '';
 
-    const body = this.contractForm.value;
+    const body = { ...this.contractForm.value };
+    // ContractResource hides salary (null) from roles without salary access (e.g. hr_staff);
+    // only send it on edit when the user actually changed it, otherwise the stored salary is wiped.
+    if (this.editId && this.contractForm.get('salary')?.pristine) delete body.salary;
     const req   = this.editId
       ? this.http.put<any>(`${this.api}/${this.editId}`, body)
       : this.http.post<any>(this.api, body);
@@ -337,7 +341,13 @@ export class ContractListComponent implements OnInit, OnDestroy {
 
   /** Open the contract document in a new tab (download). */
   downloadDocument(contract: Contract): void {
-    window.open(`${this.api}/${contract.id}/document`, '_blank');
+    // The API authenticates with a Bearer header, which window.open() cannot send.
+    this.http.get(`${this.api}/${contract.id}/document`, { responseType: 'blob', observe: 'response' })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: response => this.downloadBlob(response, contract.reference || `contract-${contract.id}`),
+        error: () => { this.errorMsg = this.lang.t('CONTRACTS.MSG.DOWNLOAD_FAILED'); this.cdr.markForCheck(); },
+      });
   }
 
   // ── Actions ───────────────────────────────────────────────────────────
@@ -365,7 +375,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
           setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3000);
           this.cdr.markForCheck();
         },
-        error: () => {},
+        error: (err) => { this.errorMsg = err?.error?.message ?? this.lang.t('MESSAGES.SAVE_FAILED'); this.cdr.markForCheck(); },
       });
   }
 
@@ -375,7 +385,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
     if (!confirm(this.lang.t('CONTRACTS.MSG.CONFIRM_DELETE'))) return;
     this.http.delete(`${this.api}/${id}`).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => { this.loadContracts(); this.loadStats(); this.cdr.markForCheck(); },
-      error: () => {},
+      error: (err) => { this.errorMsg = err?.error?.message ?? this.lang.t('MESSAGES.DELETE_FAILED'); this.cdr.markForCheck(); },
     });
   }
 
@@ -423,6 +433,7 @@ export class ContractListComponent implements OnInit, OnDestroy {
         response,
         `active-employee-contract-details-report-${new Date().toISOString().slice(0, 10)}.xlsx`
       ),
+      error: () => { this.errorMsg = this.lang.t('CONTRACTS.MSG.DOWNLOAD_FAILED'); this.cdr.markForCheck(); },
     });
   }
 

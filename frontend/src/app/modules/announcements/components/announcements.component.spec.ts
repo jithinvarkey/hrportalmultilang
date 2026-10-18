@@ -92,12 +92,15 @@ describe('AnnouncementsComponent', () => {
     httpMock.expectOne(r => r.url === API).flush({ data: [] });
   });
 
-  it('opens the attachment URL on download', () => {
+  it('downloads the attachment through HttpClient (Bearer auth) as a blob', () => {
     setup(false);
     flushInit();
-    spyOn(window, 'open');
-    component.downloadAttachment({ id: 5 } as any);
-    expect(window.open).toHaveBeenCalledWith(`${API}/5/attachment`, '_blank');
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:x');
+    component.downloadAttachment({ id: 5, attachment_name: 'notice.pdf' } as any);
+    const req = httpMock.expectOne(`${API}/5/attachment`);
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob(['x']));
+    expect(URL.createObjectURL).toHaveBeenCalled();
   });
 
   it('opens previewable attachments inline', () => {

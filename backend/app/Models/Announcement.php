@@ -27,7 +27,7 @@ class Announcement extends Model
         'is_published'          => 'boolean',
         'published_at'          => 'datetime',
         'scheduled_at'          => 'datetime',
-        'expires_at'            => 'date',
+        'expires_at'            => 'date:Y-m-d',
         'target_department_ids' => 'array',
         'target_roles'          => 'array',
         'target_employee_ids'   => 'array',

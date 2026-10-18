@@ -16,7 +16,6 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { CoreModule } from './core/core.module';
 import { SharedModule } from './shared/shared.module';
-import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { LanguageInterceptor } from './core/interceptors/language.interceptor';
 import { LanguageService } from './core/services/language.service';
 import { multiFileLoaderFactory } from './core/i18n/multi-file-translate.loader';
@@ -48,7 +47,7 @@ export function initLanguage(lang: LanguageService) {
     ToastrModule.forRoot({ positionClass: 'toast-top-right', timeOut: 3000 })
   ],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    // AuthInterceptor and HttpActivityInterceptor are provided by CoreModule.
     { provide: HTTP_INTERCEPTORS, useClass: LanguageInterceptor, multi: true },
     { provide: APP_INITIALIZER, useFactory: initLanguage, deps: [LanguageService], multi: true },
   ],

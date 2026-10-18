@@ -130,9 +130,10 @@ class EmployeeApiTest extends TestCase
         $this->postJson('/api/v1/employees', $this->validEmployeePayload('a@test.com'))->assertStatus(201);
         $this->postJson('/api/v1/employees', $this->validEmployeePayload('b@test.com'))->assertStatus(201);
 
-        $codes = Employee::pluck('employee_code')->sort()->values();
+        // Codes are plain sequential numbers (EmployeeService::generateCode).
+        $codes = Employee::pluck('employee_code')->map(fn ($c) => (int) $c)->sort()->values();
         $this->assertCount(2, $codes->unique());
-        $this->assertStringStartsWith('EMP', $codes[0]);
+        $this->assertSame($codes[0] + 1, $codes[1]);
     }
 
     /** @test */
@@ -261,8 +262,9 @@ class EmployeeApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('employee.national_id', 'IQAMA-123')
             ->assertJsonPath('employee.bank_account', 'SA123456789')
-            ->assertJsonPath('employee.dob', '1991-02-03T00:00:00.000000Z')
-            ->assertJsonPath('employee.confirmation_date', '2023-06-01T00:00:00.000000Z');
+            // Date-only fields are cast to Y-m-d so they never shift a day across timezones.
+            ->assertJsonPath('employee.dob', '1991-02-03')
+            ->assertJsonPath('employee.confirmation_date', '2023-06-01');
     }
 
     /** @test */

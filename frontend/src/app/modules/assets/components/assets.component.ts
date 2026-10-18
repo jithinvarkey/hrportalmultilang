@@ -143,8 +143,10 @@ export class AssetsComponent implements OnInit {
     };
   }
 
+  /** Local calendar date (toISOString() is UTC and gives yesterday before 03:00 in Riyadh). */
   private today(): string {
-    return new Date().toISOString().substring(0, 10);
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
   loadStats(): void {
@@ -285,7 +287,23 @@ export class AssetsComponent implements OnInit {
     });
   }
 
-  downloadAttachment(a: Asset): void { window.open(`${this.api}/${a.id}/attachment`, '_blank'); }
+  /**
+   * Download through HttpClient so the bearer token is sent — a plain
+   * window.open() navigation has no Authorization header and gets a 401.
+   */
+  downloadAttachment(a: Asset): void {
+    this.http.get(`${this.api}/${a.id}/attachment`, { responseType: 'blob' }).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = this.selectedDetail?.attachment_name || a.attachment_name || 'asset-attachment';
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.showError(this.lang.t('ASSETS.MSG.ATTACHMENT_FAILED')),
+    });
+  }
 
   downloadReport(type: 'assets' | 'assignments' | 'maintenance'): void {
     const filenames: Record<string, string> = {
@@ -320,7 +338,7 @@ export class AssetsComponent implements OnInit {
 
   doAssign(): void {
     if (!this.assignForm.employee_id || !this.assignForm.assigned_date) {
-      this.errorMsg = this.lang.t('ASSETS.MSG.EMPLOYEE_DATE_REQUIRED'); this.cdr.markForCheck(); return;
+      this.showError(this.lang.t('ASSETS.MSG.EMPLOYEE_DATE_REQUIRED')); return;
     }
     this.assigning = true;
     this.http.post<any>(`${this.api}/${this.selected!.id}/assign`, this.assignForm).subscribe({
@@ -360,7 +378,7 @@ export class AssetsComponent implements OnInit {
   closeMaintenance(): void { this.showMaintenance = false; this.cdr.markForCheck(); }
 
   saveMaintenance(): void {
-    if (!this.maintenanceForm.title?.trim()) { this.errorMsg = this.lang.t('ASSETS.MSG.TITLE_REQUIRED'); this.cdr.markForCheck(); return; }
+    if (!this.maintenanceForm.title?.trim()) { this.showError(this.lang.t('ASSETS.MSG.TITLE_REQUIRED')); return; }
     this.maintenanceSaving = true;
     this.http.post<any>(`${this.api}/${this.selected!.id}/maintenance`, this.maintenanceForm).subscribe({
       next: () => { this.maintenanceSaving = false; this.showMaintenance = false; this.toast(this.lang.t('ASSETS.MSG.MAINT_LOGGED')); this.load(); this.loadStats(); },
@@ -408,6 +426,12 @@ export class AssetsComponent implements OnInit {
   private toast(msg: string): void {
     this.successMsg = msg; this.cdr.markForCheck();
     setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3500);
+  }
+
+  /** Error banner that clears itself (it previously stayed on screen for the rest of the visit). */
+  private showError(msg: string): void {
+    this.errorMsg = msg; this.cdr.markForCheck();
+    setTimeout(() => { this.errorMsg = ''; this.cdr.markForCheck(); }, 3500);
   }
 
   private firstError(err: any): string {

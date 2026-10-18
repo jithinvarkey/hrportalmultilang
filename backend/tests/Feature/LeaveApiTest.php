@@ -47,7 +47,14 @@ class LeaveApiTest extends TestCase
         $this->employee = User::factory()->create();
         $this->employee->assignRole('employee');
 
-        $this->empRecord = Employee::factory()->create(['user_id' => $this->employee->id]);
+        // Stage-1 approval is limited to the employee's direct manager.
+        $managerRecord = Employee::factory()->create(['user_id' => $this->deptManager->id]);
+
+        $this->empRecord = Employee::factory()->create([
+            'user_id'    => $this->employee->id,
+            'manager_id' => $managerRecord->id,
+            'hire_date'  => now()->subYears(2)->startOfYear()->toDateString(),
+        ]);
 
         $this->annualLeave = LeaveType::factory()->create([
             'name'                  => 'Annual Leave',
@@ -71,6 +78,7 @@ class LeaveApiTest extends TestCase
             'employee_id'        => $this->empRecord->id,
             'leave_type_id'      => $this->annualLeave->id,
             'year'               => now()->year,
+            'accrual_year_start' => now()->startOfYear()->toDateString(),
             'allocated_days'     => 21,
             'annual_entitlement' => 21,
             'used_days'          => 0,
@@ -153,7 +161,16 @@ class LeaveApiTest extends TestCase
     /** @test */
     public function leave_request_fails_with_insufficient_balance(): void
     {
-        LeaveAllocation::where('employee_id', $this->empRecord->id)->update(['remaining_days' => 0]);
+        // The annual balance is derived from approved leave requests (not the stored columns),
+        // so use the whole year's entitlement up with an approved annual leave.
+        LeaveRequest::factory()->create([
+            'employee_id'   => $this->empRecord->id,
+            'leave_type_id' => $this->annualLeave->id,
+            'status'        => 'approved',
+            'start_date'    => now()->startOfYear()->addDays(7)->toDateString(),
+            'end_date'      => now()->startOfYear()->addDays(40)->toDateString(),
+            'total_days'    => 21,
+        ]);
 
         $this->actingAs($this->employee, 'sanctum')
             ->postJson('/api/v1/leave/requests', [

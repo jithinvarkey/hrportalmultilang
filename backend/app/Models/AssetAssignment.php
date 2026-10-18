@@ -20,8 +20,8 @@ class AssetAssignment extends Model
     ];
 
     protected $casts = [
-        'assigned_date' => 'date',
-        'return_date'   => 'date',
+        'assigned_date' => 'date:Y-m-d',
+        'return_date'   => 'date:Y-m-d',
     ];
 
     public function asset(): BelongsTo    { return $this->belongsTo(Asset::class); }

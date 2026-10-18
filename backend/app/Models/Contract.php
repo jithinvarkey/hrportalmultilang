@@ -37,8 +37,8 @@ class Contract extends Model {
         'renewal_notified', 'annual_leave_reminder_sent_at',
     ];
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+        'start_date' => 'date:Y-m-d',
+        'end_date' => 'date:Y-m-d',
         'approved_at' => 'datetime',
         'annual_leave_reminder_sent_at' => 'datetime',
         'salary' => 'decimal:2',
@@ -77,7 +77,8 @@ class Contract extends Model {
     public function scopeExpiringSoon($q, int $days = 30): mixed {
         return $q->where('status', 'active')
                         ->whereNotNull('end_date')
-                        ->whereBetween('end_date', [now(), now()->addDays($days)]);
+                        // Date strings: comparing the DATE column with now() (a datetime) dropped contracts ending today.
+                        ->whereBetween('end_date', [now()->toDateString(), now()->addDays($days)->toDateString()]);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────

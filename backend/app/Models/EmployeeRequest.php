@@ -14,7 +14,7 @@ class EmployeeRequest extends Model {
         'due_date','is_overdue','completion_file','completion_notes'
     ];
     protected $casts = [
-        'required_by'=>'date','due_date'=>'date',
+        'required_by'=>'date:Y-m-d','due_date'=>'date:Y-m-d',
         'manager_approved_at'=>'datetime','completed_at'=>'datetime','rejected_at'=>'datetime',
         'is_overdue'=>'boolean',
     ];

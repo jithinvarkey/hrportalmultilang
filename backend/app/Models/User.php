@@ -58,6 +58,23 @@ class User extends Authenticatable implements HasLocalePreference
         return $this->hasOne(Employee::class);
     }
 
+    /** Employee statuses that mean the person has left the company. */
+    public const CLOSED_EMPLOYMENT_STATUSES = ['terminated', 'inactive'];
+
+    /**
+     * True when the linked employee has left: terminated, inactive, or archived (soft-deleted).
+     * Such users may not sign in or keep a session; HR sends them final payslips and documents directly.
+     * Note: the separation workflow sets employees to inactive when offboarding starts, so access ends then.
+     * Accounts without an employee record (system administrators) are never closed by this rule.
+     */
+    public function hasClosedEmployment(): bool
+    {
+        $employee = Employee::withTrashed()->where('user_id', $this->id)->first(['id', 'status', 'deleted_at']);
+
+        return $employee !== null
+            && ($employee->trashed() || in_array($employee->status, self::CLOSED_EMPLOYMENT_STATUSES, true));
+    }
+
     /**
      * Language for notifications and mail sent with Mail::to($user): the linked employee's
      * communication language (English by default). Not the UI language in preferred_language.

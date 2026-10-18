@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://192.168.100.189:8086/api/v2'
+  // Relative, like the dev environment: the SPA is served behind the same host as the API (/api/v1).
+  apiUrl: '/api/v1'
 };

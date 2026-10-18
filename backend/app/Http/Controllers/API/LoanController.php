@@ -9,6 +9,7 @@ use App\Mail\LoanApprovedMail;
 use App\Mail\LoanRejectedMail;
 use App\Mail\LoanRequestSubmittedMail;
 use App\Mail\LoanInstallmentSkippedMail;
+use App\Models\Employee;
 use App\Models\Loan;
 use App\Models\LoanInstallment;
 use App\Models\LoanType;
@@ -208,6 +209,40 @@ class LoanController extends Controller {
         return $loan->employee && (int) $loan->employee->user_id === (int) $user->id;
     }
 
+    private function isDirectManagerOf(Loan $loan, $user): bool {
+        if (!$user->employee) {
+            return false;
+        }
+
+        $loan->loadMissing('employee');
+        return $loan->employee && (int) $loan->employee->manager_id === (int) $user->employee->id;
+    }
+
+    /** Manager-stage actions are limited to the requester's direct manager (same scope as index()). */
+    private function canActAsManagerOn(Loan $loan, $user): bool {
+        return $this->hasAnyRoleDB(['super_admin'])
+            || $loan->status !== 'pending_manager'
+            || $this->approvalLevels() !== 3
+            || $this->isDirectManagerOf($loan, $user);
+    }
+
+    private function canViewLoan(Loan $loan, $user): bool {
+        return $this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff', 'finance_manager'])
+            || $this->isOwnLoan($loan, $user)
+            || ($this->hasAnyRoleDB(['department_manager']) && $this->isDirectManagerOf($loan, $user));
+    }
+
+    /** Managers may see a report's loan, but not the employee's salary/bank fields. */
+    private function hideEmployeePayFields(Loan $loan, $user): void {
+        if ($this->hasAnyRoleDB(['super_admin', 'hr_manager', 'finance_manager']) || $this->isOwnLoan($loan, $user)) {
+            return;
+        }
+
+        if ($loan->relationLoaded('employee') && $loan->employee) {
+            $loan->employee->makeHidden(Employee::PAY_FIELDS);
+        }
+    }
+
     private function shouldLimitApprovalViewsToActiveEmployees(array $userRoles): bool {
         return !in_array('super_admin', $userRoles, true)
             && (in_array('department_manager', $userRoles, true) || in_array('hr_manager', $userRoles, true));
@@ -319,7 +354,8 @@ class LoanController extends Controller {
         $user = auth()->user();
         // FIX: Use raw DB query instead of Spatie hasRole() to avoid guard mismatch
         $userRoles = $this->userRoles();
-        $isAdmin = $this->hasAnyRoleDB(['super_admin', 'hr_manager', 'finance_manager']);
+        // Same visibility as show()/canViewLoan(): HR, HR staff and Finance see every loan.
+        $isAdmin = $this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff', 'finance_manager']);
         $isMgr = $this->hasAnyRoleDB(['department_manager']);
 
         $query = Loan::with(['employee.department', 'loanType'])
@@ -329,6 +365,8 @@ class LoanController extends Controller {
                         $q->whereIn('employee_id', $teamIds);
                     } elseif ($user->employee) {
                         $q->where('employee_id', $user->employee->id);
+                    } else {
+                        $q->whereRaw('1 = 0'); // no employee record and no loan role: nothing to show
                     }
                 })
                 ->when($request->status, function ($q, string $status) {
@@ -356,6 +394,7 @@ class LoanController extends Controller {
         $paginated = $query->paginate($perPage);
         $paginated->getCollection()->transform(function (Loan $loan) use ($user) {
             $isOwn = $this->isOwnLoan($loan, $user);
+            $this->hideEmployeePayFields($loan, $user);
             $loan->setAttribute('can_approve', !$isOwn);
             $loan->setAttribute('can_reject', !$isOwn);
             return $loan;
@@ -450,6 +489,10 @@ class LoanController extends Controller {
         ]);
 
         $employee = auth()->user()->employee;
+        if (!$employee) {
+            return response()->json(['message' => __('No employee record linked to your account.')], 422);
+        }
+
         $loanType = LoanType::findOrFail($request->loan_type_id);
 
         if ($loanType->max_amount > 0 && $request->requested_amount > $loanType->max_amount) {
@@ -513,6 +556,11 @@ class LoanController extends Controller {
                     'managerApprover', 'hrApprover', 'financeApprover', 'rejectedBy',
                 ])->findOrFail($id);
 
+        if (!$this->canViewLoan($loan, auth()->user())) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+        $this->hideEmployeePayFields($loan, auth()->user());
+
         $data = $loan->toArray();
         $data['installment_schedule'] = $data['installments'];
         $data['installments'] = $loan->getRawOriginal('installments');
@@ -545,7 +593,7 @@ class LoanController extends Controller {
         $loan = Loan::lockForUpdate()->findOrFail($id);
         $user = auth()->user();
 
-        if (!$this->canApproveStage($loan->status)) {
+        if (!$this->canApproveStage($loan->status) || !$this->canActAsManagerOn($loan, $user)) {
             return response()->json(['message' => __('You are not authorized to approve this loan at its current stage.')], 403);
         }
 
@@ -665,7 +713,7 @@ class LoanController extends Controller {
             return response()->json(['message' => __('Loan cannot be rejected at this stage.')], 422);
         }
 
-        if (!$this->canApproveStage($loan->status)) {
+        if (!$this->canApproveStage($loan->status) || !$this->canActAsManagerOn($loan, auth()->user())) {
             return response()->json(['message' => __('You are not authorized to reject this loan at its current stage.')], 403);
         }
 
@@ -709,7 +757,7 @@ class LoanController extends Controller {
             return response()->json(['message' => __('Loan cannot be cancelled at this stage.')], 422);
         }
 
-        $canCancelAsApprover = ($loan->status === 'pending_manager' && $this->hasAnyRoleDB(['super_admin', 'department_manager']))
+        $canCancelAsApprover = ($loan->status === 'pending_manager' && $this->hasAnyRoleDB(['super_admin', 'department_manager']) && $this->canActAsManagerOn($loan, $user))
             || ($loan->status === 'pending_hr' && $this->hasAnyRoleDB(['super_admin', 'hr_manager']))
             || ($loan->status === 'pending_finance' && $this->hasAnyRoleDB(['super_admin', 'finance_manager']));
 
@@ -759,6 +807,10 @@ class LoanController extends Controller {
      * @return JsonResponse
      */
     public function disburse(Request $request, int $id): JsonResponse {
+        if (!$this->hasAnyRoleDB(['super_admin', 'finance_manager', 'hr_manager', 'hr_staff'])) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
         $loan = Loan::findOrFail($id);
 
         if ($loan->status !== 'approved') {
@@ -830,6 +882,14 @@ class LoanController extends Controller {
      */
     public function skipInstallment(Request $request, int $loanId, int $instId): JsonResponse {
         $inst = LoanInstallment::where('loan_id', $loanId)->findOrFail($instId);
+
+        // Finance / HR, or the borrower's direct manager (who requests the deferment; HR and Finance are notified).
+        // The borrower can never defer their own installments.
+        $loan = $inst->loan()->with('employee')->firstOrFail();
+        $user = auth()->user();
+        if (!$this->hasAnyRoleDB(['finance_manager', 'hr_manager']) && !$this->isDirectManagerOf($loan, $user)) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
 
         if (!in_array($inst->status, ['pending', 'overdue'])) {
             return response()->json(['message' => __('Installment cannot be skipped.')], 422);

@@ -28,6 +28,36 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *   POST /api/v1/contracts/renewals/{id}/reject  — reject at current stage
  */
 class ContractRenewalController extends Controller {
+    private function isHrUser($user): bool {
+        return (bool) $user?->hasAnyRole(['super_admin', 'ceo', 'hr_manager', 'hr_staff']);
+    }
+
+    /** True when the user is the renewal employee's manager (never for the employee's own request). */
+    private function isRenewalManager(ContractRenewalRequest $r, $user): bool {
+        $empId = $user?->employee?->id;
+        if (!$empId || (int) $r->employee_id === (int) $empId) {
+            return false;
+        }
+
+        if ($r->manager_id !== null && (int) $r->manager_id === (int) $empId) {
+            return true;
+        }
+
+        $r->loadMissing('employee');
+        return $r->employee !== null && (int) $r->employee->manager_id === (int) $empId;
+    }
+
+    private function canActAsManager(ContractRenewalRequest $r, $user): bool {
+        return (bool) $user?->hasRole('department_manager') && $this->isRenewalManager($r, $user);
+    }
+
+    /** Same visibility as index(): HR, the employee, or their manager. */
+    private function canViewRenewal(ContractRenewalRequest $r, $user): bool {
+        return $this->isHrUser($user)
+            || ($user?->employee && (int) $r->employee_id === (int) $user->employee->id)
+            || $this->canActAsManager($r, $user);
+    }
+
     // ── List ──────────────────────────────────────────────────────────────
 
     /**
@@ -170,6 +200,10 @@ class ContractRenewalController extends Controller {
      * @return JsonResponse
      */
     public function store(Request $request): JsonResponse {
+        if (!$this->isHrUser(auth()->user())) {
+            return response()->json(['message' => __('You do not have permission to manage contracts.')], 403);
+        }
+
         $request->validate([
             'contract_id' => 'required|exists:employee_contracts,id',
             'proposed_start_date' => 'required|date',
@@ -239,6 +273,10 @@ class ContractRenewalController extends Controller {
                     'managerApprovedBy', 'hrApprovedBy', 'ceoApprovedBy', 'rejectedBy', 'newContract',
                 ])->findOrFail($id);
 
+        if (!$this->canViewRenewal($renewal, auth()->user())) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
         return response()->json(['renewal' => $this->formatRenewal($renewal)]);
     }
 
@@ -259,15 +297,21 @@ class ContractRenewalController extends Controller {
      * @return JsonResponse
      */
     public function approve(Request $request, int $id): JsonResponse {
-        $renewal = ContractRenewalRequest::with('contract.employee')->findOrFail($id);
+        $request->validate(['notes' => 'nullable|string|max:1000']);
+
+        // Lock the row so a double-submit at the final stage cannot create two contracts.
+        return DB::transaction(fn () => $this->approveLocked($request, $id));
+    }
+
+    private function approveLocked(Request $request, int $id): JsonResponse {
+        $renewal = ContractRenewalRequest::with('contract.employee')->lockForUpdate()->findOrFail($id);
         $user = auth()->user();
 
-        $request->validate(['notes' => 'nullable|string|max:1000']);
         $notes = $request->notes ?? null;
 
         switch ($renewal->status) {
             case 'pending':
-                if (!$user->hasAnyRole(['department_manager', 'hr_manager', 'hr_staff', 'super_admin'])) {
+                if (!$user->hasAnyRole(['hr_manager', 'hr_staff', 'super_admin']) && !$this->canActAsManager($renewal, $user)) {
                     return response()->json(['message' => __('Only managers can approve at this stage.')], 403);
                 }
                 $renewal->update([
@@ -340,7 +384,7 @@ class ContractRenewalController extends Controller {
         }
 
         $canReject = match ($renewal->status) {
-            'pending' => $user->hasAnyRole(['department_manager', 'hr_manager', 'hr_staff', 'super_admin']),
+            'pending' => $user->hasAnyRole(['hr_manager', 'hr_staff', 'super_admin']) || $this->canActAsManager($renewal, $user),
             'manager_approved' => $user->hasAnyRole(['hr_manager', 'hr_staff', 'super_admin']),
             'hr_approved' => $user->hasAnyRole(['ceo', 'super_admin']),
             default => false,
@@ -411,6 +455,10 @@ class ContractRenewalController extends Controller {
 
         $renewal = ContractRenewalRequest::findOrFail($id);
 
+        if (!$this->isHrUser(auth()->user()) && !$this->canActAsManager($renewal, auth()->user())) {
+            return response()->json(['message' => __('You do not have permission to manage contracts.')], 403);
+        }
+
         if ($renewal->document_path) {
             Storage::disk('public')->delete($renewal->document_path);
         }
@@ -438,6 +486,10 @@ class ContractRenewalController extends Controller {
     public function downloadDocument(int $id): StreamedResponse|JsonResponse {
         $renewal = ContractRenewalRequest::findOrFail($id);
 
+        if (!$this->canViewRenewal($renewal, auth()->user())) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
         if (!$renewal->document_path || !Storage::disk('public')->exists($renewal->document_path)) {
             return response()->json(['message' => __('No document attached to this renewal request.')], 404);
         }
@@ -456,6 +508,10 @@ class ContractRenewalController extends Controller {
      */
     public function deleteDocument(int $id): JsonResponse {
         $renewal = ContractRenewalRequest::findOrFail($id);
+
+        if (!$this->isHrUser(auth()->user()) && !$this->canActAsManager($renewal, auth()->user())) {
+            return response()->json(['message' => __('You do not have permission to manage contracts.')], 403);
+        }
 
         if ($renewal->document_path) {
             Storage::disk('public')->delete($renewal->document_path);
@@ -477,6 +533,9 @@ class ContractRenewalController extends Controller {
      * @return array<string, mixed>
      */
     private function formatRenewal(ContractRenewalRequest $r): array {
+        // Salary is HR-only, matching ContractResource; managers approve terms, not pay.
+        $canViewSalary = $this->isHrUser(auth()->user());
+
         return [
             'id' => $r->id,
             'reference' => $r->reference,
@@ -487,7 +546,7 @@ class ContractRenewalController extends Controller {
             'notes' => $r->notes,
             'proposed_start_date' => $r->proposed_start_date?->toDateString(),
             'proposed_end_date' => $r->proposed_end_date?->toDateString(),
-            'proposed_salary' => $r->proposed_salary,
+            'proposed_salary' => $canViewSalary ? $r->proposed_salary : null,
             'proposed_type' => $r->proposed_type,
             'created_at' => $r->created_at?->toDateTimeString(),
             'notified_at' => $r->notified_at?->toDateTimeString(),
@@ -509,7 +568,7 @@ class ContractRenewalController extends Controller {
         'reference' => $r->contract->reference,
         'end_date' => $r->contract->end_date?->toDateString(),
         'type' => $r->contract->type,
-        'salary' => $r->contract->salary,
+        'salary' => $canViewSalary ? $r->contract->salary : null,
             ] : null,
             'approvals' => [
                 'manager' => [

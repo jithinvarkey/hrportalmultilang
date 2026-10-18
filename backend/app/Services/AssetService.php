@@ -177,6 +177,15 @@ class AssetService
         }
 
         return DB::transaction(function () use ($asset, $employeeId, $data, $assignedBy): AssetAssignment {
+            // Re-check under a row lock so two concurrent requests (double click / two admins)
+            // cannot both check out the same asset and leave two open assignments.
+            $locked = Asset::whereKey($asset->id)->lockForUpdate()->first();
+            if (!$locked || $locked->status !== 'available') {
+                throw new \RuntimeException(
+                    __('Asset ":name" is currently :status and cannot be assigned.', ['name' => $asset->name, 'status' => \App\Support\Locale\StatusLabel::for($locked?->status ?? $asset->status)])
+                );
+            }
+
             $assignment = AssetAssignment::create([
                 'asset_id'           => $asset->id,
                 'employee_id'        => $employeeId,

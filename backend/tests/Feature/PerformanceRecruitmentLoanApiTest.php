@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Mail\ApplicantRejectedMail;
 use App\Mail\LoanInstallmentSkippedMail;
 use App\Mail\RecruitmentCreatedNotificationMail;
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\JobApplication;
 use App\Models\JobPosting;
@@ -60,7 +61,20 @@ class PerformanceRecruitmentLoanApiTest extends TestCase
         $this->employeeUser = User::factory()->create();
         $this->employeeUser->assignRole('employee');
 
-        $this->empRecord = Employee::factory()->create(['user_id' => $this->employeeUser->id]);
+        // The department manager is a real manager of this employee: same department and their direct manager.
+        // (Approvals and reviews are scoped to the manager's own team.)
+        $department = Department::factory()->create();
+        $managerRecord = Employee::factory()->create([
+            'user_id'       => $this->deptManager->id,
+            'department_id' => $department->id,
+        ]);
+        $department->update(['manager_id' => $managerRecord->id]);
+
+        $this->empRecord = Employee::factory()->create([
+            'user_id'       => $this->employeeUser->id,
+            'department_id' => $department->id,
+            'manager_id'    => $managerRecord->id,
+        ]);
     }
 
     // ── Performance ───────────────────────────────────────────────────────
@@ -251,6 +265,7 @@ class PerformanceRecruitmentLoanApiTest extends TestCase
         $this->postJson("/api/v1/jobs/{$job->id}/apply", [
             'applicant_name'  => 'John Smith',
             'applicant_email' => 'john@example.com',
+            'applicant_phone' => '0501234567',
         ])
         ->assertCreated()
         ->assertJson(['application' => ['job_posting_id' => $job->id]]);
@@ -326,7 +341,8 @@ class PerformanceRecruitmentLoanApiTest extends TestCase
     {
         $app = JobApplication::factory()->create(['job_posting_id' => JobPosting::factory()->create()->id]);
         $url = "/api/v1/recruitment/applications/{$app->id}";
-        foreach (['hr_staff', 'ceo', 'finance_manager'] as $role) {
+        // CEO is an access alias of HR Manager (see User::hasRole), so it may edit applicant details.
+        foreach (['hr_staff', 'finance_manager'] as $role) {
             $user = User::factory()->create();
             $user->assignRole($role);
             $this->actingAs($user, 'sanctum')->putJson($url, ['job_posting_id' => $app->job_posting_id])->assertForbidden();

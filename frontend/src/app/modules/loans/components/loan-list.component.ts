@@ -132,7 +132,7 @@ export class LoanListComponent implements OnInit {
     this.isHR = this.auth.isHRRole();
     this.isMgr = this.auth.isManagerRole();
     this.isFinance = this.auth.isFinanceManager();
-    this.canMarkInstallmentPaid = this.auth.isFinanceManager() || this.auth.isHRManager();
+    this.canMarkInstallmentPaid = this.auth.isFinanceManager() || this.isLoanHRManager();
     this.typeColumns = this.isHR
       ? ['name', 'name_ar', 'code', 'max_amount', 'installments', 'interest', 'status', 'actions']
       : ['name', 'name_ar', 'code', 'max_amount', 'installments', 'interest', 'status'];
@@ -258,7 +258,7 @@ export class LoanListComponent implements OnInit {
       this.approveTarget = loan;
       this.financeForm = {
         approved_amount: loan.requested_amount,
-        disbursed_date: new Date().toISOString().slice(0, 10),
+        disbursed_date: this.todayLocal(),
         first_installment_date: ''
       };
       this.showApprove = true;
@@ -269,7 +269,8 @@ export class LoanListComponent implements OnInit {
 
   quickApprove(loan: any) {
     this.http.post(`/api/v1/loans/${loan.id}/approve`, {}).subscribe({
-      next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.reloadDetail(); }
+      next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.reloadDetail(); },
+      error: err => this.showError(err)
     });
   }
 
@@ -278,7 +279,8 @@ export class LoanListComponent implements OnInit {
       next: () => {
         this.showApprove = false;
         this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.reloadDetail();
-      }
+      },
+      error: err => this.showError(err)
     });
   }
 
@@ -291,7 +293,8 @@ export class LoanListComponent implements OnInit {
       next: () => {
         this.showReject = false; this.load(this.currentPage); this.loadStats();
         if (this.showDetail) this.showDetail = false;
-      }
+      },
+      error: err => this.showError(err)
     });
   }
 
@@ -299,7 +302,8 @@ export class LoanListComponent implements OnInit {
   cancel(loan: any) {
     if (!confirm(this.lang.t('LOANS.MSG.CONFIRM_CANCEL'))) return;
     this.http.post(`/api/v1/loans/${loan.id}/cancel`, {}).subscribe({
-      next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.showDetail = false; }
+      next: () => { this.load(this.currentPage); this.loadMyLoans(); this.loadStats(); if (this.showDetail) this.showDetail = false; },
+      error: err => this.showError(err)
     });
   }
 
@@ -327,7 +331,8 @@ export class LoanListComponent implements OnInit {
   disburse(loan: any) {
     if (!confirm(this.lang.t('LOANS.MSG.CONFIRM_DISBURSE', { ref: loan.reference }))) return;
     this.http.post(`/api/v1/loans/${loan.id}/disburse`, {}).subscribe({
-      next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.reloadDetail(); }
+      next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.reloadDetail(); },
+      error: err => this.showError(err)
     });
   }
 
@@ -344,7 +349,7 @@ export class LoanListComponent implements OnInit {
   openPayInst(inst: any) {
     if (!this.canMarkInstallmentPaid) return;
     this.activeInst = inst;
-    this.instPayDate = new Date().toISOString().slice(0, 10);
+    this.instPayDate = this.todayLocal();
     this.instNotes = '';
     this.showPayInst = true;
   }
@@ -352,15 +357,18 @@ export class LoanListComponent implements OnInit {
   confirmPayInst() {
     this.http.post(`/api/v1/loans/${this.instLoan.id}/installments/${this.activeInst.id}/pay`, {
       paid_date: this.instPayDate, notes: this.instNotes
-    }).subscribe({ next: () => { this.showPayInst = false; this.reloadInstLoan(); this.loadStats(); } });
+    }).subscribe({ next: () => { this.showPayInst = false; this.reloadInstLoan(); this.loadStats(); }, error: err => this.showError(err) });
   }
 
-  openSkipInst(inst: any) { this.activeInst = inst; this.instNotes = ''; this.showSkipInst = true; }
+  openSkipInst(inst: any) {
+    if (!this.canSkipInstallment(this.instLoan)) return;
+    this.activeInst = inst; this.instNotes = ''; this.showSkipInst = true;
+  }
 
   confirmSkipInst() {
     this.http.post(`/api/v1/loans/${this.instLoan.id}/installments/${this.activeInst.id}/skip`, {
       notes: this.instNotes
-    }).subscribe({ next: () => { this.showSkipInst = false; this.reloadInstLoan(); } });
+    }).subscribe({ next: () => { this.showSkipInst = false; this.reloadInstLoan(); }, error: err => this.showError(err) });
   }
 
   reloadInstLoan() {
@@ -421,6 +429,21 @@ export class LoanListComponent implements OnInit {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────
+  private showError(err: any): void {
+    alert(err?.error?.message || this.lang.t('MESSAGES.GENERIC_ERROR'));
+  }
+
+  /** Today as YYYY-MM-DD in the browser's timezone (toISOString() is UTC: yesterday before 03:00 in Riyadh). */
+  private todayLocal(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  /** LoanController treats CEO as hr_manager for loan approvals. */
+  private isLoanHRManager(): boolean {
+    return this.auth.isHRManager() || this.auth.isCEO();
+  }
+
   private loanTypeCodeFromName(name: string): string {
     const words = String(name || '').trim().toUpperCase().match(/[A-Z0-9]+/g) || [];
     if (!words.length) return '';
@@ -529,7 +552,7 @@ export class LoanListComponent implements OnInit {
       return loan.status === 'pending_finance';
     }
 
-    if (this.auth.isHRManager()) {
+    if (this.isLoanHRManager()) {
       return loan.status === 'pending_hr'
         || (this.approvalLevels === 2 && loan.status === 'pending_manager');
     }
@@ -555,7 +578,7 @@ export class LoanListComponent implements OnInit {
       return loan.status === 'pending_finance';
     }
 
-    if (this.auth.isHRManager()) {
+    if (this.isLoanHRManager()) {
       return loan.status === 'pending_hr'
         || (this.approvalLevels === 2 && loan.status === 'pending_manager');
     }
@@ -572,20 +595,24 @@ export class LoanListComponent implements OnInit {
       return ['pending_manager', 'pending_hr', 'pending_finance'].includes(loan.status);
     }
 
-    if (this.isHR) {
-      return ['pending_manager', 'pending_hr', 'pending_finance']
-        .includes(loan.status);
+    // Mirrors LoanController::cancel — only the approver of the current stage may cancel someone else's loan.
+    if (this.auth.isSuperAdmin()) {
+      return ['pending_manager', 'pending_hr', 'pending_finance'].includes(loan.status);
     }
 
-    if (this.isFinance) {
-      return loan.status === 'pending_finance';
-    }
+    return (loan.status === 'pending_manager' && this.auth.isDeptManager() && this.isDirectManagerOf(loan))
+      || (loan.status === 'pending_hr' && this.isLoanHRManager())
+      || (loan.status === 'pending_finance' && this.isFinance);
+  }
 
-    if (this.isMgr) {
-      return loan.status === 'pending_manager';
-    }
+  /** The backend lets only the borrower's direct manager act at the manager stage. */
+  isDirectManagerOf(loan: any): boolean {
+    return !!this.employeeId && String(loan?.employee?.manager_id ?? '') === String(this.employeeId);
+  }
 
-    return false;
+  /** Finance / HR, or the borrower's direct manager, may defer an installment — never the borrower. */
+  canSkipInstallment(loan: any): boolean {
+    return this.canMarkInstallmentPaid || (!this.isOwnLoan(loan) && this.isDirectManagerOf(loan));
   }
 
   isOwnLoan(loan: any): boolean {
@@ -642,17 +669,17 @@ export class LoanListComponent implements OnInit {
       {
         id: 'manager', label: 'LOANS.STAGE.manager', label2: 'LOANS.STEP.MANAGER_APPROVAL',
         done: !!loan.manager_approved_at, active: loan.status === 'pending_manager',
-        by: loan.managerApprover?.name, date: loan.manager_approved_at
+        by: (loan.manager_approver ?? loan.managerApprover)?.name, date: loan.manager_approved_at
       },
       {
         id: 'hr', label: 'LOANS.STAGE.hr', label2: 'LOANS.STEP.HR_APPROVAL',
         done: !!loan.hr_approved_at, active: loan.status === 'pending_hr',
-        by: loan.hrApprover?.name, date: loan.hr_approved_at
+        by: (loan.hr_approver ?? loan.hrApprover)?.name, date: loan.hr_approved_at
       },
       {
         id: 'finance', label: 'LOANS.STAGE.finance', label2: 'LOANS.STEP.FINANCE_DISBURSE',
         done: !!loan.finance_approved_at, active: loan.status === 'pending_finance',
-        by: loan.financeApprover?.name, date: loan.finance_approved_at
+        by: (loan.finance_approver ?? loan.financeApprover)?.name, date: loan.finance_approved_at
       },
     ].filter(step => levels === 3 || step.id !== 'manager');
   }

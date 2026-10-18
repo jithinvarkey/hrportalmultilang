@@ -28,6 +28,14 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        // Public login / OTP / password-reset endpoints: limit guesses per account (or OTP challenge) and IP,
+        // so a shared office IP does not lock everyone out but one account cannot be brute-forced.
+        RateLimiter::for('auth', function (Request $request) {
+            $identity = (string) ($request->input('login') ?: $request->input('email') ?: $request->input('challenge_token') ?: '');
+
+            return Limit::perMinute(10)->by(sha1(strtolower(trim($identity)) . '|' . $request->ip()));
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

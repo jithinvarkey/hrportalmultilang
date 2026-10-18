@@ -126,7 +126,7 @@ class DashboardController extends Controller
             ->where('end_date', '>=', $today)->count());
         $approvedMonth = $safe(fn () => $leaveQuery()
             ->where('status', 'approved')
-            ->whereMonth('updated_at', $month)->count());
+            ->whereMonth('updated_at', $month)->whereYear('updated_at', $year)->count());
         $totalLeave    = $safe(fn () => $leaveQuery()->count());
 
         // ── Attendance ─────────────────────────────────────────────────
@@ -146,7 +146,7 @@ class DashboardController extends Controller
         $payPending   = $safe(fn () => $payrollQuery()->whereIn('status', ['pending_approval', 'draft'])->count());
         $payErrors    = $safe(fn () => $payrollQuery()->where('status', 'rejected')->count());
         $payOnHold    = $safe(fn () => $payrollQuery()->where('status', 'on_hold')->count());
-        $payDue       = $safe(fn () => $payrollQuery()->whereMonth('created_at', $month)->count());
+        $payDue       = $safe(fn () => $payrollQuery()->whereMonth('created_at', $month)->whereYear('created_at', $year)->count());
         $payTotal     = $safe(fn () => $payrollQuery()->count());
 
         // ── Recruitment ────────────────────────────────────────────────
@@ -160,7 +160,7 @@ class DashboardController extends Controller
         $totalApplicants = $safe(fn () => $applicationQuery()->count());
         $newApplicants   = $safe(fn () => $applicationQuery()->where('job_applications.created_at', '>=', now()->subDays(7))->count());
         $offersSent      = $safe(fn () => $applicationQuery()->where('job_applications.stage', 'offer')->count());
-        $hiredThisMonth  = $safe(fn () => $applicationQuery()->where('job_applications.stage', 'hired')->whereMonth('job_applications.updated_at', $month)->count());
+        $hiredThisMonth  = $safe(fn () => $applicationQuery()->where('job_applications.stage', 'hired')->whereMonth('job_applications.updated_at', $month)->whereYear('job_applications.updated_at', $year)->count());
 
         // ── Performance ────────────────────────────────────────────────
         $performanceQuery = fn () => $this->applyEmployeeScope(DB::table('performance_reviews'), $scope);

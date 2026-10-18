@@ -39,6 +39,20 @@ class ContractController extends Controller {
         ]);
     }
 
+    /** Same visibility as index(): HR roles see every contract, everyone else only their own. */
+    private function canViewEmployeeContracts(?int $employeeId): bool {
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->hasAnyRole(['super_admin', 'ceo', 'hr_manager', 'hr_staff'])) {
+            return true;
+        }
+
+        return $employeeId !== null && $user->employee && (int) $user->employee->id === $employeeId;
+    }
+
     // ── List ──────────────────────────────────────────────────────────────
 
     /**
@@ -61,9 +75,8 @@ class ContractController extends Controller {
 
         $query = Contract::with(['employee.department', 'department', 'createdBy'])
                 ->when(!$isHRAdmin, function ($q) use ($user, $isMgr) {
-                    if ($user->employee) {
-                        $q->where('employee_id', $user->employee->id);
-                    }
+                    // Users without an employee record must not fall through to "all contracts".
+                    $q->where('employee_id', $user->employee?->id ?? 0);
                 })
                 ->when($request->status, fn($q) => $q->where('status', $request->status))
                 ->when($request->type, fn($q) => $q->where('type', $request->type))
@@ -78,7 +91,11 @@ class ContractController extends Controller {
                                             'like', "%{$request->search}%"
                             ));
                         }))
-                ->orderBy($request->sort_by ?? 'created_at', $request->sort_dir ?? 'desc');
+                ->orderBy(
+                    in_array($request->sort_by, ['created_at', 'start_date', 'end_date', 'reference', 'status', 'type'], true)
+                        ? $request->sort_by : 'created_at',
+                    strtolower((string) $request->sort_dir) === 'asc' ? 'asc' : 'desc'
+                );
 
         return response()->json(
                         ContractResource::collection($query->paginate((int) ($request->per_page ?? 15)))
@@ -229,8 +246,8 @@ class ContractController extends Controller {
                 ->where('status', 'active')
                 ->whereNotNull('end_date')
                 ->whereBetween('end_date', [
-                    now(),
-                    now()->copy()->addDays(30)
+                    now()->toDateString(),
+                    now()->addDays(30)->toDateString()
                 ])
                 ->count()
         ),
@@ -311,6 +328,10 @@ class ContractController extends Controller {
     public function show(int $id): JsonResponse {
         $contract = Contract::with(['employee.department', 'department', 'createdBy', 'approvedBy'])
                 ->findOrFail($id);
+
+        if (!$this->canViewEmployeeContracts((int) $contract->employee_id)) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
 
         return response()->json(['contract' => new ContractResource($contract)]);
     }
@@ -463,6 +484,10 @@ class ContractController extends Controller {
     {
         $contract = Contract::findOrFail($id);
 
+        if (!$this->canViewEmployeeContracts((int) $contract->employee_id)) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
         if (!$contract->pdf_path || !Storage::disk('public')->exists($contract->pdf_path)) {
             return response()->json(['message' => __('No document attached to this contract.')], 404);
         }
@@ -503,6 +528,10 @@ class ContractController extends Controller {
      * @return JsonResponse
      */
     public function forEmployee(int $empId): JsonResponse {
+        if (!$this->canViewEmployeeContracts($empId)) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
         $contracts = Contract::with(['department', 'createdBy', 'approvedBy'])
                 ->where('employee_id', $empId)
                 ->orderBy('start_date', 'desc')

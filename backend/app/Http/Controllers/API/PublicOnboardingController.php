@@ -205,6 +205,8 @@ class PublicOnboardingController extends Controller
 
         return EmployeeOnboardingLink::with('employee')
             ->where('token_hash', hash('sha256', $token))
+            // A link for a deleted (archived) employee is dead; otherwise submit() would hit a null employee.
+            ->whereHas('employee')
             ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>=', now()))
             ->first();
     }

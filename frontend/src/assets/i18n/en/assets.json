@@ -116,6 +116,7 @@
       "CONFIRM_DELETE": "Delete asset \"{{name}}\"?",
       "DELETED": "Asset deleted.",
       "REPORT_FAILED": "Report download failed.",
+      "ATTACHMENT_FAILED": "Could not download the attachment.",
       "EMPLOYEE_DATE_REQUIRED": "Employee and date are required.",
       "ASSIGNED": "Asset assigned.",
       "ASSIGN_FAILED": "Assign failed.",

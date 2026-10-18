@@ -28,8 +28,38 @@ class PerformanceController extends Controller
     {
         return (bool) array_intersect(
             $this->userRoles(),
-            ['super_admin', 'hr_manager', 'hr_staff']
+            ['super_admin', 'ceo', 'hr_manager', 'hr_staff']
         );
+    }
+
+    private function forbidden(): JsonResponse
+    {
+        return response()->json(['message' => __('Insufficient permissions.')], 403);
+    }
+
+    /**
+     * Non-HR users may only see their own reviews; department managers additionally
+     * see reviews of employees in their own department.
+     */
+    private function scopeVisibleReviews($query)
+    {
+        if ($this->isHRAdmin()) {
+            return $query;
+        }
+
+        $employee = auth()->user()->employee;
+        if (!$employee) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if (in_array('department_manager', $this->userRoles(), true) && $employee->department_id) {
+            return $query->where(function ($q) use ($employee) {
+                $q->where('employee_id', $employee->id)
+                  ->orWhereHas('employee', fn ($e) => $e->where('department_id', $employee->department_id));
+            });
+        }
+
+        return $query->where('employee_id', $employee->id);
     }
 
     // ── Stats ─────────────────────────────────────────────────────────────
@@ -56,9 +86,7 @@ class PerformanceController extends Controller
                 ->when($request->status,     fn ($q) => $q->where('status', $request->status))
                 ->when($request->cycle_id,   fn ($q) => $q->where('cycle_id', $request->cycle_id))
                 ->when($request->employee_id,fn ($q) => $q->where('employee_id', $request->employee_id))
-                ->when(!$this->isHRAdmin() && auth()->user()->employee,
-                    fn ($q) => $q->where('employee_id', auth()->user()->employee->id)
-                )
+                ->tap(fn ($q) => $this->scopeVisibleReviews($q))
                 ->orderBy('created_at', 'desc')
                 ->paginate((int) ($request->per_page ?? 20));
             return response()->json($reviews);
@@ -76,6 +104,9 @@ class PerformanceController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if (!$this->isHRAdmin()) {
+            return $this->forbidden();
+        }
         $request->validate([
             'name'                       => 'required|string|max:150',
             'type'                       => 'required|in:annual,mid_year,quarterly,probation',
@@ -90,6 +121,9 @@ class PerformanceController extends Controller
 
     public function updateCycle(Request $request, int $id): JsonResponse
     {
+        if (!$this->isHRAdmin()) {
+            return $this->forbidden();
+        }
         $cycle = PerformanceCycle::findOrFail($id);
         $request->validate([
             'name'   => 'sometimes|string|max:150',
@@ -102,7 +136,8 @@ class PerformanceController extends Controller
     public function show(int $id): JsonResponse
     {
         $cycle = PerformanceCycle::with([
-            'reviews.employee.department', 'reviews.reviewer'
+            'reviews' => fn ($q) => $this->scopeVisibleReviews($q),
+            'reviews.employee.department', 'reviews.reviewer',
         ])->findOrFail($id);
         return response()->json(['cycle' => $cycle]);
     }
@@ -164,6 +199,11 @@ class PerformanceController extends Controller
         if ($review->status === 'finalized') {
             return response()->json(['message' => __('Review is already finalized.')], 422);
         }
+        // Once the manager has rated, the employee can no longer change the self assessment
+        // (doing so would also push the review back to "self_submitted").
+        if (!in_array($review->status, ['pending', 'self_submitted'], true)) {
+            return $this->forbidden();
+        }
 
         $review->update([
             'self_rating'    => $request->rating,
@@ -188,7 +228,17 @@ class PerformanceController extends Controller
             'kpi_scores' => 'nullable|array',
         ]);
 
-        $review = PerformanceReview::findOrFail($reviewId);
+        $review = PerformanceReview::with('employee')->findOrFail($reviewId);
+
+        if (!$this->isHRAdmin()) {
+            // Department managers may review only their own department's employees, never themselves.
+            $me = auth()->user()->employee;
+            if (!$me || !$me->department_id
+                || (int) $review->employee_id === (int) $me->id
+                || (int) $review->employee?->department_id !== (int) $me->department_id) {
+                return $this->forbidden();
+            }
+        }
 
         if (!in_array($review->status, ['self_submitted', 'pending'])) {
             return response()->json(['message' => __('Review is not ready for manager assessment.')], 422);
@@ -221,6 +271,10 @@ class PerformanceController extends Controller
 
         $review = PerformanceReview::findOrFail($reviewId);
 
+        if ($review->status === 'finalized') {
+            return response()->json(['message' => __('Review is already finalized.')], 422);
+        }
+
         $review->update([
             'final_rating'     => $request->final_rating,
             'performance_band' => $request->performance_band,
@@ -244,6 +298,9 @@ class PerformanceController extends Controller
 
     public function storeKpi(Request $request): JsonResponse
     {
+        if (!$this->isHRAdmin()) {
+            return $this->forbidden();
+        }
         $request->validate([
             'title'    => 'required|string|max:200',
             'category' => 'required|string',
@@ -256,6 +313,9 @@ class PerformanceController extends Controller
 
     public function updateKpi(Request $request, int $id): JsonResponse
     {
+        if (!$this->isHRAdmin()) {
+            return $this->forbidden();
+        }
         $kpi = Kpi::findOrFail($id);
         $kpi->update($request->all());
         return response()->json(['kpi' => $kpi->fresh()]);
@@ -263,6 +323,9 @@ class PerformanceController extends Controller
 
     public function deleteKpi(int $id): JsonResponse
     {
+        if (!$this->isHRAdmin()) {
+            return $this->forbidden();
+        }
         Kpi::findOrFail($id)->delete();
         return response()->json(['message' => __('KPI deleted.')]);
     }
@@ -270,7 +333,7 @@ class PerformanceController extends Controller
     // ── Employee report ───────────────────────────────────────────────────
     public function report(int $empId): JsonResponse
     {
-        $reviews = PerformanceReview::with(['cycle', 'reviewer'])
+        $reviews = $this->scopeVisibleReviews(PerformanceReview::with(['cycle', 'reviewer']))
             ->where('employee_id', $empId)
             ->orderBy('created_at', 'desc')
             ->get();

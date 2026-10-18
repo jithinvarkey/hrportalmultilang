@@ -187,7 +187,8 @@
         "CONNECTION_FAILED": "Connection failed.",
         "SYNC_DONE": "Sync completed: fetched {{fetched}}, new {{new}}, processed {{processed}}",
         "SYNC_SKIPPED": ", skipped duplicates {{n}}",
-        "SYNC_FAILED": "Sync failed."
+        "SYNC_FAILED": "Sync failed.",
+        "SYNC_DATES_REQUIRED": "Choose the date (or a valid start and end date) to sync."
       }
     }
   }

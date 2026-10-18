@@ -52,6 +52,10 @@ export class SeparationListComponent implements OnInit {
   rejectTarget:any = null;
   rejectReason     = '';
   checklistError   = '';
+  /** Error from an approve / reject / cancel / exit-interview / template action. */
+  actionError      = '';
+  /** Separation ids with an approve request in flight (prevents a double click from advancing two stages). */
+  approvingIds = new Set<number>();
   checklistUpdatingIds = new Set<number>();
 
   // ── New separation form ──────────────────────────────────────────────────
@@ -234,7 +238,7 @@ export class SeparationListComponent implements OnInit {
   openNew() {
     const d = new Date(); d.setDate(d.getDate() + 30);
     this.form = { employee_id: this.isHR ? '' : this.currentEmployeeId, type:'resignation', reason:'', reason_category:'personal',
-      last_working_day: d.toISOString().slice(0,10), notice_waived: false, notice_waived_reason:'', hr_notes:'' };
+      last_working_day: this.localYmd(d), notice_waived: false, notice_waived_reason:'', hr_notes:'' };
     this.formError = ''; this.settlementPreview = null;
     this.showNewForm = true;
   }
@@ -269,6 +273,7 @@ export class SeparationListComponent implements OnInit {
 
   // ── Approve ────────────────────────────────────────────────────────────
   openApprove(sep: any) {
+    this.actionError = '';
     if (sep.status === 'pending_hr') {
       this.selectedSep = sep; this.showApproveHR = true;
       this.hrApprovalForm = { other_additions: 0, other_deductions: 0, hr_notes: '' };
@@ -278,37 +283,73 @@ export class SeparationListComponent implements OnInit {
   }
 
   quickApprove(sep: any) {
-    this.http.post(`/api/v1/separations/${sep.id}/approve`, {}).subscribe({
-      next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.reloadDetail(); }
-    });
+    this.postApprove(sep.id, {});
   }
 
   submitHRApproval() {
-    this.http.post(`/api/v1/separations/${this.selectedSep.id}/approve`, this.hrApprovalForm).subscribe({
-      next: () => { this.showApproveHR = false; this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.reloadDetail(); }
-    });
+    this.postApprove(this.selectedSep.id, this.hrApprovalForm, () => this.showApproveHR = false);
   }
 
   startOffboarding(sep: any) {
-    this.http.post(`/api/v1/separations/${sep.id}/approve`, {}).subscribe({
-      next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.reloadDetail(); }
+    this.actionError = '';
+    this.postApprove(sep.id, {});
+  }
+
+  isApproving(sep: any): boolean {
+    return this.approvingIds.has(sep?.id);
+  }
+
+  /**
+   * The same endpoint advances whichever stage the request is in, so a second click
+   * while the first request is in flight would approve the next stage too
+   * (e.g. HR approval followed by an unintended "start offboarding").
+   */
+  private postApprove(id: number, body: any, onSuccess?: () => void) {
+    if (this.approvingIds.has(id)) return;
+    this.approvingIds.add(id);
+    this.http.post(`/api/v1/separations/${id}/approve`, body).subscribe({
+      next: () => {
+        this.approvingIds.delete(id);
+        onSuccess?.();
+        this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.reloadDetail();
+      },
+      error: err => { this.approvingIds.delete(id); this.actionError = this.errorText(err); }
     });
   }
 
+  private errorText(err: any): string {
+    const errors = err?.error?.errors;
+    if (errors) {
+      const first = Object.values(errors)[0];
+      if (Array.isArray(first) && first.length) return String(first[0]);
+    }
+    return err?.error?.message || this.lang.t('MESSAGES.GENERIC_ERROR');
+  }
+
+  /** yyyy-MM-dd in the browser's timezone (toISOString() is UTC: the previous day before 03:00 in Riyadh). */
+  private localYmd(date: Date): string {
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
   // ── Reject ─────────────────────────────────────────────────────────────
-  openReject(sep: any) { this.rejectTarget = sep; this.rejectReason = ''; this.showReject = true; }
+  openReject(sep: any) { this.rejectTarget = sep; this.rejectReason = ''; this.actionError = ''; this.showReject = true; }
 
   confirmReject() {
-    if (!this.rejectReason.trim()) return;
+    if (!this.rejectReason.trim() || this.submitting) return;
+    this.submitting = true; this.actionError = '';
     this.http.post(`/api/v1/separations/${this.rejectTarget.id}/reject`, { reason: this.rejectReason }).subscribe({
-      next: () => { this.showReject = false; this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.showDetail = false; }
+      next: () => { this.submitting = false; this.showReject = false; this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.showDetail = false; },
+      error: err => { this.submitting = false; this.actionError = this.errorText(err); }
     });
   }
 
   cancel(sep: any) {
     if (!confirm(this.lang.t('SEPARATIONS.MSG.CONFIRM_CANCEL'))) return;
+    this.actionError = '';
     this.http.post(`/api/v1/separations/${sep.id}/cancel`, {}).subscribe({
-      next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.showDetail = false; }
+      next: () => { this.load(this.currentPage); this.loadStats(); if (this.showDetail) this.showDetail = false; },
+      error: err => this.actionError = this.errorText(err)
     });
   }
 
@@ -358,13 +399,16 @@ export class SeparationListComponent implements OnInit {
 
   // ── Exit interview ──────────────────────────────────────────────────────
   openExitInterview(sep: any) {
-    this.selectedSep = sep; this.exitForm = { date: new Date().toISOString().slice(0,10), notes: '' };
+    this.selectedSep = sep; this.exitForm = { date: this.localYmd(new Date()), notes: '' };
+    this.actionError = '';
     this.showExitInterview = true;
   }
 
   submitExitInterview() {
+    this.actionError = '';
     this.http.post(`/api/v1/separations/${this.selectedSep.id}/exit-interview`, this.exitForm).subscribe({
-      next: () => { this.showExitInterview = false; this.reloadDetail(); }
+      next: () => { this.showExitInterview = false; this.reloadDetail(); },
+      error: err => this.actionError = this.errorText(err)
     });
   }
 
@@ -387,6 +431,7 @@ export class SeparationListComponent implements OnInit {
   openTemplateForm(t?: any) {
     if (t) { this.templateEditId = t.id; this.templateForm = { ...t }; }
     else   { this.templateEditId = null; this.templateForm = { title:'', category:'hr', description:'', is_required:true, is_active:true, sort_order:0 }; }
+    this.actionError = '';
     this.showTemplateForm = true;
   }
 
@@ -395,12 +440,19 @@ export class SeparationListComponent implements OnInit {
     const req = this.templateEditId
       ? this.http.put(`/api/v1/separations/templates/${this.templateEditId}`, this.templateForm)
       : this.http.post('/api/v1/separations/templates', this.templateForm);
-    req.subscribe({ next: () => { this.showTemplateForm = false; this.loadTemplates(); }});
+    req.subscribe({
+      next: () => { this.showTemplateForm = false; this.loadTemplates(); },
+      error: err => this.actionError = this.errorText(err)
+    });
   }
 
   deleteTemplate(id: number) {
     if (!confirm(this.lang.t('SEPARATIONS.MSG.CONFIRM_DELETE_TEMPLATE'))) return;
-    this.http.delete(`/api/v1/separations/templates/${id}`).subscribe({ next: () => this.loadTemplates() });
+    this.actionError = '';
+    this.http.delete(`/api/v1/separations/templates/${id}`).subscribe({
+      next: () => this.loadTemplates(),
+      error: err => this.actionError = this.errorText(err)
+    });
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -478,7 +530,12 @@ export class SeparationListComponent implements OnInit {
         && (this.isHRManager || this.isSuperAdmin);
     }
     if (sep.status === 'approved') {
-      return this.canManageOffboarding();
+      // Backend also requires: own request, the direct manager, or an HR-stage approver.
+      const isOwn = Number(sep.employee_id) === Number(this.currentEmployeeId);
+      const hrStage = sep.type === 'resignation'
+        ? this.isHRManager || this.isSuperAdmin
+        : this.isHRManager || this.isFinanceManager || this.isSuperAdmin;
+      return this.canManageOffboarding() && (isOwn || this.isDirectManager(sep) || hrStage);
     }
     if (!['draft', 'pending_manager', 'pending_hr'].includes(sep.status)) return false;
 

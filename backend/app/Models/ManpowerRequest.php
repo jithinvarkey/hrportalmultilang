@@ -17,7 +17,7 @@ class ManpowerRequest extends Model
     ];
 
     protected $casts = [
-        'expected_start_date' => 'date',
+        'expected_start_date' => 'date:Y-m-d',
         'approved_at'         => 'datetime',
         'job_posting_created' => 'boolean',
     ];

@@ -40,6 +40,8 @@ export class PayrollListComponent implements OnInit {
   runError              = '';
   editError             = '';
   isHR                  = false;
+  /** HR managers or the Finance Manager: approve / reject / mark paid. Running and editing stay HR-only (isHR). */
+  canApprovePayroll     = false;
   markingPaid           = false;
   stats: any            = {};
   filterStatus          = '';
@@ -74,6 +76,7 @@ export class PayrollListComponent implements OnInit {
 
   ngOnInit() {
     this.isHR = this.auth.isHRRole();
+    this.canApprovePayroll = this.isHR || this.auth.isFinanceManager();
     this.setDefaultPeriod();
     this.loadStats();
     this.load();
@@ -90,9 +93,18 @@ export class PayrollListComponent implements OnInit {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth();
-    this.runForm.month        = `${y}-${String(m + 1).padStart(2, '0')}`;
-    this.runForm.period_start = new Date(y, m, 1).toISOString().slice(0, 10);
-    this.runForm.period_end   = new Date(y, m + 1, 0).toISOString().slice(0, 10);
+    this.runForm.month = `${y}-${String(m + 1).padStart(2, '0')}`;
+    this.onRunMonthChange();
+  }
+
+  /** Keep the period on the selected "YYYY-MM" month (built locally: toISOString() is UTC and gives the previous day in Riyadh). */
+  onRunMonthChange() {
+    const [y, m] = String(this.runForm.month || '').split('-').map(Number);
+    if (!y || !m) return;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const lastDay = new Date(y, m, 0).getDate();
+    this.runForm.period_start = `${y}-${pad(m)}-01`;
+    this.runForm.period_end   = `${y}-${pad(m)}-${pad(lastDay)}`;
   }
 
   load(page = 1) {
@@ -125,11 +137,13 @@ export class PayrollListComponent implements OnInit {
         this.running  = false;
         const msg     = err?.error?.message || this.lang.t('PAYROLL.MSG.RUN_FAILED');
         this.runError = msg;
+        this.cdr.markForCheck();
       }
     });
   }
 
   openGeneratePayslip() {
+    if (!this.isHR) return;
     this.generateError = '';
     this.employeeSearch = '';
     this.employeeDropdownOpen = false;
@@ -150,14 +164,16 @@ export class PayrollListComponent implements OnInit {
     }
     this.generatingSlip = true;
     this.generateError = '';
+    const printWindow = this.openPrintWindow();
     this.http.get<any>('/api/v1/payroll/payslip/generate', { params: this.generateForm }).subscribe({
       next: r => {
         this.generatingSlip = false;
         this.showGenerateSlip = false;
-        this.downloadPayslip(r.payslip);
+        this.downloadPayslip(r.payslip, printWindow);
         this.cdr.markForCheck();
       },
       error: err => {
+        printWindow?.close();
         this.generatingSlip = false;
         this.generateError = err?.error?.message || this.lang.t('PAYROLL.MSG.PAYSLIP_FAILED');
         this.cdr.markForCheck();
@@ -341,17 +357,25 @@ export class PayrollListComponent implements OnInit {
     this.selectedSlip = this.payslips[next];
   }
 
-  downloadPayslip(ps: any) {
+  /** Opened synchronously from the click handler; a window opened after an HTTP round-trip is popup-blocked (null). */
+  private openPrintWindow(): Window | null {
+    return window.open('', '_blank');
+  }
+
+  downloadPayslip(ps: any, printWindow: Window | null = this.openPrintWindow()) {
     this.downloading = true;
     this.http.get<any>(`/api/v1/payroll/payslip/${ps.id}/download`).subscribe({
       next: r => {
         this.downloading = false;
         this.cdr.markForCheck();
-        const w = window.open('', '_blank')!;
+        const w = printWindow && !printWindow.closed ? printWindow : window.open('', '_blank');
+        if (!w) { alert(this.lang.t('PAYROLL.MSG.POPUP_BLOCKED')); return; }
+        w.document.open();
         w.document.write(this.buildPayslipHtml(r));
         w.document.close();
       },
       error: err => {
+        printWindow?.close();
         this.downloading = false;
         alert(err?.error?.message || this.lang.t('PAYROLL.MSG.PAYSLIP_FAILED'));
         this.cdr.markForCheck();
@@ -405,7 +429,7 @@ export class PayrollListComponent implements OnInit {
         this.load();
         this.cdr.markForCheck();
       },
-      error: err => { this.editSaving = false; this.editError = err?.error?.message || this.lang.t('MESSAGES.SAVE_FAILED'); }
+      error: err => { this.editSaving = false; this.editError = err?.error?.message || this.lang.t('MESSAGES.SAVE_FAILED'); this.cdr.markForCheck(); }
     });
   }
 
@@ -437,7 +461,8 @@ export class PayrollListComponent implements OnInit {
   approve(p: any) {
     if (!confirm(this.lang.t('PAYROLL.MSG.CONFIRM_APPROVE', { month: this.periodLabel(p.month) }))) return;
     this.http.post(`/api/v1/payroll/${p.id}/approve`, {}).subscribe({
-      next: () => { this.showDetail = false; this.load(); this.cdr.markForCheck(); }
+      next: () => { this.showDetail = false; this.load(); this.loadStats(); this.cdr.markForCheck(); },
+      error: err => { alert(err?.error?.message || this.lang.t('MESSAGES.GENERIC_ERROR')); this.cdr.markForCheck(); }
     });
   }
 
@@ -450,7 +475,8 @@ export class PayrollListComponent implements OnInit {
   confirmReject() {
     if (!this.rejectReason.trim()) return;
     this.http.post(`/api/v1/payroll/${this.selectedPayroll.id}/reject`, { reason: this.rejectReason }).subscribe({
-      next: () => { this.showReject = false; this.load(); this.cdr.markForCheck(); }
+      next: () => { this.showReject = false; this.showDetail = false; this.load(); this.loadStats(); this.cdr.markForCheck(); },
+      error: err => { alert(err?.error?.message || this.lang.t('MESSAGES.GENERIC_ERROR')); this.cdr.markForCheck(); }
     });
   }
 
@@ -478,6 +504,7 @@ export class PayrollListComponent implements OnInit {
       },
       error: err => {
         this.recalculating = false;
+        this.cdr.markForCheck();
         alert(err?.error?.message || this.lang.t('PAYROLL.MSG.REGENERATE_FAILED'));
       }
     });
@@ -497,6 +524,7 @@ export class PayrollListComponent implements OnInit {
       },
       error: err => {
         this.markingPaid = false;
+        this.cdr.markForCheck();
         alert(err?.error?.message ?? this.lang.t('PAYROLL.MSG.MARK_PAID_FAILED'));
       }
     });
@@ -509,7 +537,8 @@ export class PayrollListComponent implements OnInit {
         const a = document.createElement('a');
         a.href = url; a.download = `bank_transfer_${p.month}.csv`; a.click();
         window.URL.revokeObjectURL(url);
-      }
+      },
+      error: () => alert(this.lang.t('MESSAGES.GENERIC_ERROR'))
     });
   }
 
@@ -517,9 +546,8 @@ export class PayrollListComponent implements OnInit {
   editNetPreview(): number {
     const e = this.editForm;
     const earn = (+e.basic_salary||0) + (+e.housing_allowance||0) + (+e.transport_allowance||0) + (+e.other_allowances||0);
-    const ded  = (+e.gosi_employee||0) + (+e.other_deductions||0)
-      + (+this.selectedSlip?.leave_deduction||0) + (+this.selectedSlip?.loan_deduction||0);
-    return Math.max(0, earn - ded);
+    // Same formula as PayrollController::updatePayslip — the leave/loan deductions are editable too.
+    return Math.max(0, earn - this.editDeductionPreview());
   }
 
   editDeductionPreview(): number {
@@ -557,7 +585,7 @@ export class PayrollListComponent implements OnInit {
     return this.lang.t('COMMON.SAR') + ' ' + Number(v).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  canEdit(payroll: any) { return ['draft', 'pending_approval'].includes(payroll?.status); }
+  canEdit(payroll: any) { return this.isHR && ['draft', 'pending_approval'].includes(payroll?.status); }
 
   statusCls(s: string) {
     return ({ draft:'badge-gray', pending_approval:'badge-yellow', approved:'badge-blue', paid:'badge-green', rejected:'badge-red' } as any)[s] || 'badge-gray';

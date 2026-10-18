@@ -43,8 +43,8 @@ class ContractRenewalRequest extends Model
     ];
 
     protected $casts = [
-        'proposed_start_date' => 'date',
-        'proposed_end_date'   => 'date',
+        'proposed_start_date' => 'date:Y-m-d',
+        'proposed_end_date'   => 'date:Y-m-d',
         'proposed_salary'     => 'decimal:2',
         'manager_approved_at' => 'datetime',
         'hr_approved_at'      => 'datetime',

@@ -16,11 +16,11 @@ class Separation extends Model {
         'final_settlement_amount','settlement_paid','settlement_paid_date','settlement_notes',
     ];
     protected $casts = [
-        'request_date'          => 'date',
-        'last_working_day'      => 'date',
-        'notice_period_start'   => 'date',
-        'exit_interview_date'   => 'date',
-        'settlement_paid_date'  => 'date',
+        'request_date'          => 'date:Y-m-d',
+        'last_working_day'      => 'date:Y-m-d',
+        'notice_period_start'   => 'date:Y-m-d',
+        'exit_interview_date'   => 'date:Y-m-d',
+        'settlement_paid_date'  => 'date:Y-m-d',
         'manager_approved_at'   => 'datetime',
         'hr_approved_at'        => 'datetime',
         'rejected_at'           => 'datetime',

@@ -158,6 +158,7 @@
       "LOAD_EMPLOYEES_FAILED": "Unable to load employees.",
       "SELECT_EMPLOYEE_MONTH": "Please select an employee and payroll month.",
       "PAYSLIP_FAILED": "Payslip could not be generated.",
+      "POPUP_BLOCKED": "Your browser blocked the payslip window. Allow pop-ups for this site and try again.",
       "CONFIRM_REMOVE": "Remove {{name}} from this payroll? The employee record will not be deleted.",
       "REMOVE_FAILED": "Employee could not be removed from this payroll.",
       "CONFIRM_APPROVE": "Approve payroll for {{month}}? This cannot be undone.",

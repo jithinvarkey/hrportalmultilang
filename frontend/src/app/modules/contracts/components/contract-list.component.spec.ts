@@ -105,10 +105,15 @@ describe('ContractListComponent — document upload', () => {
     expect(component.uploadingDocId).toBeNull();
   });
 
-  it('opens the document URL on download', () => {
+  it('downloads the document through HttpClient (Bearer auth) as a blob', () => {
     flushInit();
-    spyOn(window, 'open');
-    component.downloadDocument({ id: 5 } as any);
-    expect(window.open).toHaveBeenCalledWith('/api/v1/contracts/5/document', '_blank');
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:x');
+    spyOn(URL, 'revokeObjectURL');
+    component.downloadDocument({ id: 5, reference: 'CTR-5' } as any);
+    const req = httpMock.expectOne('/api/v1/contracts/5/document');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob(['x']));
+    expect(URL.createObjectURL).toHaveBeenCalled();
   });
 });

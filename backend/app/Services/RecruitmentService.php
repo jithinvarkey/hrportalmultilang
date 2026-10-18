@@ -237,6 +237,13 @@ class RecruitmentService
         // Find or create User account
         $isNewUser = false;
         $user = User::where('email', $app->applicant_email)->first();
+        if ($user && $user->roles()->where('name', '<>', 'employee')->exists()) {
+            // Never reset (and hand back) the password of a staff/admin account just because an
+            // applicant record carries the same email address.
+            throw ValidationException::withMessages([
+                'applicant_email' => __('This applicant email belongs to an existing system user and cannot be used for a hire.'),
+            ]);
+        }
         if ($user) {
             // A repeated hire confirmation must issue credentials the applicant can
             // actually use, while continuing to reuse the existing account.

@@ -6,7 +6,7 @@ class PerformanceGoal extends Model {
     use SoftDeletes;
     protected $fillable = ['employee_id','review_id','title','description','category','priority',
         'status','target_value','current_value','unit','start_date','due_date','achieved_at','created_by'];
-    protected $casts = ['start_date'=>'date','due_date'=>'date','achieved_at'=>'date'];
+    protected $casts = ['start_date'=>'date:Y-m-d','due_date'=>'date:Y-m-d','achieved_at'=>'date:Y-m-d'];
     public function employee() { return $this->belongsTo(Employee::class); }
     public function review()   { return $this->belongsTo(PerformanceReview::class, 'review_id'); }
     public function getProgressAttribute(): int {

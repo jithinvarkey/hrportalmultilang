@@ -50,6 +50,60 @@ class EmployeeController extends Controller {
         return (bool) array_intersect($this->userRoles(), $roles);
     }
 
+    private const SORTABLE_COLUMNS = [
+        'created_at', 'first_name', 'last_name', 'email', 'employee_code', 'hire_date', 'status', 'department_id',
+    ];
+
+    /** Fields a non-HR employee may change on their own record. */
+    private const SELF_EDITABLE_FIELDS = [
+        'prefix', 'arabic_name', 'preferred_communication_language', 'phone', 'work_phone',
+        'address', 'city', 'country', 'marital_status',
+        'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relation',
+    ];
+
+    /** Hide pay/bank fields on the employee and on its loaded manager relation. */
+    private function hidePayFields(Employee $employee): void {
+        $employee->makeHidden(Employee::PAY_FIELDS);
+        if ($employee->relationLoaded('manager') && $employee->manager) {
+            $employee->manager->makeHidden(Employee::PAY_FIELDS);
+        }
+    }
+
+    /** Same visibility as index(): HR, self, direct manager, or dept/finance manager of the same department. */
+    private function canViewEmployee(Employee $employee): bool {
+        if ($this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff'])) {
+            return true;
+        }
+
+        $authEmployee = auth()->user()?->employee;
+        if (!$authEmployee) {
+            return false;
+        }
+
+        if ((int) $authEmployee->id === (int) $employee->id || (int) $employee->manager_id === (int) $authEmployee->id) {
+            return true;
+        }
+
+        return $this->hasAnyRoleDB(['department_manager', 'finance_manager'])
+            && $authEmployee->department_id
+            && (int) $authEmployee->department_id === (int) $employee->department_id;
+    }
+
+    /** True when making $managerId the manager of $employeeId would create a reporting loop. */
+    private function managerCreatesCycle(int $employeeId, int $managerId): bool {
+        $seen = [];
+        $current = $managerId;
+        while ($current && !isset($seen[$current])) {
+            if ($current === $employeeId) {
+                return true;
+            }
+            $seen[$current] = true;
+            $current = (int) Employee::withTrashed()->whereKey($current)->value('manager_id');
+        }
+
+        return false;
+    }
+
     public function managerOptions(Request $request): JsonResponse {
         if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff'])) {
             return response()->json(['message' => __('Unauthorized.')], 403);
@@ -147,16 +201,15 @@ class EmployeeController extends Controller {
                             ->orWhere('email', 'like', "%{$request->search}%")
                             ->orWhere('employee_code', 'like', "%{$request->search}%");
                         }))
-                ->orderBy($request->sort_by ?? 'created_at', $request->sort_dir ?? 'desc');
+                ->orderBy(
+                    in_array($request->sort_by, self::SORTABLE_COLUMNS, true) ? $request->sort_by : 'created_at',
+                    strtolower((string) $request->sort_dir) === 'asc' ? 'asc' : 'desc'
+                );
 
         $paginator = $query->paginate((int) ($request->per_page ?? 15));
 
         if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager'])) {
-            $paginator->getCollection()->each->makeHidden([
-                'salary', 'housing_allowance', 'transport_allowance',
-                'other_allowances', 'mobile_allowance', 'food_allowance',
-                'bank_name', 'bank_account',
-            ]);
+            $paginator->getCollection()->each(fn (Employee $employee) => $this->hidePayFields($employee));
         }
 
         return response()->json([
@@ -272,10 +325,16 @@ class EmployeeController extends Controller {
             return response()->json(['message' => __('Unauthorized.')], 403);
         }
 
-        $request->validate([
+        if ($request->filled('extension') && !$this->hasAnyRoleDB(['super_admin', 'hr_manager'])) {
+            return response()->json(['message' => __('Only an HR manager or system administrator can update the telephone extension.')], 403);
+        }
+
+        $validated = $request->validate([
+            'prefix' => 'nullable|string|max:10',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'email' => 'required|email|unique:employees,email',
+            // A login user is created with the same email, so it must be free in users too.
+            'email' => 'required|email|unique:employees,email|unique:users,email',
             'hire_date' => 'required|date',
             'department_id' => 'nullable|exists:departments,id',
             'unit_id' => 'nullable|exists:units,id',
@@ -290,9 +349,33 @@ class EmployeeController extends Controller {
             'years_of_experience' => 'nullable|integer|min:0',
             'dob' => 'nullable|date',
             'preferred_communication_language' => ['nullable', \Illuminate\Validation\Rule::in(\App\Support\Locale\SupportedLocales::ALL)],
+            // Same rules as update() for the remaining form fields, so "Add employee" saves them too.
+            'arabic_name' => 'nullable|string|max:200',
+            'phone' => 'nullable|string|max:30',
+            'work_phone' => 'nullable|string|max:30',
+            'extension' => 'nullable|string|max:10',
+            'gender' => 'nullable|in:male,female,other',
+            'marital_status' => 'nullable|in:single,married,divorced,widowed',
+            'nationality' => 'nullable|string|max:100',
+            'national_id' => 'nullable|string|max:50',
+            'address' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:100',
+            'country' => 'nullable|string|max:100',
+            'mode_of_employment' => 'nullable|in:direct,agency,outsourced,secondment',
+            'housing_allowance' => 'nullable|numeric|min:0|max:9999999.99',
+            'transport_allowance' => 'nullable|numeric|min:0|max:9999999.99',
+            'mobile_allowance' => 'nullable|numeric|min:0|max:9999999.99',
+            'food_allowance' => 'nullable|numeric|min:0|max:9999999.99',
+            'other_allowances' => 'nullable|numeric|min:0|max:9999999.99',
+            'bank_name' => 'nullable|string|max:100',
+            'bank_account' => 'nullable|string|max:50',
+            'emergency_contact_name' => 'nullable|string|max:100',
+            'emergency_contact_phone' => 'nullable|string|max:30',
+            'emergency_contact_relation' => 'nullable|string|max:50',
+            'notes' => 'nullable|string|max:2000',
         ]);
 
-        return DB::transaction(function () use ($request): JsonResponse {
+        return DB::transaction(function () use ($request, $validated): JsonResponse {
                     // Unique temp password: date + random suffix
                     $tempPassword = 'Hrms@' . now()->format('dmy') . strtoupper(substr(md5(uniqid('', true)), 0, 6)) . '!';
 
@@ -305,16 +388,7 @@ class EmployeeController extends Controller {
 
                     $code = $this->service->generateCode();
 
-                    $employeeData = $request->only([
-                        'first_name', 'last_name', 'email', 'phone', 'hire_date',
-                        'department_id', 'unit_id', 'designation_id', 'manager_id', 'employment_type',
-                        'status', 'salary', 'confirmation_date', 'termination_date',
-                        'probation_period', 'years_of_experience', 'dob',
-                        'nationality', 'gender', 'marital_status',
-                        'housing_allowance', 'transport_allowance', 'mobile_allowance',
-                        'food_allowance', 'other_allowances', 'mode_of_employment',
-                        'preferred_communication_language',
-                    ]);
+                    $employeeData = $validated;
                     // Missing/empty language falls back to the column default ('en').
                     if (empty($employeeData['preferred_communication_language'])) {
                         unset($employeeData['preferred_communication_language']);
@@ -347,16 +421,16 @@ class EmployeeController extends Controller {
                         'dependents',
                     ])->findOrFail($id);
 
+            if (!$this->canViewEmployee($employee)) {
+                return response()->json(['message' => __('Unauthorized.')], 403);
+            }
+
             if ($this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff']) || (int) auth()->user()?->employee?->id === $employee->id) {
                 $employee->makeVisible(['national_id', 'bank_account']);
             }
 
             if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager'])) {
-                $employee->makeHidden([
-                    'salary', 'housing_allowance', 'transport_allowance',
-                    'other_allowances', 'mobile_allowance', 'food_allowance',
-                    'bank_name', 'bank_account',
-                ]);
+                $this->hidePayFields($employee);
             }
 
             return response()->json(['employee' => $employee]);
@@ -639,8 +713,9 @@ class EmployeeController extends Controller {
 
     public function update(Request $request, int $id): JsonResponse {
         $employee = Employee::findOrFail($id);
+        $isHr = $this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff']);
 
-        if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff']) && (int) auth()->user()?->employee?->id !== $employee->id) {
+        if (!$isHr && (int) auth()->user()?->employee?->id !== $employee->id) {
             return response()->json(['message' => __('Unauthorized.')], 403);
         }
 
@@ -654,7 +729,8 @@ class EmployeeController extends Controller {
             'last_name' => 'sometimes|required|string|max:100',
             'arabic_name' => 'sometimes|nullable|string|max:200',
             'preferred_communication_language' => ['sometimes', 'nullable', \Illuminate\Validation\Rule::in(\App\Support\Locale\SupportedLocales::ALL)],
-            'email' => 'sometimes|required|email|unique:employees,email,' . $id,
+            'email' => ['sometimes', 'required', 'email', 'unique:employees,email,' . $id,
+                \Illuminate\Validation\Rule::unique('users', 'email')->ignore($employee->user_id)],
             'phone' => 'sometimes|nullable|string|max:30',
             'work_phone' => 'sometimes|nullable|string|max:30',
             'extension' => 'sometimes|nullable|string|max:10',
@@ -696,6 +772,19 @@ class EmployeeController extends Controller {
             unset($data['preferred_communication_language']);
         }
 
+        // An employee editing their own record may only change personal contact details,
+        // never salary, status, department, manager, bank or identity fields.
+        if (!$isHr) {
+            $data = array_intersect_key($data, array_flip(self::SELF_EDITABLE_FIELDS));
+        }
+
+        if (!empty($data['manager_id']) && $this->managerCreatesCycle($employee->id, (int) $data['manager_id'])) {
+            return response()->json([
+                'message' => __('Manager assignment would create a reporting cycle.'),
+                'errors' => ['manager_id' => [__('Manager assignment would create a reporting cycle.')]],
+            ], 422);
+        }
+
         $employee->update($data);
 
         if ($employee->user && ($request->has('first_name') || $request->has('last_name') || $request->has('email'))) {
@@ -717,6 +806,9 @@ class EmployeeController extends Controller {
      * FIX: message now ends with period to match test contract.
      */
     public function destroy(int $id): JsonResponse {
+        if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff'])) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
         $employee = Employee::findOrFail($id);
         $employee->update(['status' => 'terminated', 'termination_date' => now()]);
         $employee->delete();
@@ -728,10 +820,13 @@ class EmployeeController extends Controller {
     // ── Avatar / Documents / Export ───────────────────────────────────────
 
     public function uploadAvatar(Request $request, int $id): JsonResponse {
-        $request->validate(['avatar' => 'required|image|max:2048']);
         $employee = Employee::findOrFail($id);
+        if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff']) && (int) auth()->user()?->employee?->id !== $employee->id) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+        $request->validate(['avatar' => 'required|image|max:2048']);
         if ($employee->avatar)
-            Storage::delete($employee->avatar);
+            Storage::disk('public')->delete($employee->avatar);
         $path = $request->file('avatar')->store('avatars', 'public');
         $employee->update(['avatar' => $path]);
         return response()->json(['avatar_url' => asset('storage/' . $path)]);
@@ -830,6 +925,10 @@ class EmployeeController extends Controller {
     }
 
     public function export(Request $request): mixed {
+        // The CSV includes salaries — same audience as the details report.
+        if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff'])) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
         return $this->service->export($request->all());
     }
 

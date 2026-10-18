@@ -22,9 +22,11 @@ class AuthApiTest extends TestCase
     /** @test */
     public function user_can_login_with_valid_credentials(): void
     {
+        // OTP-exempt accounts receive the token directly; others get an OTP challenge first.
         User::factory()->create([
-            'email'    => 'hr@hrms.com',
-            'password' => Hash::make('Secret@123'),
+            'email'      => 'hr@hrms.com',
+            'password'   => Hash::make('Secret@123'),
+            'otp_exempt' => true,
         ]);
 
         $this->postJson('/api/v1/auth/login', [

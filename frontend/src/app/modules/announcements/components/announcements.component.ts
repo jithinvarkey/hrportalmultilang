@@ -46,6 +46,10 @@ export class AnnouncementsComponent implements OnInit {
   loading = false;
   announcements: Announcement[] = [];
   categories: any[] = [];
+  /** The API paginates (15 per page); further pages are appended with "Load more". */
+  currentPage = 1;
+  lastPage = 1;
+  loadingMore = false;
 
   // Filters
   filterCategoryId: number | null = null;
@@ -66,7 +70,8 @@ export class AnnouncementsComponent implements OnInit {
   // Targeting data
   departments: any[] = [];
   employees: any[] = [];
-  readonly roleOptions = ['employee', 'department_manager', 'hr_staff', 'hr_manager', 'finance', 'super_admin'];
+  // Must be real role names (the backend matches them against model_has_roles); there is no 'finance' role.
+  readonly roleOptions = ['employee', 'department_manager', 'hr_staff', 'hr_manager', 'finance_manager', 'super_admin'];
 
   // Engagement stats drawer
   showStats = false;
@@ -137,16 +142,29 @@ export class AnnouncementsComponent implements OnInit {
     });
   }
 
-  load(): void {
-    this.loading = true;
-    const params: any = {};
+  load(page = 1): void {
+    const append = page > 1;
+    if (append) this.loadingMore = true; else this.loading = true;
+    const params: any = { page };
     if (this.filterCategoryId) params.category_id = this.filterCategoryId;
     if (this.search.trim()) params.search = this.search.trim();
 
     this.http.get<any>(this.api, { params }).subscribe({
-      next: r => { this.announcements = r?.data || []; this.loading = false; this.cdr.markForCheck(); },
-      error: () => { this.loading = false; this.cdr.markForCheck(); },
+      next: r => {
+        const rows = r?.data || [];
+        this.announcements = append ? [...this.announcements, ...rows] : rows;
+        this.currentPage = r?.current_page ?? page;
+        this.lastPage = r?.last_page ?? this.currentPage;
+        this.loading = false; this.loadingMore = false;
+        this.cdr.markForCheck();
+      },
+      error: () => { this.loading = false; this.loadingMore = false; this.cdr.markForCheck(); },
     });
+  }
+
+  loadMore(): void {
+    if (this.loadingMore || this.currentPage >= this.lastPage) return;
+    this.load(this.currentPage + 1);
   }
 
   onFilterChange(): void { this.load(); }
@@ -166,8 +184,10 @@ export class AnnouncementsComponent implements OnInit {
         target_roles: (a as any).target_roles ?? [],
         target_employee_ids: (a as any).target_employee_ids ?? [],
         is_pinned: a.is_pinned, is_published: a.is_published,
-        scheduled_at: a.scheduled_at ? a.scheduled_at.substring(0, 16) : '',
-        expires_at: a.expires_at ?? '',
+        // The API serialises dates as UTC ISO strings; the inputs need local wall-clock values,
+        // otherwise each save shifts scheduled_at by -3h and expires_at by -1 day (Asia/Riyadh).
+        scheduled_at: this.toLocalInput(a.scheduled_at, true),
+        expires_at: this.toLocalInput(a.expires_at, false),
       };
     } else {
       this.editId = null;
@@ -249,7 +269,18 @@ export class AnnouncementsComponent implements OnInit {
   }
 
   downloadAttachment(a: Announcement): void {
-    window.open(`${this.api}/${a.id}/attachment`, '_blank');
+    // The API authenticates with a Bearer header, which window.open() cannot send.
+    this.http.get(`${this.api}/${a.id}/attachment`, { responseType: 'blob' }).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = a.attachment_name || 'attachment';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      },
+      error: () => this.toast(this.lang.t('ANNOUNCEMENTS.MSG.PREVIEW_UNAVAILABLE')),
+    });
   }
 
   viewAttachment(a: Announcement): void {
@@ -498,6 +529,17 @@ export class AnnouncementsComponent implements OnInit {
     return this.showArabic(a) && (a.body_ar || '').trim() ? a.body_ar! : a.body;
   }
 
+
+  /** yyyy-MM-dd (or yyyy-MM-ddTHH:mm) in the browser's timezone for date / datetime-local inputs. */
+  private toLocalInput(value: string | null | undefined, withTime: boolean): string {
+    if (!value) return '';
+    if (!withTime && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return withTime ? value.substring(0, 16) : value.substring(0, 10);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const ymd = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    return withTime ? `${ymd}T${pad(d.getHours())}:${pad(d.getMinutes())}` : ymd;
+  }
 
   private toast(msg: string): void {
     this.successMsg = msg; this.cdr.markForCheck();

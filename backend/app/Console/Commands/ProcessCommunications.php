@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Announcement;
+use App\Models\AppNotification;
 use App\Models\Employee;
 use App\Models\Policy;
 use App\Services\Communications\NotificationService;
@@ -32,7 +33,10 @@ class ProcessCommunications extends Command
 
     private function publishScheduledAnnouncements(NotificationService $notifications): void
     {
+        // Only announcements that were never published: one HR published and later
+        // unpublished (published_at already set) must not be re-published and re-sent.
         $due = Announcement::where('is_published', false)
+            ->whereNull('published_at')
             ->whereNotNull('scheduled_at')
             ->where('scheduled_at', '<=', now())
             ->get();
@@ -79,6 +83,15 @@ class ProcessCommunications extends Command
             ->pluck('id');
 
         foreach ($due as $policy) {
+            // This command runs every minute; remind at most once per policy per day.
+            $alreadyRemindedToday = AppNotification::where('type', 'policy_review')
+                ->where('ref_id', $policy->id)
+                ->where('created_at', '>=', now()->startOfDay())
+                ->exists();
+            if ($alreadyRemindedToday) {
+                continue;
+            }
+
             $notifications->notifyMany(
                 $hrEmployeeIds, 'policy_review',
                 "Policy review due: {$policy->title}",

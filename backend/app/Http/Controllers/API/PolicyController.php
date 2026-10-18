@@ -437,13 +437,19 @@ class PolicyController extends Controller
 
         $oldVersion = $policy->version;
         $wasPublished = (bool) $policy->is_published;
-        $audience = $this->normalizeAudience($request);
-        if ($audience['audience_type'] === 'departments' && empty($audience['target_department_ids'])) {
+        // Only touch the audience when the request actually sends it; a partial update
+        // (e.g. publish toggle) must not silently widen a department-targeted policy to "all".
+        $audienceSent = $request->has('audience_type') || $request->has('target_department_ids');
+        $audience = $audienceSent ? $this->normalizeAudience($request) : null;
+        if ($audience && $audience['audience_type'] === 'departments' && empty($audience['target_department_ids'])) {
             return response()->json(['message' => __('Select at least one department, or choose all departments.')], 422);
         }
+        unset($data['audience_type'], $data['target_department_ids']);
         $policy->fill($data);
-        $policy->audience_type = $audience['audience_type'];
-        $policy->target_department_ids = $audience['target_department_ids'];
+        if ($audience) {
+            $policy->audience_type = $audience['audience_type'];
+            $policy->target_department_ids = $audience['target_department_ids'];
+        }
         if ($request->has('requires_acknowledgement')) $policy->requires_acknowledgement = $request->boolean('requires_acknowledgement');
         if ($request->has('mandatory'))                $policy->mandatory = $request->boolean('mandatory');
         if ($request->has('is_published'))             $policy->is_published = $request->boolean('is_published');

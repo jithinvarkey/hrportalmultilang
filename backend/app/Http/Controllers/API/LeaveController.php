@@ -95,16 +95,17 @@ class LeaveController extends Controller {
     }
 
     private function leaveTypeVisibleForEmployee(LeaveType $leaveType, $employee): bool {
-        if (!$employee?->department_id) {
-            return false;
-        }
-
         $hasVisibilityConfig = DB::table('leave_type_department_visibility')
                 ->where('leave_type_id', $leaveType->id)
                 ->exists();
 
+        // Types without a department restriction are available to everyone, including staff with no department.
         if (!$hasVisibilityConfig) {
             return true;
+        }
+
+        if (!$employee?->department_id) {
+            return false;
         }
 
         return DB::table('leave_type_department_visibility')
@@ -121,6 +122,29 @@ class LeaveController extends Controller {
 
         $leave->loadMissing('employee');
         return $leave->employee && (int) $leave->employee->user_id === (int) $user->id;
+    }
+
+    private function isHRAdmin(): bool {
+        return rescue(fn() => $this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff']), false, false);
+    }
+
+    /** HR sees everyone; others see themselves, and managers also see their direct reports. */
+    private function canAccessEmployeeLeave($employeeId): bool {
+        if ($this->isHRAdmin()) {
+            return true;
+        }
+
+        $own = auth()->user()?->employee;
+        if (!$own) {
+            return false;
+        }
+
+        if ((int) $employeeId === (int) $own->id) {
+            return true;
+        }
+
+        return rescue(fn() => $this->hasAnyRoleDB(['department_manager', 'finance_manager']), false, false)
+            && Employee::whereKey((int) $employeeId)->where('manager_id', $own->id)->exists();
     }
 
     private function leaveRequestScope($user, bool $isHRAdmin, bool $isMgr) {
@@ -306,10 +330,8 @@ class LeaveController extends Controller {
         $user = auth()->user();
 
         // ── Role check via raw DB (no Spatie, no guard issues) ────────────────
-        $userRoles = rescue(fn() => DB::table('model_has_roles')
-                        ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-                        ->where('model_has_roles.model_id', $user->id)
-                        ->pluck('roles.name')->toArray(), [], false);
+        // Same resolution as stats()/approve() so a CEO's list matches their counts.
+        $userRoles = rescue(fn() => $this->userRoles(), [], false);
 
         $isHRAdmin = (bool) array_intersect($userRoles, ['super_admin', 'hr_manager', 'hr_staff']);
         $isMgr = (bool) array_intersect($userRoles, ['department_manager', 'finance_manager']);
@@ -456,6 +478,10 @@ class LeaveController extends Controller {
         $leaveType = LeaveType::findOrFail($request->leave_type_id);
         $employee = auth()->user()->employee;
 
+        if (!$employee) {
+            return response()->json(['message' => __('No employee record linked to your account.')], 422);
+        }
+
         if (!$this->leaveTypeVisibleForEmployee($leaveType, $employee)) {
             return response()->json(['message' => __(':type is not available for your department.', ['type' => $leaveType->name])], 403);
         }
@@ -577,9 +603,14 @@ class LeaveController extends Controller {
         }
 
         $allocation = $this->allocationForLeaveDate($employee, $leaveType, Carbon::parse($request->end_date));
+        $projected = $allocation && $this->isAnnualLeaveType($leaveType)
+            ? $this->projectedAnnualAllocation($allocation, Carbon::parse($request->end_date))
+            : null;
+        // Annual projection excludes requests still awaiting approval; reserve them here
+        // (non-annual remaining_days already nets out pending_days).
         $availableDays = $allocation
-            ? ($this->isAnnualLeaveType($leaveType)
-                ? (float) $this->projectedAnnualAllocation($allocation, Carbon::parse($request->end_date))->remaining_days
+            ? ($projected
+                ? round((float) $projected->remaining_days - (float) $projected->pending_days, 2)
                 : (float) $allocation->remaining_days)
             : null;
 
@@ -772,6 +803,9 @@ class LeaveController extends Controller {
 
     public function show($id) {
         $request = LeaveRequest::with(['employee', 'leaveType', 'approver', 'managerApprover', 'ticketPassengers'])->findOrFail($id);
+        if (!$this->isOwnLeaveRequest($request, auth()->user()) && !$this->canAccessEmployeeLeave($request->employee_id)) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
         $request->setAttribute('activities', $this->activityService->timeline($request));
         return response()->json(['request' => $request]);
     }
@@ -938,6 +972,15 @@ class LeaveController extends Controller {
         if (!in_array($leave->status, ['pending', 'manager_approved', 'approved'])) {
             return response()->json(['message' => __('Cannot cancel this leave')], 422);
         }
+        // HR may cancel any request; an employee only their own, before final approval.
+        if (!$this->isHRAdmin()) {
+            if (!$this->isOwnLeaveRequest($leave, auth()->user())) {
+                return response()->json(['message' => __('Unauthorized.')], 403);
+            }
+            if ($leave->status === 'approved') {
+                return response()->json(['message' => __('Cannot cancel this leave')], 422);
+            }
+        }
         $oldStatus = $leave->status;
         if (!$leave->leaveType || !$this->isAnnualLeaveType($leave->leaveType)) {
             $this->service->updateLeaveBalance($leave, 'cancel');
@@ -963,6 +1006,10 @@ class LeaveController extends Controller {
     }
 
     public function balance(Request $request, $empId) {
+        if (!$this->canAccessEmployeeLeave($empId)) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
         if (!$request->query('as_of')) {
             $allocations = LeaveAllocation::with(['leaveType', 'employee'])
                     ->where('employee_id', $empId)
@@ -1077,9 +1124,10 @@ class LeaveController extends Controller {
         });
     }
 
-    private function overlappingLeaveRequest(int $employeeId, string $startDate, string $endDate): ?LeaveRequest {
+    private function overlappingLeaveRequest(int $employeeId, string $startDate, string $endDate, ?int $excludeId = null): ?LeaveRequest {
         return LeaveRequest::with('leaveType')
             ->where('employee_id', $employeeId)
+            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
             ->whereIn('status', ['pending', 'manager_approved', 'approved'])
             ->whereDate('start_date', '<=', $endDate)
             ->whereDate('end_date', '>=', $startDate)
@@ -1096,10 +1144,15 @@ class LeaveController extends Controller {
             return $query->where('year', $date->year)->first();
         }
 
-        return (clone $query)
-            ->whereDate('accrual_year_start', '<=', $date->toDateString())
-            ->whereDate(DB::raw('DATE_ADD(accrual_year_start, INTERVAL 1 YEAR)'), '>', $date->toDateString())
-            ->first()
+        $inYear = (clone $query)->whereDate('accrual_year_start', '<=', $date->toDateString());
+        if (DB::getDriverName() === 'mysql') {
+            $inYear->whereDate(DB::raw('DATE_ADD(accrual_year_start, INTERVAL 1 YEAR)'), '>', $date->toDateString());
+        } else {
+            // Same window for databases without DATE_ADD (the SQLite test suite).
+            $inYear->whereDate('accrual_year_start', '>', $date->copy()->subYearNoOverflow()->toDateString());
+        }
+
+        return $inYear->first()
             ?: $query->where('year', $this->annualPeriodStart($employee, $date)->year)->first();
     }
 
@@ -1346,10 +1399,55 @@ class LeaveController extends Controller {
     }
 
     public function update(Request $request, $id) {
-        $leave = LeaveRequest::findOrFail($id);
+        $leave = LeaveRequest::with('leaveType')->findOrFail($id);
+        if (!$this->isOwnLeaveRequest($leave, auth()->user()) && !$this->isHRAdmin()) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
         if ($leave->status !== 'pending')
             return response()->json(['message' => __('Cannot edit non-pending leave')], 422);
-        $leave->update($request->only(['start_date', 'end_date', 'reason']));
+
+        $request->validate([
+            'start_date' => 'sometimes|date',
+            'end_date' => 'sometimes|date',
+            'reason' => 'sometimes|string',
+        ]);
+
+        $changes = $request->only(['start_date', 'end_date', 'reason']);
+        $datesChanged = $request->has('start_date') || $request->has('end_date');
+
+        if ($datesChanged && !$leave->leaveType?->is_hourly) {
+            $start = $request->input('start_date', optional($leave->start_date)->toDateString());
+            $end = $leave->is_half_day ? $start : $request->input('end_date', optional($leave->end_date)->toDateString());
+            if (Carbon::parse($end)->lt(Carbon::parse($start))) {
+                return response()->json(['message' => __('Selected dates do not contain working days after excluding weekends and holidays.')], 422);
+            }
+
+            $overlap = $this->overlappingLeaveRequest($leave->employee_id, $start, $end, $leave->id);
+            if ($overlap) {
+                return response()->json([
+                    'message' => __('You already have a :type leave request from :from to :to with status :status. Please choose different dates.', [
+                        'type' => $overlap->leaveType?->name ?? __('leave'),
+                        'from' => Carbon::parse($overlap->start_date)->toDateString(),
+                        'to' => Carbon::parse($overlap->end_date)->toDateString(),
+                        'status' => \App\Support\Locale\StatusLabel::for($overlap->status),
+                    ]),
+                ], 422);
+            }
+
+            $workingDays = $this->service->calculateWorkingDays($start, $end);
+            $totalDays = $leave->is_half_day ? ($workingDays > 0 ? 0.5 : 0) : $workingDays;
+            if ($totalDays <= 0) {
+                return response()->json(['message' => __('Selected dates do not contain working days after excluding weekends and holidays.')], 422);
+            }
+
+            // Release the old pending reservation, then reserve the recalculated days.
+            $this->service->updateLeaveBalance($leave, 'cancel');
+            $leave->update(array_merge($changes, ['start_date' => $start, 'end_date' => $end, 'total_days' => $totalDays]));
+            $this->service->updateLeaveBalance($leave->fresh('leaveType'), 'submit');
+        } else {
+            // Hourly excuses are re-validated on create only; just the reason is editable here.
+            $leave->update($leave->leaveType?->is_hourly ? $request->only(['reason']) : $changes);
+        }
         $this->logLeaveActivity($leave, 'updated', 'Leave request details updated.', [
             'to_status' => $leave->status,
             'notes' => $request->input('reason'),
@@ -1358,6 +1456,10 @@ class LeaveController extends Controller {
     }
 
     public function runAccrual() {
+        if (!$this->isHRAdmin()) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
         try {
             Artisan::call('leave:accrue');
             $output = Artisan::output();
@@ -1874,6 +1976,10 @@ class LeaveController extends Controller {
 
         if (!$empId)
             return response()->json(['message' => __('Employee not found')], 404);
+
+        if (!$this->canAccessEmployeeLeave($empId)) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
 
         return response()->json($this->service->monthlyExcuseUsage($empId, $year, $month, $leaveTypeId));
     }

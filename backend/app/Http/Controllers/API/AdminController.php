@@ -337,10 +337,10 @@ class AdminController extends Controller
     {
         $query = User::with(['roles', 'employee.department', 'employee.designation'])
             ->when($request->role,   fn ($q) => $q->role($request->role))
-            ->when($request->search, fn ($q) =>
-                $q->where('name', 'like', "%{$request->search}%")
+            ->when($request->search, fn ($q) => $q->where(fn ($s) =>
+                $s->where('name', 'like', "%{$request->search}%")
                   ->orWhere('email', 'like', "%{$request->search}%")
-            )
+            ))
             ->orderBy('name');
 
         return response()->json($query->paginate(20));
@@ -368,7 +368,8 @@ class AdminController extends Controller
             'name'     => $request->name,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
-            'otp_exempt' => (bool) $request->boolean('otp_exempt'),
+            // OTP exemption is a super-admin decision (see updateUserOtpExemption()).
+            'otp_exempt' => $this->isSuperAdmin() && $request->boolean('otp_exempt'),
         ]);
         $user->assignRole($request->role);
 
@@ -388,7 +389,7 @@ class AdminController extends Controller
             'otp_exempt' => 'sometimes|boolean',
         ]);
 
-        $user->update($request->only('name', 'email', 'otp_exempt'));
+        $user->update($request->only($this->isSuperAdmin() ? ['name', 'email', 'otp_exempt'] : ['name', 'email']));
 
         if ($request->filled('password')) {
             $user->update(['password' => Hash::make($request->password)]);

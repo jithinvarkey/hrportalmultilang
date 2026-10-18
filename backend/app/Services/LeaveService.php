@@ -156,7 +156,7 @@ class LeaveService {
         // Overlap check
         $overlap = LeaveRequest::where('employee_id', $employee->id)
                 ->where('leave_type_id', $leaveType->id)
-                ->whereIn('status', ['pending', 'approved'])
+                ->whereIn('status', ['pending', 'manager_approved', 'approved'])
                 ->where('start_date', $date)
                 ->when($excludeRequestId, fn($q) => $q->where('id', '!=', $excludeRequestId))
                 ->exists();
@@ -181,7 +181,7 @@ class LeaveService {
 
         $usedThisMonth = LeaveRequest::where('employee_id', $employee->id)
                 ->where('leave_type_id', $leaveType->id)
-                ->whereIn('status', ['pending', 'approved'])
+                ->whereIn('status', ['pending', 'manager_approved', 'approved'])
                 ->whereBetween('start_date', [$monthStart, $monthEnd])
                 ->when($excludeRequestId, fn($q) => $q->where('id', '!=', $excludeRequestId))
                 ->sum('total_hours');
@@ -225,7 +225,7 @@ class LeaveService {
 
         $used = LeaveRequest::where('employee_id', $empId)
                 ->where('leave_type_id', $leaveType?->id)
-                ->whereIn('status', ['pending', 'approved'])
+                ->whereIn('status', ['pending', 'manager_approved', 'approved'])
                 ->whereBetween('start_date', [$monthStart, $monthEnd])
                 ->sum('total_hours');
 

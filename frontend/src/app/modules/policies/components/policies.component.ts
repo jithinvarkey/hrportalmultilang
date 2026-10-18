@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, HostListener, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
@@ -38,7 +38,7 @@ type PolicyAction = 'open' | 'report' | 'edit' | 'publish' | 'delete';
   styleUrls:       ['./policies.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PoliciesComponent implements OnInit {
+export class PoliciesComponent implements OnInit, OnDestroy {
 
   @ViewChild('pdfPages') private pdfPagesContainer?: ElementRef<HTMLDivElement>;
 
@@ -61,6 +61,8 @@ export class PoliciesComponent implements OnInit {
   pdfError = '';
   pdfPageCount = 0;
   private previewGeneration = 0;
+  /** pdf.js loading task of the open preview; destroyed on close so the document and its worker data are freed. */
+  private pdfLoadingTask: any = null;
 
   // Form (HR)
   showForm = false;
@@ -206,7 +208,11 @@ export class PoliciesComponent implements OnInit {
     try {
       const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf.mjs');
       pdfjs.GlobalWorkerOptions.workerSrc = '/assets/pdfjs/pdf.worker.min.mjs?v=5.4.624';
-      const pdfDocument = await pdfjs.getDocument({ data: await blob.arrayBuffer() }).promise;
+      const data = await blob.arrayBuffer();
+      if (generation !== this.previewGeneration) return;
+      const loadingTask = pdfjs.getDocument({ data });
+      this.pdfLoadingTask = loadingTask;
+      const pdfDocument = await loadingTask.promise;
       if (generation !== this.previewGeneration) return;
 
       this.pdfPageCount = pdfDocument.numPages;
@@ -260,6 +266,10 @@ export class PoliciesComponent implements OnInit {
 
   private clearPolicyPreview(): void {
     this.previewGeneration++;
+    if (this.pdfLoadingTask) {
+      this.pdfLoadingTask.destroy?.().catch?.(() => {});
+      this.pdfLoadingTask = null;
+    }
     this.pdfLoading = false;
     this.pdfError = '';
     this.pdfPageCount = 0;
@@ -298,7 +308,15 @@ export class PoliciesComponent implements OnInit {
   }
 
   downloadAttachment(p: Policy): void {
-    window.open(`${this.api}/${p.id}/attachment`, '_blank');
+    // The API authenticates with a Bearer header, which window.open() cannot send.
+    this.http.get(`${this.api}/${p.id}/attachment`, { responseType: 'blob' }).subscribe({
+      next: blob => this.saveBlob(blob, p.attachment_name || `policy-${p.id}.pdf`),
+      error: () => this.toast(this.lang.t('POLICIES.MSG.PREVIEW_UNAVAILABLE')),
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.clearPolicyPreview();
   }
 
   private blankCategoryForm(): any {
@@ -375,8 +393,9 @@ export class PoliciesComponent implements OnInit {
       this.editId = p.id;
       this.form = {
         category_id: p.category?.id ?? null, title: p.title, content: p.content || '',
-        version: p.version, effective_date: p.effective_date ?? '',
-        review_date: p.review_date ?? '', mandatory: p.mandatory ?? false,
+        // Date casts arrive as UTC ISO strings (previous day 21:00Z in Asia/Riyadh); the inputs need yyyy-MM-dd.
+        version: p.version, effective_date: this.dateInputValue(p.effective_date),
+        review_date: this.dateInputValue(p.review_date), mandatory: p.mandatory ?? false,
         requires_acknowledgement: p.requires_acknowledgement, is_published: p.is_published,
         audience_type: p.audience_type || 'all',
         target_department_ids: (p.target_department_ids || []).map(Number),
@@ -603,6 +622,15 @@ export class PoliciesComponent implements OnInit {
     return label !== key ? label : raw;
   }
 
+
+  private dateInputValue(value: string | null | undefined): string {
+    if (!value) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value.substring(0, 10);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
 
   private toast(msg: string): void {
     this.successMsg = msg; this.cdr.markForCheck();

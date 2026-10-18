@@ -37,12 +37,13 @@ class LoanService {
         $startDate = $loan->first_installment_date ? Carbon::parse($loan->first_installment_date) : Carbon::parse($loan->disbursed_date)->addMonth()->startOfMonth();
 
         $amount = $loan->approved_amount ?? $loan->requested_amount;
-        $installAmt = $loan->monthly_installment ?? $this->calculateMonthlyInstallment($amount, $loan->installments);
+        $count = (int) $loan->installments;
+        $installAmt = $loan->monthly_installment ?? $this->calculateMonthlyInstallment($amount, $count);
 
         $rows = [];
-        for ($i = 1; $i <= $loan->installments; $i++) {
+        for ($i = 1; $i <= $count; $i++) {
             // Last installment gets the rounding remainder
-            $installAmount = ($i === $loan->installments) ? round($amount - ($installAmt * ($loan->installments - 1)), 2) : $installAmt;
+            $installAmount = ($i === $count) ? round($amount - ($installAmt * ($count - 1)), 2) : $installAmt;
 
             $rows[] = [
                 'loan_id' => $loan->id,
@@ -126,14 +127,22 @@ class LoanService {
 
         $userRoles = rescue(fn() => DB::table('model_has_roles')
                         ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-                        ->where('model_has_roles.model_id', $user->id)
+                        ->where('model_has_roles.model_id', $user?->id)
                         ->pluck('roles.name')
                         ->toArray(), [], false);
 
+        // CEO is an access alias of HR Manager (see User::hasRole).
+        if (in_array('ceo', $userRoles, true)) {
+            $userRoles[] = 'hr_manager';
+        }
+
+        // Counts follow the same visibility as the loan list (LoanController::index): HR, HR staff and Finance
+        // see every loan, a department manager sees their direct reports, everyone else only their own loans.
         $isHRAdmin = (bool) array_intersect($userRoles, [
                     'super_admin',
                     'hr_manager',
-                    'hr_staff'
+                    'hr_staff',
+                    'finance_manager',
         ]);
 
         $isMgr = in_array('department_manager', $userRoles);
@@ -141,19 +150,14 @@ class LoanService {
         $baseQuery = Loan::query();
 
         if (!$isHRAdmin) {
+            $employee = $user?->employee;
 
-            if ($isMgr && $user->employee) {
-
-                $deptId = $user->employee->department_id;
-
-                $baseQuery->whereHas('employee', function ($q) use ($deptId, $user) {
-
-                    $q->where('department_id', $deptId)
-                            ->where('id', '!=', $user->employee->id); // exclude manager himself
-                });
-            } elseif ($user->employee) {
-
-                $baseQuery->where('employee_id', $user->employee->id);
+            if ($isMgr && $employee) {
+                $baseQuery->whereIn('employee_id', $employee->subordinates()->pluck('id'));
+            } elseif ($employee) {
+                $baseQuery->where('employee_id', $employee->id);
+            } else {
+                $baseQuery->whereRaw('1 = 0');
             }
         }
 

@@ -262,6 +262,41 @@ class PayrollApiTest extends TestCase
     }
 
     /** @test */
+    public function finance_manager_can_view_payroll_but_not_run_or_edit_it(): void
+    {
+        $payroll = Payroll::factory()->create(['status' => 'approved']);
+
+        $this->actingAs($this->financeManager, 'sanctum')->getJson('/api/v1/payroll')->assertOk();
+        $this->actingAs($this->financeManager, 'sanctum')->getJson("/api/v1/payroll/{$payroll->id}")->assertOk();
+
+        // Running, regenerating and reopening payroll stay with HR.
+        $this->actingAs($this->financeManager, 'sanctum')
+            ->postJson('/api/v1/payroll/run', [
+                'month'        => now()->format('Y-m'),
+                'period_start' => now()->startOfMonth()->toDateString(),
+                'period_end'   => now()->endOfMonth()->toDateString(),
+            ])
+            ->assertForbidden();
+        $this->actingAs($this->financeManager, 'sanctum')
+            ->postJson("/api/v1/payroll/{$payroll->id}/reopen")
+            ->assertForbidden();
+        $this->actingAs($this->financeManager, 'sanctum')
+            ->postJson("/api/v1/payroll/{$payroll->id}/recalculate")
+            ->assertForbidden();
+    }
+
+    /** @test */
+    public function employees_cannot_access_payroll(): void
+    {
+        $payroll = Payroll::factory()->create(['status' => 'pending_approval']);
+
+        $this->actingAs($this->employee, 'sanctum')->getJson('/api/v1/payroll')->assertForbidden();
+        $this->actingAs($this->employee, 'sanctum')
+            ->postJson("/api/v1/payroll/{$payroll->id}/approve")
+            ->assertForbidden();
+    }
+
+    /** @test */
     public function finance_manager_can_approve_payroll(): void
     {
         $payroll = Payroll::factory()->create(['status' => 'pending_approval']);

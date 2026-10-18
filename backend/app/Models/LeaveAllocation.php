@@ -20,8 +20,8 @@ class LeaveAllocation extends Model {
         'carry_forward_overridden_at','carry_forward_overridden_by',
     ];
     protected $casts = [
-        'accrual_year_start'    => 'date',
-        'last_accrual_date'     => 'date',
+        'accrual_year_start'    => 'date:Y-m-d',
+        'last_accrual_date'     => 'date:Y-m-d',
         'allocated_days'        => 'float',
         'used_days'             => 'float',
         'pending_days'          => 'float',

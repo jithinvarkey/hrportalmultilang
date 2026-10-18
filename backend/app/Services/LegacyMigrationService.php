@@ -1272,8 +1272,13 @@ class LegacyMigrationService
 
     private function nextEmployeeCode(): string
     {
-        $last = Employee::withTrashed()->orderByDesc('id')->value('employee_code');
-        $next = $last ? ((int) preg_replace('/\D/', '', $last) + 1) : 1;
+        // Use the highest number in use (not the latest row's), so imported rows never collide
+        // with codes created earlier through the portal or a previous import.
+        $max = Employee::withTrashed()
+            ->pluck('employee_code')
+            ->map(fn ($code) => (int) (preg_replace('/\D/', '', (string) $code) ?: 0))
+            ->max();
+        $next = ((int) $max) + 1;
         return 'EMP' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 
