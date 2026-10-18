@@ -16,6 +16,21 @@ use Illuminate\Support\Facades\DB;
  */
 return new class extends Migration
 {
+
+    /**
+     * MySQL re-defines the ENUM in place. SQLite (used by the test suite) has no MODIFY COLUMN and stores
+     * enums as CHECK constraints, so there the column is recreated as a plain string with the same default.
+     */
+    private function setStatusEnum(string $table, string $mysqlDefinition, string $default): void
+    {
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE {$table} MODIFY COLUMN status {$mysqlDefinition}");
+            return;
+        }
+
+        Schema::table($table, fn (Blueprint $t) => $t->dropColumn('status'));
+        Schema::table($table, fn (Blueprint $t) => $t->string('status', 30)->default($default));
+    }
     public function up(): void
     {
         // ── leave_types: add skip_manager_approval flag ─────────────────
@@ -26,13 +41,13 @@ return new class extends Migration
 
         // ── leave_requests: expand status enum + add manager approval cols ─
         // MySQL requires re-creating the enum to add a value
-        DB::statement("ALTER TABLE leave_requests MODIFY COLUMN status ENUM(
+        $this->setStatusEnum('leave_requests', "ENUM(
             'pending',
             'manager_approved',
             'approved',
             'rejected',
             'cancelled'
-        ) NOT NULL DEFAULT 'pending'");
+        ) NOT NULL DEFAULT 'pending'", 'pending');
 
         Schema::table('leave_requests', function (Blueprint $table) {
             // Manager approval (level 1)
@@ -66,9 +81,9 @@ return new class extends Migration
             ]);
         });
 
-        DB::statement("ALTER TABLE leave_requests MODIFY COLUMN status ENUM(
+        $this->setStatusEnum('leave_requests', "ENUM(
             'pending','approved','rejected','cancelled'
-        ) NOT NULL DEFAULT 'pending'");
+        ) NOT NULL DEFAULT 'pending'", 'pending');
 
         Schema::table('leave_types', function (Blueprint $table) {
             $table->dropColumn('skip_manager_approval');

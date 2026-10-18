@@ -4,6 +4,7 @@ import { Store } from '@ngrx/store';
 import { Router } from '@angular/router';
 import { loginSuccess } from '../store/auth.actions';
 import { AuthService } from '../../../core/services/auth.service';
+import { SIGNOUT_REASON_KEY } from '../../../core/interceptors/auth.interceptor';
 
 @Component({
   standalone: false,
@@ -39,6 +40,15 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.otpForm = this.fb.group({
       otp: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
     });
+
+    // Explain a forced sign-out (e.g. the account was closed while the user was signed in).
+    try {
+      const reason = sessionStorage.getItem(SIGNOUT_REASON_KEY);
+      if (reason) {
+        this.errorMsg = reason;
+        sessionStorage.removeItem(SIGNOUT_REASON_KEY);
+      }
+    } catch { /* storage unavailable */ }
   }
 
   onSubmit() {

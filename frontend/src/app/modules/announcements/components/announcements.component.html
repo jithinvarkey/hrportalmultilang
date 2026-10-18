@@ -169,6 +169,12 @@
     <mat-icon>campaign</mat-icon>
     <p>{{ 'ANNOUNCEMENTS.EMPTY' | translate }}</p>
   </div>
+
+  <div class="load-more" *ngIf="currentPage < lastPage" style="display:flex;justify-content:center;padding:8px 0">
+    <button class="btn-outline" (click)="loadMore()" [disabled]="loadingMore">
+      <mat-icon>{{ loadingMore ? 'hourglass_empty' : 'expand_more' }}</mat-icon> {{ 'ANNOUNCEMENTS.LOAD_MORE' | translate }}
+    </button>
+  </div>
 </div>
 
 <!-- ── Announcement form ─────────────────────────────────────────────────── -->

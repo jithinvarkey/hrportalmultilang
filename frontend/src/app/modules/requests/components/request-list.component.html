@@ -26,7 +26,7 @@
 
   <!-- Main Tabs -->
   <div class="main-tabs">
-    <button *ngFor="let t of tabs" class="main-tab"
+    <button *ngFor="let t of visibleTabs" class="main-tab"
             [class.active]="activeTab===t.id" (click)="switchTab(t.id)">
       <mat-icon>{{ t.icon }}</mat-icon>{{ t.label | translate }}
     </button>

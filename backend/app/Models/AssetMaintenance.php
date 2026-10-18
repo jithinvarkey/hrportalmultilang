@@ -20,8 +20,8 @@ class AssetMaintenance extends Model
     ];
 
     protected $casts = [
-        'scheduled_date'  => 'date',
-        'completed_date'  => 'date',
+        'scheduled_date'  => 'date:Y-m-d',
+        'completed_date'  => 'date:Y-m-d',
         'cost'            => 'decimal:2',
     ];
 

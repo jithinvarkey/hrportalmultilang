@@ -110,14 +110,9 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    const user       = this.auth.getUser();
-    const toArr      = (v: any): string[] => !v ? [] : Array.isArray(v) ? v : Object.values(v);
-    const roles      = toArr(user?.roles);
-    const raw        = JSON.stringify(user ?? {});
-
-    this.isHR  = ['super_admin','ceo','hr_manager','hr_staff'].some(r => roles.includes(r) || raw.includes(r));
-    this.isCEO = ['ceo', 'super_admin'].some(r => roles.includes(r) || raw.includes(r));
-    this.isMgr = ['super_admin','ceo','hr_manager','hr_staff','department_manager'].some(r => roles.includes(r) || raw.includes(r));
+    this.isHR  = this.auth.isHRRole();
+    this.isCEO = this.auth.isCEO() || this.auth.isSuperAdmin();
+    this.isMgr = this.auth.isManagerRole();
 
     this.createForm = this.fb.group({
       contract_id:         ['', Validators.required],
@@ -143,7 +138,7 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
     this.http.get<any>(this.api, { params }).pipe(takeUntil(this.destroy$)).subscribe({
       next: (r) => {
         this.renewals   = r.data ?? [];
-        this.pagination = r.meta ?? null;
+        this.pagination = r.meta ?? (r.last_page ? r : null);
         this.loading    = false;
         this.cdr.markForCheck();
       },
@@ -172,6 +167,7 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
     this.selectedRenewal  = renewal;
     this.actionType       = 'approve';
     this.actionNotes      = '';
+    this.errorMsg         = '';
     this.showActionDialog = true;
     this.cdr.markForCheck();
   }
@@ -180,6 +176,7 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
     this.selectedRenewal        = renewal;
     this.actionType             = 'reject';
     this.actionRejectionReason  = '';
+    this.errorMsg               = '';
     this.showActionDialog       = true;
     this.cdr.markForCheck();
   }
@@ -361,7 +358,22 @@ export class ContractRenewalsComponent implements OnInit, OnDestroy {
 
   /** Open the renewal document in a new tab (download). */
   downloadDocument(renewal: RenewalRequest): void {
-    window.open(`${this.api}/${renewal.id}/document`, '_blank');
+    // The API authenticates with a Bearer header, which window.open() cannot send.
+    this.http.get(`${this.api}/${renewal.id}/document`, { responseType: 'blob', observe: 'response' })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: response => {
+          const disposition = response.headers.get('content-disposition') || '';
+          const match = disposition.match(/filename="?([^"]+)"?/i);
+          const url = URL.createObjectURL(response.body as Blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = match?.[1] || renewal.document?.name || renewal.reference;
+          link.click();
+          URL.revokeObjectURL(url);
+        },
+        error: () => { this.errorMsg = this.lang.t('CONTRACTS.MSG.DOWNLOAD_FAILED'); this.cdr.markForCheck(); },
+      });
   }
 
   viewDetail(r: RenewalRequest): void {

@@ -31,7 +31,8 @@ const routes: Routes = [
         path: 'payroll',
         loadChildren: () => import('./modules/payroll/payroll.module').then(m => m.PayrollModule),
         canActivate: [RoleGuard],
-        data: { roles: ['super_admin', 'ceo', 'hr_manager'] }
+        // Finance Manager reviews, approves and pays payroll; running and editing it stays with HR.
+        data: { roles: ['super_admin', 'ceo', 'hr_manager', 'finance_manager'] }
       },
       {
         path: 'leave',
@@ -89,8 +90,11 @@ const routes: Routes = [
         loadChildren: () => import('./modules/profile/profile.module').then(m => m.ProfileModule)
       },
       {
+        // Reports include salary and payroll data: same access as Payroll (backend enforces it too).
         path: 'reports',
-        loadChildren: () => import('./modules/reports/reports.module').then(m => m.ReportsModule)
+        loadChildren: () => import('./modules/reports/reports.module').then(m => m.ReportsModule),
+        canActivate: [RoleGuard],
+        data: { roles: ['super_admin', 'ceo', 'hr_manager'] }
       },
       {
         path: 'assets',

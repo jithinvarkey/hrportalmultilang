@@ -26,8 +26,8 @@ class Loan extends Model {
         'hr_approved_at'       => 'datetime',
         'finance_approved_at'  => 'datetime',
         'rejected_at'          => 'datetime',
-        'disbursed_date'       => 'date',
-        'first_installment_date' => 'date',
+        'disbursed_date'       => 'date:Y-m-d',
+        'first_installment_date' => 'date:Y-m-d',
     ];
     public function employee()        { return $this->belongsTo(Employee::class); }
     public function loanType()        { return $this->belongsTo(LoanType::class); }

@@ -21,10 +21,10 @@ class PerformanceCycle extends Model
     ];
 
     protected $casts = [
-        'start_date'                  => 'date',
-        'end_date'                    => 'date',
-        'self_assessment_deadline'    => 'date',
-        'manager_review_deadline'     => 'date',
+        'start_date'                  => 'date:Y-m-d',
+        'end_date'                    => 'date:Y-m-d',
+        'self_assessment_deadline'    => 'date:Y-m-d',
+        'manager_review_deadline'     => 'date:Y-m-d',
         'include_360'                 => 'boolean',
     ];
 

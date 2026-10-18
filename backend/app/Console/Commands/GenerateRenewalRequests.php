@@ -50,9 +50,10 @@ class GenerateRenewalRequests extends Command
         $skipped   = 0;
 
         foreach ($expiring as $contract) {
-            // Skip if an open renewal already exists for this contract
+            // Skip if a renewal already exists for this contract. A rejected
+            // request is HR's decision and must not be re-generated every day.
             $existing = ContractRenewalRequest::where('contract_id', $contract->id)
-                ->whereNotIn('status', ['rejected', 'cancelled'])
+                ->where('status', '!=', 'cancelled')
                 ->exists();
 
             if ($existing) {

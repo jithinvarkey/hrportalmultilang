@@ -73,10 +73,17 @@ class AnnouncementController extends Controller
     private function userRoles(): array
     {
         $user = auth()->user();
-        return rescue(fn () => DB::table('model_has_roles')
+        $roles = rescue(fn () => DB::table('model_has_roles')
             ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
             ->where('model_has_roles.model_id', $user->id)
             ->pluck('roles.name')->toArray(), [], false);
+
+        // CEO is an access alias of HR Manager (see User::hasRole).
+        if (in_array('ceo', $roles, true) && !in_array('hr_manager', $roles, true)) {
+            $roles[] = 'hr_manager';
+        }
+
+        return $roles;
     }
 
     private function isManager(): bool
@@ -208,10 +215,7 @@ class AnnouncementController extends Controller
             ->withCount(['reads', 'reactions'])
             ->findOrFail($id);
 
-        if (!$this->isManager() && (
-            !$this->isVisible($announcement)
-            || !$this->announcementVisibleToEmployee($announcement, auth()->user()->employee, $this->userRoles())
-        )) {
+        if (!$this->canSee($announcement)) {
             return response()->json(['message' => __('Not found.')], 404);
         }
 
@@ -224,7 +228,9 @@ class AnnouncementController extends Controller
     /** Mark an announcement as read by the current employee (idempotent). */
     public function markRead(int $id): JsonResponse
     {
-        Announcement::findOrFail($id);
+        if (!$this->canSee(Announcement::findOrFail($id))) {
+            return response()->json(['message' => __('Not found.')], 404);
+        }
         $this->recordRead($id);
         return response()->json(['message' => __('Marked as read.')]);
     }
@@ -245,7 +251,9 @@ class AnnouncementController extends Controller
         $empId = $this->employeeId();
         if (!$empId) return response()->json(['message' => __('Only employees can react.')], 422);
 
-        Announcement::findOrFail($id);
+        if (!$this->canSee(Announcement::findOrFail($id))) {
+            return response()->json(['message' => __('Not found.')], 404);
+        }
         $emoji = $request->input('emoji', '👍');
 
         $existing = AnnouncementReaction::where('announcement_id', $id)->where('employee_id', $empId)->first();
@@ -499,6 +507,12 @@ class AnnouncementController extends Controller
     {
         $announcement = Announcement::findOrFail($id);
 
+        // Same audience/publication rules as show(): employees cannot pull attachments of
+        // drafts or of announcements targeted at other departments/roles/employees.
+        if (!$this->canSee($announcement)) {
+            return response()->json(['message' => __('Not found.')], 404);
+        }
+
         if (!$announcement->attachment_path || !Storage::disk('public')->exists($announcement->attachment_path)) {
             return response()->json(['message' => __('No attachment.')], 404);
         }
@@ -549,10 +563,20 @@ class AnnouncementController extends Controller
         $a->attachment_size = $file->getSize();
     }
 
+    /** Managers see everything; everyone else only published, in-audience announcements. */
+    private function canSee(Announcement $announcement): bool
+    {
+        return $this->isManager() || (
+            $this->isVisible($announcement)
+            && $this->announcementVisibleToEmployee($announcement, auth()->user()->employee, $this->userRoles())
+        );
+    }
+
     private function isVisible(Announcement $a): bool
     {
         return $a->is_published
-            && (!$a->expires_at || $a->expires_at->gte(now()->startOfDay()));
+            && (!$a->expires_at || $a->expires_at->gte(now()->startOfDay()))
+            && (!$a->scheduled_at || $a->scheduled_at->lte(now()));
     }
 
     private function announcementVisibleToEmployee(Announcement $announcement, ?Employee $employee, array $roleNames): bool

@@ -29,6 +29,7 @@ use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\API\PublicOnboardingController;
 use App\Http\Controllers\API\LegacyMigrationController;
 use App\Http\Controllers\API\UnitController;
+use App\Http\Controllers\API\ReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,8 +40,10 @@ use App\Http\Controllers\API\UnitController;
 
 Route::prefix('v1')->group(function () {
 
+    // HR-only endpoints use role:super_admin|ceo|hr_manager|hr_staff (ceo is also an alias of hr_manager in User::hasRole()).
+
     // ── Public Auth ──────────────────────────────────────────────────────
-    Route::prefix('auth')->group(function () {
+    Route::prefix('auth')->middleware('throttle:auth')->group(function () {
         Route::post('login',           [AuthController::class, 'login']);
         Route::post('verify-login-otp',[AuthController::class, 'verifyLoginOtp']);
         Route::post('resend-otp',      [AuthController::class, 'resendOtp']);
@@ -57,7 +60,8 @@ Route::prefix('v1')->group(function () {
     // ── Protected Routes ─────────────────────────────────────────────────
 
 
-    Route::middleware('auth:sanctum')->group(function () {
+    // account.active signs out users whose employment was closed (terminated/archived) after they logged in.
+    Route::middleware(['auth:sanctum', 'account.active'])->group(function () {
 
         // Auth
         Route::prefix('auth')->group(function () {
@@ -140,7 +144,7 @@ Route::prefix('v1')->group(function () {
              Route::put('/{id}/leave-balances/carry-forward', [EmployeeController::class, 'updateLeaveCarryForward'])->whereNumber('id');
              Route::get('/{id}',                          [EmployeeController::class, 'show']);
             Route::put('/{id}',                          [EmployeeController::class, 'update']);
-            Route::delete('/{id}',                       [EmployeeController::class, 'destroy']);
+            Route::delete('/{id}',                       [EmployeeController::class, 'destroy'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
             Route::post('/{id}/avatar',                  [EmployeeController::class, 'uploadAvatar']);
             Route::post('/{id}/documents',               [EmployeeController::class, 'uploadDocument']);
             Route::get('/{id}/documents',                [EmployeeController::class, 'listDocuments']);
@@ -157,30 +161,48 @@ Route::prefix('v1')->group(function () {
         // Departments
         Route::prefix('departments')->group(function () {
             Route::get('/',               [DepartmentController::class, 'index']);
-            Route::post('/',              [DepartmentController::class, 'store']);
+            Route::post('/',              [DepartmentController::class, 'store'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
             Route::get('/{id}',           [DepartmentController::class, 'show']);
-            Route::put('/{id}',           [DepartmentController::class, 'update']);
-            Route::delete('/{id}',        [DepartmentController::class, 'destroy']);
+            Route::put('/{id}',           [DepartmentController::class, 'update'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
+            Route::delete('/{id}',        [DepartmentController::class, 'destroy'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
             Route::get('/{id}/headcount', [DepartmentController::class, 'headcount']);
         });
 
         // Units / Branches
-        Route::apiResource('units', UnitController::class);
+        Route::apiResource('units', UnitController::class)->only(['index', 'show']);
+        Route::apiResource('units', UnitController::class)->only(['store', 'update', 'destroy'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
 
         // Designations
-        Route::apiResource('designations', DesignationController::class);
+        Route::apiResource('designations', DesignationController::class)->only(['index', 'show']);
+        Route::apiResource('designations', DesignationController::class)->only(['store', 'update', 'destroy'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
+
+        // Reports (Reports page). They include salaries and payroll, so they follow payroll's access.
+        Route::prefix('reports')->middleware('role:super_admin|ceo|hr_manager')->group(function () {
+            Route::get('/download/{type}/csv', [ReportController::class, 'downloadCsv'])
+                ->whereIn('type', ['employees', 'payroll', 'leave-balance', 'leave-requests', 'attendance', 'loans']);
+            Route::get('/download/{type}/pdf', [ReportController::class, 'downloadPdf'])
+                ->whereIn('type', ['employees', 'payroll', 'leave-balance', 'leave-requests', 'attendance', 'loans']);
+            Route::get('/employees',      [ReportController::class, 'employees']);
+            Route::get('/payroll',        [ReportController::class, 'payroll']);
+            Route::get('/leave-balance',  [ReportController::class, 'leaveBalance']);
+            Route::get('/leave-requests', [ReportController::class, 'leaveRequests']);
+            Route::get('/attendance',     [ReportController::class, 'attendance']);
+            Route::get('/loans',          [ReportController::class, 'loans']);
+        });
 
         // Payroll
-        Route::prefix('payroll')->middleware('role:super_admin|ceo|hr_manager')->group(function () {
+        // Payroll: HR managers run and edit it; the Finance Manager reviews, approves/rejects, marks it paid
+        // and exports the bank file. Routes marked HR-only below are closed to Finance.
+        Route::prefix('payroll')->middleware('role:super_admin|ceo|hr_manager|finance_manager')->group(function () {
             // ── Static / literal routes FIRST (before any {id} wildcards) ──────
             Route::get('/stats',                               [PayrollController::class, 'stats']);
             Route::get('/components',                          [PayrollController::class, 'components']);
-            Route::post('/components',                         [PayrollController::class, 'storeComponent']);
+            Route::post('/components',                         [PayrollController::class, 'storeComponent'])->middleware('role:super_admin|ceo|hr_manager');
             Route::get('/employee-options',                    [PayrollController::class, 'employeeOptions']);
             Route::get('/employee/{empId}',                    [PayrollController::class, 'employeeHistory'])->whereNumber('empId');
-            Route::get('/payslip/generate',                    [PayrollController::class, 'generateEmployeePayslip']);
+            Route::get('/payslip/generate',                    [PayrollController::class, 'generateEmployeePayslip'])->middleware('role:super_admin|ceo|hr_manager');
             Route::get('/payslip/{payslipId}/download',        [PayrollController::class, 'downloadPayslip'])->whereNumber('payslipId');
-            Route::post('/run',                                [PayrollController::class, 'run']);
+            Route::post('/run',                                [PayrollController::class, 'run'])->middleware('role:super_admin|ceo|hr_manager');
 
             // ── List + create ────────────────────────────────────────────────
             Route::get('/',                                    [PayrollController::class, 'index']);
@@ -190,17 +212,17 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/approve',                       [PayrollController::class, 'approve'])->whereNumber('id');
             Route::post('/{id}/reject',                        [PayrollController::class, 'reject'])->whereNumber('id');
             Route::post('/{id}/mark-paid',                     [PayrollController::class, 'markPaid'])->whereNumber('id');
-            Route::post('/{id}/reopen',                        [PayrollController::class, 'reopen'])->whereNumber('id');
-            Route::post('/{id}/recalculate',                   [PayrollController::class, 'recalculate'])->whereNumber('id');
+            Route::post('/{id}/reopen',                        [PayrollController::class, 'reopen'])->whereNumber('id')->middleware('role:super_admin|ceo|hr_manager');
+            Route::post('/{id}/recalculate',                   [PayrollController::class, 'recalculate'])->whereNumber('id')->middleware('role:super_admin|ceo|hr_manager');
             Route::get('/{id}/payslips',                       [PayrollController::class, 'payslips'])->whereNumber('id');
             Route::get('/{id}/export',                         [PayrollController::class, 'export'])->whereNumber('id');
-            Route::put('/{id}/payslips/{psId}',                [PayrollController::class, 'updatePayslip'])->whereNumber(['id','psId']);
-            Route::delete('/{id}/payslips/{psId}',             [PayrollController::class, 'removeProbationPayslip'])->whereNumber(['id','psId']);
+            Route::put('/{id}/payslips/{psId}',                [PayrollController::class, 'updatePayslip'])->whereNumber(['id','psId'])->middleware('role:super_admin|ceo|hr_manager');
+            Route::delete('/{id}/payslips/{psId}',             [PayrollController::class, 'removeProbationPayslip'])->whereNumber(['id','psId'])->middleware('role:super_admin|ceo|hr_manager');
         });
 
         // Leave
         Route::prefix('leave')->group(function () {
-            Route::post('/accrue',   [LeaveController::class, 'runAccrual']);   // manual trigger
+            Route::post('/accrue',   [LeaveController::class, 'runAccrual'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');   // manual trigger
             Route::get('/types',                   [LeaveController::class, 'types']);
             Route::get('/ticket-options',          [LeaveController::class, 'ticketOptions']);
             Route::post('/types',                  [LeaveController::class, 'storeType']);
@@ -243,15 +265,15 @@ Route::prefix('v1')->group(function () {
             Route::get('/report',             [AttendanceController::class, 'report']);
             Route::get('/direct-reports',     [AttendanceController::class, 'directReports']);
             Route::get('/monthly-report.xlsx', [AttendanceController::class, 'monthlyReport']);
-            Route::post('/manual',            [AttendanceController::class, 'manualEntry']);
+            Route::post('/manual',            [AttendanceController::class, 'manualEntry'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
             Route::get('/employee/{empId}',   [AttendanceController::class, 'employeeLog']);
-            Route::put('/{id}',              [AttendanceController::class, 'update'])->whereNumber('id');
+            Route::put('/{id}',              [AttendanceController::class, 'update'])->whereNumber('id')->middleware('role:super_admin|ceo|hr_manager|hr_staff');
             Route::get('/settings',          [AttendanceController::class, 'getSettings']);
-            Route::post('/settings',         [AttendanceController::class, 'saveSettings']);
+            Route::post('/settings',         [AttendanceController::class, 'saveSettings'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
         });
 
         // BioTime / ZKTeco biometric devices
-        Route::prefix('biotime')->group(function () {
+        Route::prefix('biotime')->middleware('role:super_admin|ceo|hr_manager|hr_staff')->group(function () {
             Route::post('/sync-all',                   [BioTimeController::class, 'syncAll']);
 
             Route::prefix('devices')->group(function () {
@@ -306,17 +328,17 @@ Route::prefix('v1')->group(function () {
         Route::prefix('performance')->group(function () {
             Route::get('/stats',                       [PerformanceController::class, 'stats']);
             Route::get('/kpis',                        [PerformanceController::class, 'kpis']);
-            Route::post('/kpis',                       [PerformanceController::class, 'storeKpi']);
-            Route::put('/kpis/{id}',                   [PerformanceController::class, 'updateKpi'])->whereNumber('id');
-            Route::delete('/kpis/{id}',                [PerformanceController::class, 'deleteKpi'])->whereNumber('id');
+            Route::post('/kpis',                       [PerformanceController::class, 'storeKpi'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
+            Route::put('/kpis/{id}',                   [PerformanceController::class, 'updateKpi'])->whereNumber('id')->middleware('role:super_admin|ceo|hr_manager|hr_staff');
+            Route::delete('/kpis/{id}',                [PerformanceController::class, 'deleteKpi'])->whereNumber('id')->middleware('role:super_admin|ceo|hr_manager|hr_staff');
             Route::get('/reports/{empId}',             [PerformanceController::class, 'report'])->whereNumber('empId');
 
             // ── Cycles ─────────────────────────────────────────────────────
             Route::get('/',                            [PerformanceController::class, 'index']);
-            Route::post('/',                           [PerformanceController::class, 'store']);
+            Route::post('/',                           [PerformanceController::class, 'store'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
             Route::get('/{id}',                        [PerformanceController::class, 'show'])->whereNumber('id');
-            Route::put('/{id}',                        [PerformanceController::class, 'updateCycle'])->whereNumber('id');
-            Route::post('/{id}/initiate',              [PerformanceController::class, 'initiate'])->whereNumber('id');
+            Route::put('/{id}',                        [PerformanceController::class, 'updateCycle'])->whereNumber('id')->middleware('role:super_admin|ceo|hr_manager|hr_staff');
+            Route::post('/{id}/initiate',              [PerformanceController::class, 'initiate'])->whereNumber('id')->middleware('role:super_admin|ceo|hr_manager|hr_staff');
 
             // ── Reviews ─────────────────────────────────────────────────────
             Route::post('/review/{reviewId}/self',     [PerformanceController::class, 'selfAssessment'])->whereNumber('reviewId');
@@ -330,8 +352,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/stats',        [OrgChartController::class, 'stats']);
             Route::get('/search',       [OrgChartController::class, 'search']);
             Route::get('/dept/{id}',    [OrgChartController::class, 'department'])->whereNumber('id');
-            Route::post('/dept',        [OrgChartController::class, 'storeDepartment']);
-            Route::put('/dept/{id}',    [OrgChartController::class, 'updateDepartment'])->whereNumber('id');
+            Route::post('/dept',        [OrgChartController::class, 'storeDepartment'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
+            Route::put('/dept/{id}',    [OrgChartController::class, 'updateDepartment'])->whereNumber('id')->middleware('role:super_admin|ceo|hr_manager|hr_staff');
         });
 
         // ── Loans ────────────────────────────────────────────────────────────
@@ -339,7 +361,7 @@ Route::prefix('v1')->group(function () {
             // ── Static routes FIRST (must come before any {id} wildcards) ──
             Route::get('/stats',                            [LoanController::class, 'stats']);
             Route::get('/my',                               [LoanController::class, 'myLoans']);
-            Route::post('/installments/mark-overdue',       [LoanController::class, 'markOverdue']);
+            Route::post('/installments/mark-overdue',       [LoanController::class, 'markOverdue'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
 
             // ── Loan Types ────────────────────────────────────────────────
             Route::prefix('types')->group(function () {
@@ -395,14 +417,14 @@ Route::prefix('v1')->group(function () {
         Route::prefix('requests')->group(function () {
             Route::get('/stats',                    [RequestManagementController::class, 'stats']);
             Route::get('/assignable-users',         [RequestManagementController::class, 'assignableUsers']);
-            Route::post('/mark-overdue',            [RequestManagementController::class, 'markOverdue']);
+            Route::post('/mark-overdue',            [RequestManagementController::class, 'markOverdue'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
 
             Route::prefix('types')->group(function () {
                 Route::get('/',         [RequestManagementController::class, 'types']);
                 Route::get('/all',      [RequestManagementController::class, 'allTypes']);
-                Route::post('/',        [RequestManagementController::class, 'storeType']);
-                Route::put('/{id}',     [RequestManagementController::class, 'updateType'])->whereNumber('id');
-                Route::delete('/{id}',  [RequestManagementController::class, 'deleteType'])->whereNumber('id');
+                Route::post('/',        [RequestManagementController::class, 'storeType'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
+                Route::put('/{id}',     [RequestManagementController::class, 'updateType'])->whereNumber('id')->middleware('role:super_admin|ceo|hr_manager|hr_staff');
+                Route::delete('/{id}',  [RequestManagementController::class, 'deleteType'])->whereNumber('id')->middleware('role:super_admin|ceo|hr_manager|hr_staff');
             });
 
             Route::get('/',     [RequestManagementController::class, 'index']);
@@ -453,8 +475,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/employees/{empId}/contracts', [ContractController::class, 'forEmployee'])->whereNumber('empId');
 
         Route::prefix('admin')->group(function () {
-            Route::get('/overview',                         [AdminController::class, 'overview']);
-            Route::get('/permissions',                      [AdminController::class, 'permissions']);
+            // User & role management: the SPA's /admin guard requires these permissions.
+            Route::get('/overview',                         [AdminController::class, 'overview'])->middleware('role_or_permission:super_admin|admin.manage_users|admin.manage_roles');
+            Route::get('/permissions',                      [AdminController::class, 'permissions'])->middleware('role_or_permission:super_admin|admin.manage_users|admin.manage_roles');
             Route::get('/login-activities',                 [AdminController::class, 'loginActivities']);
             Route::get('/settings/loans',                   [AdminController::class, 'loanSettings']);
               Route::put('/settings/loans',                   [AdminController::class, 'updateLoanSettings']);
@@ -470,7 +493,7 @@ Route::prefix('v1')->group(function () {
               Route::post('/settings/hdf-template',            [AdminController::class, 'uploadHdfTemplate']);
               Route::post('/legacy-migration/import',           [LegacyMigrationController::class, 'import']);
 
-            Route::prefix('users')->group(function () {
+            Route::prefix('users')->middleware('role_or_permission:super_admin|admin.manage_users')->group(function () {
                 Route::get('/',         [AdminController::class, 'users']);
                 Route::post('/',        [AdminController::class, 'storeUser']);
                 Route::get('/{id}',     [AdminController::class, 'showUser'])->whereNumber('id');
@@ -480,7 +503,7 @@ Route::prefix('v1')->group(function () {
                 Route::put('/{id}/otp-exemption',   [AdminController::class, 'updateUserOtpExemption'])->whereNumber('id');
             });
 
-            Route::prefix('roles')->group(function () {
+            Route::prefix('roles')->middleware('role_or_permission:super_admin|admin.manage_roles')->group(function () {
                 Route::get('/',         [AdminController::class, 'roles']);
                 Route::put('/{id}/permissions', [AdminController::class, 'updateRolePermissions'])->whereNumber('id');
             });

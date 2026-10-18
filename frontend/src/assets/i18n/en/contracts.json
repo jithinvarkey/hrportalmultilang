@@ -99,7 +99,8 @@
       "APPROVED": "Contract approved.",
       "APPROVE_FAILED": "Approve failed.",
       "STATUS_UPDATED": "Status updated to {{status}}.",
-      "CONFIRM_DELETE": "Delete this contract? This cannot be undone."
+      "CONFIRM_DELETE": "Delete this contract? This cannot be undone.",
+      "DOWNLOAD_FAILED": "Download failed. The file may be missing or you may not have access."
     },
     "RENEWALS": {
       "TITLE": "Contract Renewals",

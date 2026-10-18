@@ -19,8 +19,8 @@ class ContractRenewal extends Model
     ];
 
     protected $casts = [
-        'proposed_start_date'  => 'date',
-        'proposed_end_date'    => 'date',
+        'proposed_start_date'  => 'date:Y-m-d',
+        'proposed_end_date'    => 'date:Y-m-d',
         'auto_created'         => 'boolean',
         'manager_approved_at'  => 'datetime',
         'hr_approved_at'       => 'datetime',

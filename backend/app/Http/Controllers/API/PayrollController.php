@@ -148,6 +148,9 @@ class PayrollController extends Controller {
     public function reject(Request $request, $id) {
         $request->validate(['reason' => 'required|string']);
         $payroll = Payroll::findOrFail($id);
+        if (!in_array($payroll->status, ['draft', 'pending_approval'], true)) {
+            return response()->json(['message' => __('Payroll is not pending approval')], 422);
+        }
         $payroll->update(['status' => 'rejected', 'notes' => $request->reason]);
         $this->service->releasePayrollLoanInstallments($payroll);
         return response()->json(['message' => __('Payroll rejected')]);
@@ -409,13 +412,15 @@ class PayrollController extends Controller {
         }
 
         try {
+            DB::beginTransaction();
+
             // Delete existing payslips and recalculate fresh
             $payroll->payslips()->delete();
 
             $data = [
                 'month'        => $payroll->month,
-                'period_start' => $payroll->period_start,
-                'period_end'   => $payroll->period_end,
+                'period_start' => $payroll->period_start->toDateString(),
+                'period_end'   => $payroll->period_end->toDateString(),
             ];
 
             $employees   = $this->service->eligibleEmployees();
@@ -436,11 +441,14 @@ class PayrollController extends Controller {
                 'total_net'        => round($totalNet, 2),
             ]);
 
+            DB::commit();
+
             return response()->json([
                 'message' => __('Payroll regenerated for :count employees and is ready for approval.', ['count' => $employees->count()]),
                 'payroll' => $payroll->fresh()->loadCount('payslips'),
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json(['message' => __('Payroll regeneration failed: :error', ['error' => $e->getMessage()])], 500);
         }
     }

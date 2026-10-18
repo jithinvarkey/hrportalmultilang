@@ -1,8 +1,20 @@
 <?php
 namespace App\Models;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class LeaveRequest extends Model {
+    use HasFactory;
+
+    /**
+     * Human-readable reference used in emails and logs (e.g. "LV-04593"). There is no reference column on
+     * leave_requests, so it is derived from the id; without this, email subjects ended in an empty "- ".
+     */
+    public function getReferenceAttribute(): ?string
+    {
+        return $this->id ? 'LV-' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT) : null;
+    }
+
     protected $fillable = [
         'employee_id','leave_type_id',
         'start_date','start_time','end_date','end_time',
@@ -15,8 +27,8 @@ class LeaveRequest extends Model {
         'cancelled_at',
     ];
     protected $casts = [
-        'start_date'  => 'date',
-        'end_date'    => 'date',
+        'start_date'  => 'date:Y-m-d',
+        'end_date'    => 'date:Y-m-d',
         'approved_at' => 'datetime',
         'manager_approved_at' => 'datetime',
         'cancelled_at' => 'datetime',

@@ -272,7 +272,8 @@
           <ng-container *ngIf="!r.document">
             <mat-icon class="muted">upload_file</mat-icon>
             <span class="rd-name muted">{{ 'CONTRACTS.RENEWALS.NO_DOCUMENT' | translate }}</span>
-            <label class="btn-sm upload-label">
+            <!-- The API accepts uploads from HR or the employee's manager only -->
+            <label class="btn-sm upload-label" *ngIf="isHR || isCEO || isMgr">
               <mat-icon>{{ uploadingDocId === r.id ? 'hourglass_empty' : 'upload' }}</mat-icon>
               {{ (uploadingDocId === r.id ? 'CONTRACTS.DETAIL.UPLOADING' : 'COMMON.UPLOAD') | translate }}
               <input type="file" accept=".pdf,.doc,.docx" hidden

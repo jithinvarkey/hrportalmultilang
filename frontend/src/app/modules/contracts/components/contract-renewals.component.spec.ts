@@ -18,7 +18,13 @@ describe('ContractRenewalsComponent — document upload', () => {
   let fixture: ComponentFixture<ContractRenewalsComponent>;
   let httpMock: HttpTestingController;
 
-  const authStub = { getUser: () => ({ roles: ['super_admin'] }) } as unknown as AuthService;
+  const authStub = {
+    getUser: () => ({ roles: ['super_admin'] }),
+    isHRRole: () => true,
+    isCEO: () => false,
+    isSuperAdmin: () => true,
+    isManagerRole: () => true,
+  } as unknown as AuthService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -88,10 +94,15 @@ describe('ContractRenewalsComponent — document upload', () => {
     httpMock.expectNone('/api/v1/contracts/renewals/9/document');
   });
 
-  it('opens the document URL on download', () => {
+  it('downloads the document through HttpClient (Bearer auth) as a blob', () => {
     flushInit();
-    spyOn(window, 'open');
-    component.downloadDocument({ id: 4 } as any);
-    expect(window.open).toHaveBeenCalledWith('/api/v1/contracts/renewals/4/document', '_blank');
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:x');
+    spyOn(URL, 'revokeObjectURL');
+    component.downloadDocument({ id: 4, reference: 'RNW-4', document: null } as any);
+    const req = httpMock.expectOne('/api/v1/contracts/renewals/4/document');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob(['x']));
+    expect(URL.createObjectURL).toHaveBeenCalled();
   });
 });

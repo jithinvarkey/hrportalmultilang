@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Employee;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OrgChartController extends Controller
 {
@@ -39,7 +40,8 @@ class OrgChartController extends Controller
         ->withCount($this->employeeStatusCountColumns())
         ->findOrFail($id);
 
-        return response()->json(['department' => $dept]);
+        // Employee rows here are visible to every user — never expose pay/bank/ID columns.
+        return response()->json(['department' => Employee::stripPayFields($dept->toArray())]);
     }
 
     // ── Company-level stats ───────────────────────────────────────────────
@@ -100,11 +102,17 @@ class OrgChartController extends Controller
     // ── Department CRUD ───────────────────────────────────────────────────
     public function storeDepartment(Request $request)
     {
+        if (!$this->canManage()) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
         $request->validate([
             'name'      => 'required|string|max:100',
             'name_ar'   => 'nullable|string|max:150',
             'code'      => 'required|string|max:20|unique:departments',
             'parent_id' => 'nullable|exists:departments,id',
+            'manager_id' => 'nullable|exists:employees,id',
+            'headcount_budget' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
         ]);
         $dept = Department::create($request->only('name','name_ar','code','description','parent_id','manager_id','headcount_budget','is_active'));
         return response()->json(['department' => $dept->load('manager','parent')], 201);
@@ -112,12 +120,51 @@ class OrgChartController extends Controller
 
     public function updateDepartment(Request $request, $id)
     {
+        if (!$this->canManage()) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
         $dept = Department::findOrFail($id);
+        $request->validate([
+            'name'      => 'sometimes|required|string|max:100',
+            'name_ar'   => 'nullable|string|max:150',
+            'code'      => "sometimes|required|string|max:20|unique:departments,code,{$dept->id}",
+            'parent_id' => ['nullable', 'exists:departments,id', \Illuminate\Validation\Rule::notIn($this->selfAndDescendantIds((int) $dept->id))],
+            'manager_id' => 'nullable|exists:employees,id',
+            'headcount_budget' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
+        ]);
         $dept->update($request->only('name','name_ar','code','description','parent_id','manager_id','headcount_budget','is_active'));
         return response()->json(['department' => $dept->fresh('manager','parent','children')]);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
+    /** Department master data is maintained by HR / system admins only. */
+    private function canManage(): bool
+    {
+        return auth()->check() && DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_id', auth()->id())
+            ->where('model_has_roles.model_type', get_class(auth()->user()))
+            ->whereIn('roles.name', ['super_admin', 'ceo', 'hr_manager', 'hr_staff'])
+            ->exists();
+    }
+
+    /** The department itself plus all of its descendants — none of them may become its parent. */
+    private function selfAndDescendantIds(int $id): array
+    {
+        $ids = [$id];
+        $frontier = [$id];
+        while ($frontier) {
+            $frontier = array_values(array_diff(
+                DB::table('departments')->whereIn('parent_id', $frontier)->pluck('id')->map(fn ($v) => (int) $v)->all(),
+                $ids
+            ));
+            $ids = array_merge($ids, $frontier);
+        }
+
+        return $ids;
+    }
+
     private function formatDept($dept): array
     {
         return [

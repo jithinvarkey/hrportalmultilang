@@ -52,6 +52,14 @@ class AuthController extends Controller
             }
         }
 
+        if ($user->hasClosedEmployment()) {
+            $this->loginActivityService->record($request, $user, 'login_failed', 'failed', $identifier, [
+                'reason' => 'account_closed',
+            ]);
+
+            return response()->json(['message' => __('Your account is no longer active. Please contact HR.')], 403);
+        }
+
         if ($this->isOtpExempt($user)) {
             $tokenResult = $user->createToken('hrms-token');
             $token = $tokenResult->plainTextToken;
@@ -106,6 +114,14 @@ class AuthController extends Controller
         }
 
         $user = $challenge->user;
+        if ($user->hasClosedEmployment()) {
+            $this->loginActivityService->record($request, $user, 'login_failed', 'failed', $user->email, [
+                'reason' => 'account_closed',
+            ]);
+
+            return response()->json(['message' => __('Your account is no longer active. Please contact HR.')], 403);
+        }
+
         $tokenResult = $user->createToken('hrms-token');
         $token = $tokenResult->plainTextToken;
 
@@ -137,6 +153,10 @@ class AuthController extends Controller
 
         if (!$challenge) {
             throw ValidationException::withMessages(['otp' => [__('This OTP request is invalid.')]]);
+        }
+
+        if ($challenge->user?->hasClosedEmployment()) {
+            return response()->json(['message' => __('Your account is no longer active. Please contact HR.')], 403);
         }
 
         $challenge = $this->otpService->resend($challenge);
@@ -185,7 +205,12 @@ class AuthController extends Controller
             ]);
         }
 
-        $request->user()->update(['password' => Hash::make($request->password)]);
+        $user = $request->user();
+        $user->update(['password' => Hash::make($request->password)]);
+
+        // Sign out every other device; the current session stays valid.
+        $currentTokenId = optional($user->currentAccessToken())->id;
+        $user->tokens()->when($currentTokenId, fn ($q) => $q->where('id', '!=', $currentTokenId))->delete();
 
         return response()->json(['message' => __('Password changed successfully')]);
     }
@@ -199,7 +224,8 @@ class AuthController extends Controller
             ->whereRaw('LOWER(email) = ?', [strtolower((string) $request->input('email'))])
             ->first();
 
-        if (!$user) {
+        // Closed accounts get the same answer as unknown emails (no OTP is sent, nothing to probe).
+        if (!$user || $user->hasClosedEmployment()) {
             return response()->json([
                 'message' => __('If an account exists for that email, an OTP has been sent.'),
             ]);
@@ -230,7 +256,13 @@ class AuthController extends Controller
                 LoginOtp::PURPOSE_PASSWORD_RESET
             );
 
+            if ($challenge->user->hasClosedEmployment()) {
+                return response()->json(['message' => __('Your account is no longer active. Please contact HR.')], 403);
+            }
+
             $challenge->user->forceFill(['password' => Hash::make((string) $request->input('password'))])->save();
+            // A reset password must also end every session opened with the old one.
+            $challenge->user->tokens()->delete();
 
             return response()->json(['message' => __('Password has been reset successfully.')]);
         }
@@ -241,10 +273,16 @@ class AuthController extends Controller
             'password' => 'required|min:8|confirmed',
         ]);
 
+        $resetUser = User::query()->whereRaw('LOWER(email) = ?', [strtolower((string) $request->input('email'))])->first();
+        if ($resetUser?->hasClosedEmployment()) {
+            return response()->json(['message' => __('Your account is no longer active. Please contact HR.')], 403);
+        }
+
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password): void {
                 $user->forceFill(['password' => Hash::make($password)])->save();
+                $user->tokens()->delete();
             }
         );
 

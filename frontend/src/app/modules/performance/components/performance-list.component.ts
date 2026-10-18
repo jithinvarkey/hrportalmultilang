@@ -49,6 +49,7 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
 
   isHR  = false;
   isMgr = false;
+  private employeeId: number | null = null;
 
   // ── Filters ───────────────────────────────────────────────────────────
   reviewStatus  = '';
@@ -96,6 +97,7 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.isHR  = this.auth.isHRRole();
     this.isMgr = this.auth.isManagerRole();
+    this.employeeId = this.auth.getUser()?.employee?.id ?? null;
 
     this.cycleForm = this.fb.group({
       name:                     ['', Validators.required],
@@ -158,7 +160,7 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
   loadCycles(page = 1): void {
     this.loading = true; this.currentPage = page;
     this.http.get<any>(this.api, { params: { page, per_page: 12 } }).pipe(takeUntil(this.destroy$)).subscribe({
-      next: r => { this.cycles = r.data ?? []; this.pagination = r.meta ?? null; this.loading = false; this.cdr.markForCheck(); },
+      next: r => { this.cycles = r.data ?? []; this.pagination = r.meta ?? r; this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.loading = false; this.cdr.markForCheck(); },
     });
   }
@@ -170,7 +172,7 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
     if (this.searchControl.value)  params.search = this.searchControl.value;
 
     this.http.get<any>(this.api, { params }).pipe(takeUntil(this.destroy$)).subscribe({
-      next: r => { this.reviews = r.data ?? []; this.pagination = r.meta ?? null; this.loading = false; this.cdr.markForCheck(); },
+      next: r => { this.reviews = r.data ?? []; this.pagination = r.meta ?? r; this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.loading = false; this.cdr.markForCheck(); },
     });
   }
@@ -190,9 +192,9 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
     if (cycle) {
       this.cycleForm.patchValue({
         name: cycle.name, type: cycle.type, status: cycle.status,
-        start_date: cycle.start_date, end_date: cycle.end_date,
-        self_assessment_deadline: cycle.self_assessment_deadline ?? '',
-        manager_review_deadline:  cycle.manager_review_deadline ?? '',
+        start_date: this.toDateInput(cycle.start_date), end_date: this.toDateInput(cycle.end_date),
+        self_assessment_deadline: this.toDateInput(cycle.self_assessment_deadline),
+        manager_review_deadline:  this.toDateInput(cycle.manager_review_deadline),
       });
     } else {
       this.cycleForm.reset({ type: 'annual', status: 'draft' });
@@ -317,7 +319,7 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
       : this.http.post(`${this.api}/kpis`, this.kpiForm.value);
     req.pipe(takeUntil(this.destroy$)).subscribe({
       next: () => { this.submitting = false; this.showKpiForm = false; this.loadKpis(); this.cdr.markForCheck(); },
-      error: () => { this.submitting = false; this.cdr.markForCheck(); },
+      error: (e: any) => { this.submitting = false; this.errorMsg = e?.error?.message ?? this.lang.t('MESSAGES.SAVE_FAILED'); this.cdr.markForCheck(); },
     });
   }
 
@@ -339,8 +341,21 @@ export class PerformanceListComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  canSelfAssess(r: any):    boolean { return r.status === 'pending'; }
-  canMgrReview(r: any):     boolean { return ['pending','self_submitted'].includes(r.status) && (this.isMgr || this.isHR); }
+  /** PerformanceController::selfAssessment only accepts the caller's own review, while pending or self_submitted. */
+  canSelfAssess(r: any):    boolean { return this.isOwnReview(r) && ['pending','self_submitted'].includes(r.status); }
+  /** Managers (non-HR) can never review themselves (backend returns 403). */
+  canMgrReview(r: any):     boolean { return ['pending','self_submitted'].includes(r.status) && (this.isHR || (this.isMgr && !this.isOwnReview(r))); }
+  private isOwnReview(r: any): boolean {
+    return this.employeeId !== null && String(r?.employee_id ?? r?.employee?.id) === String(this.employeeId);
+  }
+  /** Date cast values arrive as UTC ISO timestamps ("2026-09-30T21:00:00Z" = 1 Oct in Riyadh); date inputs need local YYYY-MM-DD. */
+  private toDateInput(value: any): string {
+    if (!value) return '';
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
   canFinalize(r: any):      boolean { return r.status === 'manager_reviewed' && this.isHR; }
 
   /** Translation key for a cycle type / performance band code (unknown codes fall back to the raw code). */

@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { formatDate as ngFormatDate } from '@angular/common';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { finalize, takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { humanize } from '../../../shared/pipes/i18n.pipes';
@@ -594,7 +594,8 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     }, 200);
 
     this.http.post<any>(`/api/v1/employees/${this.employee.id}/documents`, fd)
-      .pipe(takeUntil(this.destroy$))
+      // finalize also clears the progress timer when the page is left mid-upload
+      .pipe(takeUntil(this.destroy$), finalize(() => clearInterval(ivl)))
       .subscribe({
         next: r => {
           clearInterval(ivl);

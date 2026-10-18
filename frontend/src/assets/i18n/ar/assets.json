@@ -116,6 +116,7 @@
       "CONFIRM_DELETE": "هل تريد حذف الأصل \"{{name}}\"؟",
       "DELETED": "تم حذف الأصل.",
       "REPORT_FAILED": "تعذّر تنزيل التقرير.",
+      "ATTACHMENT_FAILED": "تعذر تنزيل المرفق.",
       "EMPLOYEE_DATE_REQUIRED": "الموظف والتاريخ مطلوبان.",
       "ASSIGNED": "تم تسليم الأصل.",
       "ASSIGN_FAILED": "تعذّر تسليم الأصل.",

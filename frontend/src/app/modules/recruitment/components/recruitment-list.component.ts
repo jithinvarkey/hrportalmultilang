@@ -196,7 +196,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
       benefits:        [''],
     });
     this.hireForm = this.fb.group({
-      joining_date:     [new Date().toISOString().slice(0, 10), Validators.required],
+      joining_date:     [this.localYmd(new Date()), Validators.required],
       salary:           [null, Validators.required],
       department_id:    [''],
       designation_id:   [''],
@@ -218,7 +218,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
     if (this.searchControl.value) params.search = this.searchControl.value;
     if (this.statusFilter)        params.status = this.statusFilter;
     this.http.get<any>(`${this.api}/jobs`, { params }).pipe(takeUntil(this.destroy$)).subscribe({
-      next: r => { this.jobs = r.data ?? []; this.pagination = r.meta ?? null; this.loading = false; this.cdr.markForCheck(); },
+      next: r => { this.jobs = r.data ?? []; this.pagination = r.meta ?? (r.last_page ? r : null); this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.loading = false; this.cdr.markForCheck(); },
     });
   }
@@ -307,7 +307,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
       applicant_email: [app.applicant_email, [Validators.required, Validators.email, Validators.maxLength(255)]],
       applicant_phone: [app.applicant_phone, [Validators.required, Validators.maxLength(30)]],
       expected_salary: [app.expected_salary ?? null, [Validators.min(0), Validators.max(99999999.99)]],
-      available_from: [app.available_from?.slice(0, 10) ?? ''],
+      available_from: [this.dateInputValue(app.available_from)],
       cover_letter_text: [app.cover_letter_text ?? '', Validators.maxLength(20000)],
     });
     this.applicantEditError = '';
@@ -398,8 +398,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
 
     this.http.put(`${this.api}/applications/${app.id}/stage`, { stage }).pipe(takeUntil(this.destroy$)).subscribe({
       next: (r: any) => {
-        app.stage = stage;
-        if (this.selectedApp?.id === app.id) this.selectedApp.stage = stage;
+        this.syncStage(app, stage);
         this.successMsg = r?.message || this.lang.t('RECRUITMENT.MSG.MOVED_TO', { stage: this.stageLabel(stage) });
         this.loadStats();
         setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3000);
@@ -459,10 +458,11 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
         next: (r: any) => {
           this.offerSubmitting  = false;
           this.showOfferForm    = false;
-          this.selectedApp.stage = 'offer';
+          this.syncStage(this.selectedApp, 'offer');
           const to = r?.email_to || this.lang.t('RECRUITMENT.MSG.THE_CANDIDATE');
-          this.successMsg = r?.email_cc
-            ? this.lang.t('RECRUITMENT.MSG.OFFER_SENT_CC', { to, cc: r.email_cc })
+          const cc = (Array.isArray(r?.email_cc) ? r.email_cc : [r?.email_cc]).filter(Boolean).join(', ');
+          this.successMsg = cc
+            ? this.lang.t('RECRUITMENT.MSG.OFFER_SENT_CC', { to, cc })
             : this.lang.t('RECRUITMENT.MSG.OFFER_SENT', { to });
           this.loadStats();
           setTimeout(() => { this.successMsg = ''; this.cdr.markForCheck(); }, 3000);
@@ -588,7 +588,7 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
     this.showOfferForm = false;
     this.showInterviewForm = false;
     this.hireForm.reset({
-      joining_date:     new Date().toISOString().slice(0, 10),
+      joining_date:     this.localYmd(new Date()),
       salary:           app.expected_salary ?? null,
       department_id:    app.job_posting?.department_id ?? '',
       designation_id:   app.job_posting?.designation_id ?? '',
@@ -651,7 +651,12 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
   openJobForm(job?: any): void {
     this.editJobId = job?.id ?? null;
     if (job) {
-      this.jobForm.patchValue({ ...job, department_id: job.department_id ?? '', designation_id: job.designation_id ?? '' });
+      this.jobForm.patchValue({
+        ...job,
+        department_id: job.department_id ?? '',
+        designation_id: job.designation_id ?? '',
+        closing_date: this.dateInputValue(job.closing_date),
+      });
     } else {
       this.jobForm.reset({
         employment_type: 'full_time',
@@ -936,6 +941,31 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
   get pages(): number[] { if(!this.pagination?.last_page) return []; return Array.from({length:Math.min(this.pagination.last_page,8)},(_,i)=>i+1); }
   get f() { return this.jobForm.controls; }
 
+  /** Set the stage on the given application, the open drawer copy and the kanban list item. */
+  private syncStage(app: any, stage: string): void {
+    if (app) app.stage = stage;
+    if (this.selectedApp && this.selectedApp.id === app?.id) this.selectedApp.stage = stage;
+    const listItem = this.applications.find(a => a.id === app?.id);
+    if (listItem) listItem.stage = stage;
+  }
+
+  /** yyyy-MM-dd in the browser's timezone (toISOString() is UTC: the previous day before 03:00 in Riyadh). */
+  private localYmd(date: Date): string {
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  /**
+   * Value for <input type="date"> from an API date. Laravel `date` casts serialise as UTC ISO
+   * ("2026-10-19T21:00:00.000000Z" for 20 Oct in Asia/Riyadh), so slicing the string gives the previous day.
+   */
+  private dateInputValue(value: string | null | undefined): string {
+    if (!value) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value).slice(0, 10) : this.localYmd(date);
+  }
+
   private firstError(err: any): string {
     if (err?.error?.errors) {
       const first = Object.values(err.error.errors)[0];
@@ -994,9 +1024,8 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
         },
         error: (e: any) => {
           this.addApplicantBusy = false;
-          this.errorMsg = e?.error?.message ?? e?.error?.errors
-            ? Object.values(e.error.errors).flat().join(' ')
-            : this.lang.t('RECRUITMENT.MSG.APPLICANT_ADD_FAILED');
+          const validation = e?.error?.errors ? Object.values(e.error.errors).flat().join(' ') : '';
+          this.errorMsg = validation || e?.error?.message || this.lang.t('RECRUITMENT.MSG.APPLICANT_ADD_FAILED');
           this.cdr.markForCheck();
         },
       });

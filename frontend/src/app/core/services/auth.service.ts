@@ -88,30 +88,18 @@ export class AuthService {
 
 
   logout(): void {
+    // Clear the local session right away: callers navigate to the login page immediately, and the
+    // user must not stay signed in (guards, polling, a quick re-login) while the API call is in flight.
+    const token = this.getToken();
+    this.clearStoredSession();
+    if (!token) return;
 
-  const token = this.getToken();
-
-  this.http.post(
-    `${this.apiUrl}/auth/logout`,
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    }
-  ).subscribe({
-    next: () => {
-      this.clearStoredSession();
-      //this.router.navigate(['/login']);
-    },
-    error: () => {
-      // Even if API fails, clear local session
-      this.clearStoredSession();
-      //this.router.navigate(['/login']);
-    }
-  });
-
-}
+    this.http.post(
+      `${this.apiUrl}/auth/logout`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    ).subscribe({ error: () => { /* token is already gone locally */ } });
+  }
 
   refreshUser(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/auth/me`).pipe(
@@ -129,6 +117,9 @@ export class AuthService {
     const u = sessionStorage.getItem(this.userKey) || localStorage.getItem(this.userKey);
     return u ? JSON.parse(u) : null;
   }
+
+  /** Forget the stored token and user (used on logout and when the API rejects the token). */
+  clearSession(): void { this.clearStoredSession(); }
 
   private clearStoredSession(): void {
     sessionStorage.removeItem(this.tokenKey);
@@ -264,7 +255,7 @@ export class AuthService {
       {
         group: 'NAV.GROUP.FINANCE',
         path: '/payroll', label: 'NAV.PAYROLL', icon: 'payments',
-        roles: [ROLES.SUPER_ADMIN, ROLES.HR_MANAGER]
+        roles: [ROLES.SUPER_ADMIN, ROLES.HR_MANAGER, ROLES.FINANCE_MANAGER]
       },
       {
         path: '/loans', label: 'NAV.LOANS', icon: 'account_balance',

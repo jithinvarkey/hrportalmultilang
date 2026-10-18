@@ -118,6 +118,8 @@ export class LeaveListComponent implements OnInit {
   isHR = false;
   canManageHolidays = false;
   isMgr = false;
+  /** Roles the backend accepts at the manager stage (LeaveController::approve/reject). */
+  private isLeaveManagerApprover = false;
   showMyRequestsTab = true;
   userId = '';
   employeeId = '';
@@ -185,7 +187,9 @@ export class LeaveListComponent implements OnInit {
   // ── Stats ─────────────────────────────────────────────────────────────────
   loadStats() {
     // Role detection
-    this.isHR = this.auth.isHRRole();
+    // Backend treats only these roles as leave HR (approve final stage, manage types, reports).
+    this.isHR = this.auth.hasAnyRole(['super_admin', 'hr_manager', 'hr_staff']);
+    this.isLeaveManagerApprover = this.auth.hasAnyRole(['super_admin', 'hr_manager', 'hr_staff', 'department_manager', 'finance_manager']);
     this.canManageHolidays = this.auth.hasAnyRole(['super_admin', 'hr_manager', 'hr_staff']);
     this.isMgr = this.auth.isManagerRole() || this.auth.isFinanceManager();
     const user = this.auth.getUser();
@@ -273,7 +277,8 @@ export class LeaveListComponent implements OnInit {
     this.http.post(`/api/v1/leave/requests/${r.id}/approve`, {})
       .pipe(finalize(() => this.clearActionLoading()))
       .subscribe({
-        next: () => { this.load(this.currentPage); this.loadStats(); this.loadMyBalance(); this.loadAnnualBalanceToday(); if (this.showDetail) this.showDetail = false; }
+        next: () => { this.load(this.currentPage); this.loadStats(); this.loadMyBalance(); this.loadAnnualBalanceToday(); if (this.showDetail) this.showDetail = false; },
+        error: err => { alert(err?.error?.message || this.lang.t('MESSAGES.GENERIC_ERROR')); this.load(this.currentPage); }
       });
   }
 
@@ -304,7 +309,8 @@ export class LeaveListComponent implements OnInit {
     this.http.delete(`/api/v1/leave/requests/${r.id}`)
       .pipe(finalize(() => this.clearActionLoading()))
       .subscribe({
-        next: () => { this.load(this.currentPage); this.loadStats(); this.loadMyBalance(); this.loadAnnualBalanceToday(); if (this.showDetail) this.showDetail = false; }
+        next: () => { this.load(this.currentPage); this.loadStats(); this.loadMyBalance(); this.loadAnnualBalanceToday(); if (this.showDetail) this.showDetail = false; },
+        error: err => { alert(err?.error?.message || this.lang.t('MESSAGES.GENERIC_ERROR')); this.load(this.currentPage); }
       });
   }
 
@@ -562,11 +568,11 @@ export class LeaveListComponent implements OnInit {
 
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${this.calYear}-${String(this.calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const dow = new Date(dateStr).getDay();
+      const dow = new Date(this.calYear, this.calMonth, d).getDay();
       const isWeekend = dow === 5 || dow === 6; // Fri=5, Sat=6
       const holiday = this.holidays.find(h => h.date?.slice(0, 10) === dateStr);
       const leaves = this.calendarEvents.filter(e => e.start_date?.slice(0, 10) <= dateStr && e.end_date?.slice(0, 10) >= dateStr);
-      const isToday = dateStr === new Date().toISOString().slice(0, 10);
+      const isToday = dateStr === this.dateInputValue(new Date());
       cells.push({ d, dateStr, isWeekend, holiday, leaves, isToday });
     }
     this.calDays = cells;
@@ -749,15 +755,16 @@ export class LeaveListComponent implements OnInit {
 
   workingDaysPreview(): number {
     if (!this.form.start_date || !this.form.end_date) return 0;
-    const start = new Date(this.form.start_date);
-    const end = new Date(this.form.end_date);
+    // Parse as local dates: `new Date('YYYY-MM-DD')` is UTC midnight and shifts the weekday/date by the timezone.
+    const start = new Date(`${this.form.start_date}T00:00:00`);
+    const end = new Date(`${this.form.end_date}T00:00:00`);
     if (end < start) return 0;
     let count = 0;
     const cur = new Date(start);
     const holidayDates = new Set((this.formHolidays || []).map(h => (h.date || '').slice(0, 10)));
     while (cur <= end) {
       const d = cur.getDay();
-      const dateStr = cur.toISOString().slice(0, 10);
+      const dateStr = this.dateInputValue(cur);
       if (d !== 5 && d !== 6 && !holidayDates.has(dateStr)) count++;
       cur.setDate(cur.getDate() + 1);
     }
@@ -927,10 +934,10 @@ export class LeaveListComponent implements OnInit {
   canApprove(r: any): boolean {
     if (r?.can_approve === false) return false;
     if (this.isOwnRequest(r)) return false;
-    if (r.status === 'pending' && this.isMgr && !this.isHR) {
+    if (r.status === 'pending' && this.isLeaveManagerApprover && !this.isHR) {
       return !!this.employeeId && String(r?.employee?.manager_id) === String(this.employeeId);
     }
-    if (r.status === 'pending') return this.isMgr;
+    if (r.status === 'pending') return this.isLeaveManagerApprover;
     if (r.status === 'manager_approved') return this.isHR;
     return false;
   }
@@ -949,9 +956,9 @@ export class LeaveListComponent implements OnInit {
 
   canCancel(r: any): boolean {
 
-    // HR can always cancel
+    // HR can cancel anything the backend still allows to be cancelled
     if (this.isHR) {
-      return true;
+      return ['pending', 'manager_approved', 'approved'].includes(r?.status);
     }
 
     // Employee can cancel only own pending requests

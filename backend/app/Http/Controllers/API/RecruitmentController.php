@@ -88,7 +88,7 @@ class RecruitmentController extends Controller {
         $this->ensureCanManageRecruitment($request);
         $departmentScope = $this->managerDepartmentScope($request);
         $job = $this->scopeJobs(JobPosting::query(), $departmentScope)->findOrFail($id);
-        $data = $request->all();
+        $data = $request->except(['created_by']);
 
         if ($departmentScope !== null) {
             unset($data['department_id']);
@@ -137,12 +137,16 @@ class RecruitmentController extends Controller {
             ? $request->file('cv_path')->store("recruitment/cvs/{$jobId}", 'public')
             : null;
 
+        // Only recruiters may place an applicant directly into a later stage;
+        // public/self-service applicants always start at "applied".
+        $canSetStage = $isHR || $departmentScope > 0;
+
         $application = JobApplication::create(array_merge(
             $request->only(['applicant_name','applicant_email','applicant_phone','expected_salary','available_from','cover_letter_text']),
             [
                 'job_posting_id' => $jobId,
                 'cv_path'        => $cvPath,
-                'stage'          => $request->stage ?? 'applied',
+                'stage'          => $canSetStage ? ($request->stage ?? 'applied') : 'applied',
             ]
         ));
 
@@ -162,7 +166,7 @@ class RecruitmentController extends Controller {
             ->with(['jobPosting.department'])
             ->when($request->job_posting_id, fn($q) => $q->where('job_posting_id', $request->job_posting_id))
             ->when($request->stage, fn($q) => $q->where('stage', $request->stage))
-            ->orderBy('created_at','desc')->paginate(20);
+            ->orderBy('created_at','desc')->paginate(min(max((int) $request->input('per_page', 20), 1), 200));
         $this->hideExpectedSalary($apps->getCollection(), $request);
         return response()->json($apps);
     }
@@ -214,6 +218,12 @@ class RecruitmentController extends Controller {
         $request->validate(['stage'=>'required|in:applied,screening,interview,offer,hired,rejected']);
         $departmentScope = $this->managerDepartmentScope($request);
         $app = $this->scopeApplications(JobApplication::query(), $departmentScope)->findOrFail($id);
+
+        if ($app->stage === 'hired') {
+            return response()->json([
+                'message' => __('This applicant has already been hired; the stage can no longer be changed.'),
+            ], 422);
+        }
 
         if ($request->stage === 'offer') {
             return response()->json([
@@ -296,7 +306,11 @@ class RecruitmentController extends Controller {
     public function updateInterview(Request $request, $id) {
         $this->ensureCanManageRecruitment($request);
         $interview = Interview::findOrFail($id);
-        $interview->update($request->all());
+        // A department manager may only edit interviews for applications in their scope.
+        $this->scopeApplications(JobApplication::query(), $this->managerDepartmentScope($request))
+            ->findOrFail($interview->application_id);
+        // Interviewers are validated in scheduleInterview(); never re-point or re-staff an interview here.
+        $interview->update($request->except(['application_id', 'interviewer_employee_ids', 'interviewers']));
         return response()->json(['interview' => $interview]);
     }
 

@@ -33,6 +33,26 @@ class Employee extends Model
 
     protected $hidden = ['national_id','bank_account'];
 
+    /** Pay and banking columns that only payroll-level roles may see. */
+    public const PAY_FIELDS = [
+        'salary','housing_allowance','transport_allowance','other_allowances',
+        'mobile_allowance','food_allowance','bank_name','bank_account',
+    ];
+
+    /** Recursively drop pay/bank/ID fields from serialized data (org-structure endpoints). */
+    public static function stripPayFields(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if (is_string($key) && (in_array($key, self::PAY_FIELDS, true) || $key === 'national_id')) {
+                unset($data[$key]);
+            } elseif (is_array($value)) {
+                $data[$key] = self::stripPayFields($value);
+            }
+        }
+
+        return $data;
+    }
+
     protected $casts = [
         'dob'               => 'date:Y-m-d',
         'hire_date'         => 'date:Y-m-d',

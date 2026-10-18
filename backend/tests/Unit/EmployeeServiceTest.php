@@ -54,7 +54,8 @@ class EmployeeServiceTest extends TestCase
 
         $this->service->createDefaultLeaveAllocations($employee);
 
-        $this->assertDatabaseCount('leave_allocations', 2);
+        // Migrations also seed default active types (e.g. business excuse), so compare with all active types.
+        $this->assertDatabaseCount('leave_allocations', LeaveType::where('is_active', true)->count());
 
         $this->assertDatabaseHas('leave_allocations', [
             'employee_id'    => $employee->id,
@@ -79,6 +80,7 @@ class EmployeeServiceTest extends TestCase
      */
     public function it_creates_no_allocations_when_no_active_types_exist(): void
     {
+        LeaveType::query()->update(['is_active' => false]); // including types seeded by migrations
         $employee = Employee::factory()->create();
 
         $this->service->createDefaultLeaveAllocations($employee);

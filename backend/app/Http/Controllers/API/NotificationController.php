@@ -29,7 +29,7 @@ class NotificationController extends Controller
 
         $notifications = AppNotification::where('employee_id', $empId)
             ->orderByDesc('created_at')
-            ->limit((int) ($request->limit ?? 20))
+            ->limit(max(1, min(100, (int) ($request->limit ?? 20))))
             ->get();
 
         return response()->json([

@@ -47,6 +47,7 @@ export class BioTimeComponent implements OnInit, OnDestroy {
 
 showSyncModal = false;
 syncDeviceObj: any = null;
+syncError = '';
 
 syncForm = {
   type: 'today', // today | date | range
@@ -210,6 +211,17 @@ syncForm = {
     return;
   }
 
+  // The API falls back to "today" when the date is missing, so a blank date
+  // would silently sync the wrong day — require the dates for these modes.
+  const f = this.syncForm;
+  if ((f.type === 'date' && !f.date)
+      || (f.type === 'range' && (!f.start_date || !f.end_date || f.start_date > f.end_date))) {
+    this.syncError = this.lang.t('ATTENDANCE.BIOTIME.MSG.SYNC_DATES_REQUIRED');
+    this.cdr.markForCheck();
+    return;
+  }
+  this.syncError = '';
+
   this.syncing[deviceId] = true;
   this.cdr.markForCheck();
 
@@ -301,6 +313,7 @@ syncForm = {
 openSyncModal(device: any): void {
 
   this.syncDeviceObj = device;
+  this.syncError = '';
 
   this.syncForm = {
     type: 'today',

@@ -40,7 +40,7 @@ class AttendanceLog extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
+        'date' => 'date:Y-m-d',
         'missed_checkout_notified_at' => 'datetime',
     ];
 

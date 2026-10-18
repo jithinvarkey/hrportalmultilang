@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 class OtpService
 {
     private const EXPIRES_IN_MINUTES = 3;
+    private const MAX_SENDS = 5;
     private const MAX_ATTEMPTS = 5;
 
     private $smsService;
@@ -57,6 +58,11 @@ class OtpService
             throw ValidationException::withMessages(['otp' => [__('Please wait before requesting another OTP.')]]);
         }
 
+        // Each resend resets the attempt counter, so cap resends to keep the total number of guesses bounded.
+        if ((int) $challenge->send_count >= self::MAX_SENDS) {
+            throw ValidationException::withMessages(['otp' => [__('Too many OTP requests. Please sign in again.')]]);
+        }
+
         $otp = (string) random_int(100000, 999999);
         $challenge->forceFill([
             'otp_hash' => Hash::make($otp),
@@ -83,19 +89,39 @@ class OtpService
             throw ValidationException::withMessages(['otp' => [__('This OTP is invalid or has expired.')]]);
         }
 
-        if ($challenge->attempts >= self::MAX_ATTEMPTS) {
+        // Reserve the attempt atomically before the (slow) hash check, so parallel guesses
+        // cannot all slip past the MAX_ATTEMPTS check.
+        $reserved = LoginOtp::query()
+            ->whereKey($challenge->id)
+            ->whereNull('consumed_at')
+            ->where('attempts', '<', self::MAX_ATTEMPTS)
+            ->increment('attempts');
+
+        if ($reserved === 0) {
+            $challenge->refresh();
+            if ($challenge->consumed_at !== null) {
+                throw ValidationException::withMessages(['otp' => [__('This OTP is invalid or has expired.')]]);
+            }
+
             $challenge->forceFill(['consumed_at' => now()])->save();
             throw ValidationException::withMessages(['otp' => [__('Too many incorrect attempts. Please request a new OTP.')]]);
         }
 
         if (!Hash::check($otp, $challenge->otp_hash)) {
-            $challenge->increment('attempts');
             throw ValidationException::withMessages(['otp' => [__('The OTP is incorrect.')]]);
         }
 
-        $challenge->forceFill(['consumed_at' => now()])->save();
+        // Consume once: a second concurrent request with the same correct OTP must not get another token.
+        $consumed = LoginOtp::query()
+            ->whereKey($challenge->id)
+            ->whereNull('consumed_at')
+            ->update(['consumed_at' => now()]);
 
-        return $challenge;
+        if ($consumed === 0) {
+            throw ValidationException::withMessages(['otp' => [__('This OTP is invalid or has expired.')]]);
+        }
+
+        return $challenge->refresh();
     }
 
     public function findChallenge(string $challengeToken, string $purpose): ?LoginOtp

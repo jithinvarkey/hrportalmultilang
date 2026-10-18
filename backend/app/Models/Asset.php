@@ -30,7 +30,7 @@ class Asset extends Model
 
     protected $casts = [
         'purchase_price' => 'decimal:2',
-        'purchase_date'  => 'date',
+        'purchase_date'  => 'date:Y-m-d',
     ];
 
     protected $appends = ['attachment_url'];

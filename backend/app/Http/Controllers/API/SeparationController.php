@@ -50,7 +50,10 @@ class SeparationController extends Controller
             )
             ->orderBy('created_at','desc');
 
-        return response()->json($query->paginate(15));
+        $paginator = $query->paginate(15);
+        $paginator->getCollection()->each(fn (Separation $sep) => $this->redactPayData($sep));
+
+        return response()->json($paginator);
     }
 
     // ── Show ───────────────────────────────────────────────────────────────
@@ -147,6 +150,7 @@ class SeparationController extends Controller
                 ->orderBy('created_at')
                 ->get(['id','reference','loan_type_id','approved_amount','monthly_installment','total_paid','balance_remaining','status']));
         }
+        $this->redactPayData($sep);
         return response()->json(['separation' => $sep]);
     }
 
@@ -239,7 +243,9 @@ class SeparationController extends Controller
             }
         }
         $sep->update($payload);
-        return response()->json(['separation' => $sep->fresh()]);
+        $sep = $sep->fresh();
+        $this->redactPayData($sep);
+        return response()->json(['separation' => $sep]);
     }
 
     // ── Approve ────────────────────────────────────────────────────────────
@@ -313,7 +319,9 @@ class SeparationController extends Controller
                 return response()->json(['message' => __('Cannot approve at this stage.')], 422);
         }
 
-        return response()->json(['message' => __('Approved.'), 'separation' => $sep->fresh('employee')]);
+        $sep = $sep->fresh('employee');
+        $this->redactPayData($sep);
+        return response()->json(['message' => __('Approved.'), 'separation' => $sep]);
     }
 
     // ── Reject ─────────────────────────────────────────────────────────────
@@ -406,9 +414,15 @@ class SeparationController extends Controller
         if (!$this->canManageOffboarding(auth()->user())) {
             return response()->json(['message' => __('Only HR Manager, Finance Manager, or CEO can update settlement.')], 403);
         }
-        $sep->update($request->only([
-            'gratuity_amount','leave_encashment','other_additions','other_deductions',
-            'final_settlement_amount','settlement_paid','settlement_paid_date','settlement_notes',
+        $sep->update($request->validate([
+            'gratuity_amount'         => 'sometimes|numeric|min:0',
+            'leave_encashment'        => 'sometimes|numeric|min:0',
+            'other_additions'         => 'sometimes|numeric|min:0',
+            'other_deductions'        => 'sometimes|numeric|min:0',
+            'final_settlement_amount' => 'sometimes|numeric|min:0',
+            'settlement_paid'         => 'sometimes|boolean',
+            'settlement_paid_date'    => 'nullable|date',
+            'settlement_notes'        => 'nullable|string|max:2000',
         ]));
         return response()->json(['separation' => $sep->fresh()]);
     }
@@ -477,8 +491,15 @@ class SeparationController extends Controller
         if (!$this->canManageOffboarding(auth()->user())) {
             return response()->json(['message' => __('Only HR Manager, Finance Manager, or CEO can manage checklist templates.')], 403);
         }
-        $request->validate(['title' => 'required|string|max:150']);
-        return response()->json(['template' => OffboardingTemplate::create($request->all())], 201);
+        $data = $request->validate([
+            'title'       => 'required|string|max:150',
+            'category'    => 'sometimes|string|max:60',
+            'description' => 'nullable|string',
+            'sort_order'  => 'sometimes|integer|min:0',
+            'is_required' => 'sometimes|boolean',
+            'is_active'   => 'sometimes|boolean',
+        ]);
+        return response()->json(['template' => OffboardingTemplate::create($data)], 201);
     }
 
     public function updateTemplate(Request $request, $id)
@@ -487,7 +508,14 @@ class SeparationController extends Controller
             return response()->json(['message' => __('Only HR Manager, Finance Manager, or CEO can manage checklist templates.')], 403);
         }
         $t = OffboardingTemplate::findOrFail($id);
-        $t->update($request->all());
+        $t->update($request->validate([
+            'title'       => 'sometimes|string|max:150',
+            'category'    => 'sometimes|string|max:60',
+            'description' => 'nullable|string',
+            'sort_order'  => 'sometimes|integer|min:0',
+            'is_required' => 'sometimes|boolean',
+            'is_active'   => 'sometimes|boolean',
+        ]));
         return response()->json(['template' => $t]);
     }
 
@@ -537,6 +565,28 @@ class SeparationController extends Controller
         }
 
         return $query->where('employee_id', $user?->employee?->id ?: 0);
+    }
+
+    private const SETTLEMENT_FIELDS = [
+        'gratuity_amount','leave_encashment','other_deductions','other_additions',
+        'final_settlement_amount','settlement_paid','settlement_paid_date','settlement_notes',
+    ];
+
+    /**
+     * Settlement amounts and the employee's pay are visible only to payroll-level
+     * roles or to the separating employee; department managers (approvers or
+     * clearance owners) must not receive them.
+     */
+    private function redactPayData(Separation $sep): void
+    {
+        $user = auth()->user();
+        if ($user?->hasAnyRole(['super_admin', 'ceo', 'hr_manager', 'finance_manager'])) return;
+        if ((int) $sep->employee_id === (int) $user?->employee?->id) return;
+
+        $sep->makeHidden(self::SETTLEMENT_FIELDS);
+        if ($sep->relationLoaded('employee') && $sep->employee) {
+            $sep->employee->makeHidden(Employee::PAY_FIELDS);
+        }
     }
 
     private function canViewSeparation(Separation $sep): bool
@@ -602,6 +652,9 @@ class SeparationController extends Controller
     private function canUpdateChecklistItem(OffboardingItem $item, $user): bool
     {
         if ($this->canViewAllChecklistItems($user)) return true;
+        // Department categories are owned by department managers (and finance);
+        // ordinary staff in that department must not clear tasks.
+        if (!$user?->hasAnyRole(['finance_manager', 'department_manager'])) return false;
 
         $category = $this->offboardingCategoryForUser($user);
         return $category !== null && $item->category === $category;

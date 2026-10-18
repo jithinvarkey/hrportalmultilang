@@ -43,6 +43,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
   isHR = false;
   isMgr = false;
   currentUserId: number | null = null;
+  currentEmployeeId: number | null = null;
   currentUserdepartment: number | null = null;
 
   // ── Panels ───────────────────────────────────────────────────────────────
@@ -153,6 +154,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
     this.isHR = this.auth.isHRRole();
     this.isMgr = this.auth.isManagerRole();
     this.currentUserId = this.auth.getUser()?.id ?? null;
+    this.currentEmployeeId = this.auth.getUser()?.employee?.id ?? null;
     this.currentUserdepartment = this.auth.getUser()?.employee?.departmentId ?? null;
     // OnPush: re-render labels built in code (SLA chips, names) when the language changes
     this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.cdr.markForCheck());
@@ -559,6 +561,18 @@ export class RequestListComponent implements OnInit, OnDestroy {
     return Array.from({ length: Math.max(0, end - start + 1) }, (_, i) => start + i);
   }
 
+  /** Request-type management is an HR function; other roles only see their own / assigned requests. */
+  get visibleTabs(): any[] {
+    return this.isHR ? this.tabs : this.tabs.filter(t => t.id !== 'types');
+  }
+
+  /** Approvers must not act on their own request (the "My Requests" tab lists them too). */
+  private isOwnReq(req: any): boolean {
+    const empId = req?.employee_id ?? req?.employee?.id;
+    return this.currentEmployeeId !== null && empId !== undefined && empId !== null
+      && String(empId) === String(this.currentEmployeeId);
+  }
+
   get columns(): string[] {
     return this.activeTab === 'mine' ? this.mineColumns : this.displayedColumns;
   }
@@ -618,7 +632,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
   // ── Permission helpers ────────────────────────────────────────────────────
 
   canMgrApprove(req: any): boolean {
-    if (req.status !== 'pending_manager') {
+    if (req.status !== 'pending_manager' || this.isOwnReq(req)) {
       return false;
     }
 
@@ -637,6 +651,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
   }
 
   canAssign(req: any): boolean {
+    if (this.isOwnReq(req)) return false;
     if (this.isHR) return ['pending', 'in_progress'].includes(req.status);
     return req.status === 'pending' && this.isMgr;
   }
@@ -648,7 +663,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
 
   canReject(req: any): boolean {
 
-    if (!['pending', 'pending_manager', 'in_progress'].includes(req.status)) {
+    if (!['pending', 'pending_manager', 'in_progress'].includes(req.status) || this.isOwnReq(req)) {
       return false;
     }
 

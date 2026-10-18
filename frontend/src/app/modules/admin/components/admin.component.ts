@@ -612,22 +612,29 @@ export class AdminComponent implements OnInit {
     const req = this.userEditId
       ? this.http.put<any>(`/api/v1/admin/users/${this.userEditId}`, this.userForm)
       : this.http.post<any>('/api/v1/admin/users', this.userForm);
+    const done = () => {
+      this.submitting = false; this.showUserForm = false;
+      this.loadUsers(this.currentPage); this.loadOverview();
+    };
+    const fail = (err: any) => { this.submitting = false; this.formError = this.firstError(err) || this.lang.t('ADMIN.MSG.FAILED'); };
     req.subscribe({
-      next: r => {
-        // Also assign role if editing
-        if (this.userEditId) {
-          this.http.post(`/api/v1/admin/users/${this.userEditId}/assign-role`, { role: this.userForm.role }).subscribe();
-        }
-        this.submitting = false; this.showUserForm = false;
-        this.loadUsers(this.currentPage); this.loadOverview();
+      next: () => {
+        // PUT /users/:id ignores the role, so assign it separately — and only
+        // reload / close once that has finished, so the list shows the new role
+        // and a failure is reported instead of being silently dropped.
+        if (!this.userEditId) { done(); return; }
+        this.http.post(`/api/v1/admin/users/${this.userEditId}/assign-role`, { role: this.userForm.role })
+          .subscribe({ next: done, error: fail });
       },
-      error: err => { this.submitting = false; this.formError = err?.error?.message || this.lang.t('ADMIN.MSG.FAILED'); }
+      error: fail
     });
   }
 
   quickAssignRole(userId: number, role: string) {
     this.http.post(`/api/v1/admin/users/${userId}/assign-role`, { role }).subscribe({
-      next: () => this.loadUsers(this.currentPage)
+      next: () => this.loadUsers(this.currentPage),
+      // Reload so the row's select snaps back to the role actually stored
+      error: err => { alert(this.firstError(err) || this.lang.t('ADMIN.MSG.FAILED')); this.loadUsers(this.currentPage); }
     });
   }
 
@@ -665,7 +672,10 @@ export class AdminComponent implements OnInit {
     if (!this.selectedRole) return;
     this.http.put(`/api/v1/admin/roles/${this.selectedRole.id}/permissions`, {
       permissions: Array.from(this.editablePerms)
-    }).subscribe({ next: () => { this.showRoleEditor = false; this.loadRoles(); }});
+    }).subscribe({
+      next: () => { this.showRoleEditor = false; this.loadRoles(); },
+      error: err => { this.showRoleEditor = false; this.adminError = this.firstError(err) || this.lang.t('ADMIN.MSG.FAILED'); }
+    });
   }
 
   // ── Permission matrix helpers ──────────────────────────────────────

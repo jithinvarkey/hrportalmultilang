@@ -6,6 +6,8 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
+use App\Models\Employee;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,9 +26,9 @@ class DepartmentController extends Controller
      */
     public function index(): JsonResponse
     {
-        return response()->json(
-            Department::with(['manager', 'parent'])->orderBy('name')->get()
-        );
+        return response()->json(Employee::stripPayFields(
+            Department::with(['manager', 'parent'])->orderBy('name')->get()->toArray()
+        ));
     }
 
     /**
@@ -37,6 +39,10 @@ class DepartmentController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        if (!$this->canManage()) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
         $validated = $request->validate([
             'name'             => 'required|string|max:100',
             'name_ar'          => 'nullable|string|max:150',
@@ -63,9 +69,9 @@ class DepartmentController extends Controller
     public function show(int $id): JsonResponse
     {
         return response()->json([
-            'department' => Department::with([
+            'department' => Employee::stripPayFields(Department::with([
                 'manager', 'employees.designation', 'children',
-            ])->findOrFail($id),
+            ])->findOrFail($id)->toArray()),
         ]);
     }
 
@@ -78,6 +84,10 @@ class DepartmentController extends Controller
      */
     public function update(Request $request, int $id): JsonResponse
     {
+        if (!$this->canManage()) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
         $dept = Department::findOrFail($id);
 
         $validated = $request->validate([
@@ -85,7 +95,7 @@ class DepartmentController extends Controller
             'name_ar'          => 'nullable|string|max:150',
             'code'             => "sometimes|required|string|max:20|unique:departments,code,{$id}",
             'description'      => 'nullable|string|max:500',
-            'parent_id'        => 'nullable|exists:departments,id',
+            'parent_id'        => ['nullable', 'exists:departments,id', \Illuminate\Validation\Rule::notIn($this->selfAndDescendantIds($dept->id))],
             'manager_id'       => 'nullable|exists:employees,id',
             'headcount_budget' => 'nullable|integer|min:0',
             'is_active'        => 'boolean',
@@ -93,7 +103,7 @@ class DepartmentController extends Controller
 
         $dept->update($validated);
 
-        return response()->json(['department' => $dept->fresh(['manager', 'parent'])]);
+        return response()->json(['department' => Employee::stripPayFields($dept->fresh(['manager', 'parent'])->toArray())]);
     }
 
     /**
@@ -104,6 +114,10 @@ class DepartmentController extends Controller
      */
     public function destroy(int $id): JsonResponse
     {
+        if (!$this->canManage()) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
         Department::findOrFail($id)->delete();
 
         return response()->json(['message' => __('Department deleted')]);
@@ -125,5 +139,32 @@ class DepartmentController extends Controller
             'actual'        => $dept->employees_count,
             'variance'      => ($dept->headcount_budget ?? 0) - $dept->employees_count,
         ]);
+    }
+
+    /** Department master data is maintained by HR / system admins only. */
+    private function canManage(): bool
+    {
+        return auth()->check() && DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_id', auth()->id())
+            ->where('model_has_roles.model_type', get_class(auth()->user()))
+            ->whereIn('roles.name', ['super_admin', 'ceo', 'hr_manager', 'hr_staff'])
+            ->exists();
+    }
+
+    /** The department itself plus all of its descendants — none of them may become its parent. */
+    private function selfAndDescendantIds(int $id): array
+    {
+        $ids = [$id];
+        $frontier = [$id];
+        while ($frontier) {
+            $frontier = array_values(array_diff(
+                DB::table('departments')->whereIn('parent_id', $frontier)->pluck('id')->map(fn ($v) => (int) $v)->all(),
+                $ids
+            ));
+            $ids = array_merge($ids, $frontier);
+        }
+
+        return $ids;
     }
 }

@@ -588,7 +588,7 @@
             {{ inst.status | statusLabel }}
           </span>
 
-          <div class="inst-actions" *ngIf="inst.status==='pending'||inst.status==='overdue'">
+          <div class="inst-actions" *ngIf="(inst.status==='pending'||inst.status==='overdue') && !inst.payslip_id && canSkipInstallment(instLoan)">
             <button class="inst-btn pay-btn" *ngIf="canMarkInstallmentPaid" [matTooltip]="'LOANS.MARK_PAID' | translate" [attr.aria-label]="'LOANS.MARK_PAID' | translate" (click)="openPayInst(inst)">
               <mat-icon>check_circle</mat-icon>
             </button>

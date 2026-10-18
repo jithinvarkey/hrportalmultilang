@@ -244,6 +244,8 @@
         placeholder="158">
     </div>
 
+    <div class="form-err" *ngIf="syncError"><mat-icon>error_outline</mat-icon> {{ syncError }}</div>
+
   </div>
 
   <div class="modal-footer">

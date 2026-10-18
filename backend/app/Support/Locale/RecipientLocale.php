@@ -12,7 +12,13 @@ use App\Models\User;
  */
 final class RecipientLocale
 {
-    /** @var array<string,string|null> per-process cache, keyed by lower-cased email */
+    /**
+     * Seconds a lookup is reused. Keeps a bulk send (one lookup per address) cheap, while a long-running
+     * queue worker still picks up an employee's changed language instead of using it until the worker restarts.
+     */
+    private const TTL_SECONDS = 60;
+
+    /** @var array<string,array{0:string|null,1:int}> per-process cache: lower-cased email => [locale, expires at] */
     private static array $cache = [];
 
     /** @param  iterable<string>  $emails */
@@ -35,11 +41,12 @@ final class RecipientLocale
             return null;
         }
 
-        if (!array_key_exists($email, self::$cache)) {
-            self::$cache[$email] = self::lookup($email);
+        $now = time();
+        if (!isset(self::$cache[$email]) || self::$cache[$email][1] < $now) {
+            self::$cache[$email] = [self::lookup($email), $now + self::TTL_SECONDS];
         }
 
-        return self::$cache[$email];
+        return self::$cache[$email][0];
     }
 
     public static function flush(): void

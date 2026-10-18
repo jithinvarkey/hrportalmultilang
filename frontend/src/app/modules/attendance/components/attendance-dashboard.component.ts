@@ -214,14 +214,19 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
     return ['admin', 'department'].includes(this.data?.type);
   }
 
+  // Local calendar dates: toISOString() is UTC, which in Riyadh (UTC+3) gives
+  // yesterday's date between 00:00 and 03:00 (and the previous month on the 1st).
   private today(): string {
-    return new Date().toISOString().slice(0, 10);
+    return this.ymd(new Date());
   }
 
   private defaultReportFrom(): string {
     const d = new Date();
-    d.setDate(1);
-    return d.toISOString().slice(0, 10);
+    return this.ymd(new Date(d.getFullYear(), d.getMonth(), 1));
+  }
+
+  private ymd(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
   // ── Charts ───────────────────────────────────────────────────────────

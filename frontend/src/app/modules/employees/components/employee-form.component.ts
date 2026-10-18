@@ -24,6 +24,18 @@ export class EmployeeFormComponent implements OnInit {
   activeTab     = 'personal';
   errorMsg      = '';
 
+  /**
+   * Fields the API withheld from GET /employees/:id for this viewer (salary,
+   * allowances, bank details are hidden from hr_staff / ceo). They must not be
+   * required or sent back on save, otherwise the form can never be submitted
+   * and the blank values would overwrite the stored data.
+   */
+  private readonly restrictableFields = [
+    'salary', 'housing_allowance', 'transport_allowance', 'other_allowances',
+    'mobile_allowance', 'food_allowance', 'bank_name', 'bank_account', 'national_id',
+  ];
+  hiddenFields = new Set<string>();
+
   tabs = [
     { id: 'personal',   label: 'EMPLOYEES.TABS.PERSONAL_INFO', icon: 'person' },
     { id: 'employment', label: 'EMPLOYEES.TABS.EMPLOYMENT', icon: 'work' },
@@ -55,6 +67,13 @@ export class EmployeeFormComponent implements OnInit {
       this.http.get<any>(`/api/v1/employees/${this.employeeId}`).subscribe({
         next: r => {
           const e = r.employee || r;
+
+          this.hiddenFields = new Set(this.restrictableFields.filter(f => !(f in e)));
+          if (this.hiddenFields.has('salary')) {
+            const salaryCtrl = this.form.get('salary');
+            salaryCtrl?.clearValidators();
+            salaryCtrl?.updateValueAndValidity();
+          }
 
           // Designations are department-scoped and loaded async. Load them
           // FIRST so the saved designation's <option> exists before we patch
@@ -283,6 +302,7 @@ export class EmployeeFormComponent implements OnInit {
   buildPayload(): any {
     const payload = { ...this.form.getRawValue() };
     if (!this.canManageExtension) delete payload.extension;
+    this.hiddenFields.forEach(field => delete payload[field]);
     ['dob', 'hire_date', 'confirmation_date', 'termination_date'].forEach(field => {
       payload[field] = this.toDateInput(payload[field]) || null;
     });

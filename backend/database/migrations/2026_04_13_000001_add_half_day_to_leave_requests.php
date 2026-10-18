@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -14,9 +15,15 @@ return new class extends Migration
             // Which half: 'morning' or 'afternoon'
             $table->enum('half_day_period', ['morning', 'afternoon'])->nullable()->after('is_half_day');
             // Manager approval stage tracking
-            $table->enum('status', ['pending', 'manager_approved', 'approved', 'rejected', 'cancelled'])
-                  ->default('pending')->change();
         });
+
+        // SQLite (tests) cannot change columns natively; there the status column is already a plain string.
+        if (DB::getDriverName() !== 'sqlite') {
+            Schema::table('leave_requests', function (Blueprint $table) {
+                $table->enum('status', ['pending', 'manager_approved', 'approved', 'rejected', 'cancelled'])
+                      ->default('pending')->change();
+            });
+        }
     }
 
     public function down(): void

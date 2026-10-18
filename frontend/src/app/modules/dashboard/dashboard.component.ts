@@ -38,6 +38,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Last /dashboard/charts payload (undefined = charts not built yet), reused to rebuild on language change. */
   private chartData: any = undefined;
   private langSub?: Subscription;
+  /** Pending chart-build timers; cleared on destroy so they never draw onto a later dashboard's canvases. */
+  private timers: any[] = [];
+  private destroyed = false;
 
   constructor(
     private http: HttpClient, private router: Router, private cdr: ChangeDetectorRef, public auth: AuthService,
@@ -68,7 +71,14 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   pct(a: number, b: number) { return b ? Math.round((a / b) * 100) : 0; }
-  isOD(d: string)           { return d && new Date(d) < new Date(); }
+  /** Overdue = due date before today (a task due today is not overdue). Date-only strings are read as local dates. */
+  isOD(d: string) {
+    if (!d) return false;
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d));
+    const due = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(d);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return due < today;
+  }
   go(path: string)          { this.router.navigateByUrl(path); }
 
   empStatusCls(s: string)   { return ({ active:'badge-green', on_leave:'badge-yellow', probation:'badge-blue', inactive:'badge-gray', terminated:'badge-red' } as any)[s] || 'badge-gray'; }
@@ -119,8 +129,18 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       this.cdr.markForCheck();
     });
   }
-  ngAfterViewInit() { setTimeout(() => { this.destroyCharts(); this.tryBuildCharts(); }, 1000); }
-  ngOnDestroy()     { this.langSub?.unsubscribe(); this.destroyCharts(); }
+  ngAfterViewInit() { this.later(() => { this.destroyCharts(); this.tryBuildCharts(); }, 1000); }
+  ngOnDestroy()     {
+    this.destroyed = true;
+    this.timers.forEach(t => clearTimeout(t));
+    this.timers = [];
+    this.langSub?.unsubscribe();
+    this.destroyCharts();
+  }
+
+  private later(fn: () => void, ms: number) {
+    this.timers.push(setTimeout(() => { if (!this.destroyed) fn(); }, ms));
+  }
 
   refresh() {
     this.loading = true;
@@ -128,7 +148,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.destroyCharts();      // destroy first
     this.loadAll();
     // Delay chart build until after DOM settles with new data
-    setTimeout(() => { this.destroyCharts(); this.tryBuildCharts(); }, 1200);
+    this.later(() => { this.destroyCharts(); this.tryBuildCharts(); }, 1200);
   }
 
   private destroyCharts() {
@@ -301,17 +321,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Charts ────────────────────────────────────────────────────────────────
   private tryBuildCharts() {
-    if (this.chartRetries >= this.MAX_RETRIES) return; // stop retrying
+    if (this.destroyed || this.chartRetries >= this.MAX_RETRIES) return; // stop retrying
     const C = (window as any).Chart;
     if (!C) {
       this.chartRetries++;
-      setTimeout(() => this.tryBuildCharts(), 500);
+      this.later(() => this.tryBuildCharts(), 500);
       return;
     }
     this.chartRetries = 0;
     this.http.get<any>('/api/v1/dashboard/charts').subscribe({
-      next:  d => { this.chartData = d; this.buildCharts(d, C); this.cdr.markForCheck(); },
-      error: () => { this.chartData = null; this.buildCharts(null, C); this.cdr.markForCheck(); }
+      next:  d => { if (this.destroyed) return; this.destroyCharts(); this.chartData = d; this.buildCharts(d, C); this.cdr.markForCheck(); },
+      error: () => { if (this.destroyed) return; this.destroyCharts(); this.chartData = null; this.buildCharts(null, C); this.cdr.markForCheck(); }
     });
   }
 
