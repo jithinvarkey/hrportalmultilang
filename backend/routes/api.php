@@ -15,6 +15,7 @@ use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\BioTimeController;
 use App\Http\Controllers\API\AnnouncementController;
 use App\Http\Controllers\API\PolicyController;
+use App\Http\Controllers\API\QmsDocumentController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\AttendanceController;
 use App\Http\Controllers\API\ContractController;
@@ -56,6 +57,13 @@ Route::prefix('v1')->group(function () {
     Route::post('jobs/{jobId}/apply',     [RecruitmentController::class, 'publicApply']);
     Route::get('public/onboarding/{token}', [PublicOnboardingController::class, 'show']);
     Route::post('public/onboarding/{token}', [PublicOnboardingController::class, 'submit']);
+
+    // ── QMS integration (server-to-server, X-Integration-Key) ────────────
+    Route::prefix('integrations/qms')->middleware(['qms.key', 'throttle:120,1'])->group(function () {
+        Route::post('documents',                     [QmsDocumentController::class, 'store']);
+        Route::get('documents/{externalId}',         [QmsDocumentController::class, 'show']);
+        Route::post('documents/{externalId}/obsolete', [QmsDocumentController::class, 'obsolete']);
+    });
 
     // ── Protected Routes ─────────────────────────────────────────────────
 
@@ -125,6 +133,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}/acknowledgements',[PolicyController::class, 'acknowledgements'])->whereNumber('id');
             Route::get('/{id}/acknowledgements/export',[PolicyController::class, 'exportAcknowledgements'])->whereNumber('id');
             Route::post('/{id}/remind',        [PolicyController::class, 'remindPending'])->whereNumber('id');
+            // QMS documents: publish the waiting version, version history
+            Route::post('/{id}/publish',       [PolicyController::class, 'publish'])->whereNumber('id');
+            Route::get('/{id}/versions',       [PolicyController::class, 'versions'])->whereNumber('id');
+            Route::get('/{id}/versions/{versionId}/attachment', [PolicyController::class, 'versionAttachment'])->whereNumber(['id', 'versionId']);
         });
 
         // Dashboard

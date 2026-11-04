@@ -62,7 +62,9 @@
       "DOCUMENT": "المستند (PDF، بحد أقصى 10 ميجابايت)",
       "REQUIRE_ACK": "يتطلب الإقرار بالاطلاع",
       "MANDATORY": "إلزامية",
-      "PUBLISH": "نشر"
+      "PUBLISH": "نشر",
+      "SELECT_EMPLOYEES": "اختر الموظفين",
+      "SEARCH_EMPLOYEES": "ابحث بالاسم أو البريد أو الرقم الوظيفي"
     },
     "CATEGORY_FORM": {
       "POLICY_COUNT": "{{count}} سياسة",
@@ -112,7 +114,35 @@
       "CONFIRM_DELETE_CATEGORY": "هل تريد حذف التصنيف \"{{name}}\"؟ ستبقى السياسات بمحتواها لكن دون هذا التصنيف.",
       "CATEGORY_DELETED": "تم حذف التصنيف.",
       "CSV_FAILED": "تعذّر تنزيل ملف CSV.",
-      "REMINDERS_SENT": "تم إرسال التذكيرات."
+      "REMINDERS_SENT": "تم إرسال التذكيرات.",
+      "SELECT_EMPLOYEE": "اختر موظفًا واحدًا على الأقل."
+    },
+    "SPECIFIC_EMPLOYEES": "موظفون محددون",
+    "QMS": {
+      "AWAITING_ONE": "مستند واحد من نظام الجودة بانتظار نشره.",
+      "AWAITING_MANY": "{{count}} مستندات من نظام الجودة بانتظار نشرها.",
+      "SHOW_ONLY_AWAITING": "عرض المستندات المنتظرة فقط",
+      "FROM_QMS": "معتمد في نظام إدارة الجودة",
+      "WAITING_VERSION": "الإصدار {{version}} بانتظار النشر",
+      "PUBLISH_VERSION": "نشر الإصدار {{version}}",
+      "HISTORY": "الإصدارات",
+      "CONFIRM_PUBLISH": "هل تريد نشر \"{{title}}\" الإصدار {{version}} للموظفين المحددين؟",
+      "DOC_NO": "رقم المستند",
+      "OWNER_DEPT": "الإدارة المالكة",
+      "LIVE": "الإصدار المنشور",
+      "NOT_PUBLISHED": "لم يُنشر بعد",
+      "KEEPS_LIVE": "سيستمر الموظفون في رؤية الإصدار {{version}} حتى تنشر هذا الإصدار.",
+      "VERSION_HISTORY": "سجل الإصدارات",
+      "NO_HISTORY": "لم يتم استلام أي إصدارات بعد.",
+      "RECEIVED_ON": "استُلم {{date}}",
+      "PUBLISHED_ON": "نُشر {{date}}",
+      "FILE_FAILED": "تعذر تنزيل الملف.",
+      "STATUS": {
+        "pending": "بانتظار النشر",
+        "published": "منشور",
+        "superseded": "سابق",
+        "discarded": "مستبدل"
+      }
     }
   }
 }

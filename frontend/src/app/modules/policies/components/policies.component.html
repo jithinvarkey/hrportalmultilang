@@ -17,11 +17,18 @@
   <span [innerHTML]="(pendingAckCount === 1 ? 'POLICIES.ACK_REMINDER_ONE' : 'POLICIES.ACK_REMINDER_MANY') | translate:{ count: pendingAckCount }"></span>
 </div>
 
+<!-- QMS documents waiting for HR -->
+<div class="qms-banner" *ngIf="isManager && awaitingCount">
+  <mat-icon>verified</mat-icon>
+  <span>{{ (awaitingCount === 1 ? 'POLICIES.QMS.AWAITING_ONE' : 'POLICIES.QMS.AWAITING_MANY') | translate:{ count: awaitingCount } }}</span>
+  <label class="qms-only"><input type="checkbox" [(ngModel)]="onlyAwaiting"> {{ 'POLICIES.QMS.SHOW_ONLY_AWAITING' | translate }}</label>
+</div>
+
 <!-- Filters -->
 <div class="filters">
   <div class="search-box">
     <mat-icon>search</mat-icon>
-    <input [(ngModel)]="search" (keyup.enter)="onFilterChange()" [placeholder]="'POLICIES.SEARCH_PLACEHOLDER' | translate">
+    <input [(ngModel)]="search" (ngModelChange)="onSearchInput()" (keyup.enter)="onFilterChange()" [placeholder]="'POLICIES.SEARCH_PLACEHOLDER' | translate">
   </div>
   <select [(ngModel)]="filterCategoryId" (ngModelChange)="onFilterChange()">
     <option [ngValue]="null">{{ 'POLICIES.ALL_CATEGORIES' | translate }}</option>
@@ -37,21 +44,27 @@
 
 <!-- Grouped list -->
 <div class="policy-groups" *ngIf="!loading">
-  <div class="policy-group" *ngFor="let g of grouped">
+  <div class="policy-group" *ngFor="let g of grouped; trackBy: trackGroup">
     <div class="group-head">
       <mat-icon>{{ g.icon || 'folder' }}</mat-icon>
       <span>{{ g.category ? (g.category | locName) : ('POLICIES.UNCATEGORIZED' | translate) }}</span>
       <span class="group-count">{{ g.items.length }}</span>
     </div>
 
-    <div class="policy-row" *ngFor="let p of g.items">
+    <div class="policy-row" *ngFor="let p of g.items; trackBy: trackPolicy" [hidden]="onlyAwaiting && !isAwaiting(p)" [class.awaiting]="isManager && isAwaiting(p)">
       <button type="button" class="pr-main pr-open" (click)="openReader(p)">
         <div class="pr-title">
           <span class="pr-title-text" dir="auto">{{ p.title }}</span>
           <span class="ver-chip" dir="ltr">v{{ p.version }}</span>
           <span class="type-chip" *ngIf="p.document_type">{{ documentTypeLabel(p.document_type) }}</span>
           <span class="mand-flag" *ngIf="p.mandatory">{{ 'POLICIES.MANDATORY' | translate }}</span>
-          <span class="draft-flag" *ngIf="!p.is_published">{{ 'draft' | statusLabel }}</span>
+          <span class="draft-flag" *ngIf="!p.is_published && !(isManager && isAwaiting(p))">{{ 'draft' | statusLabel }}</span>
+          <span class="qms-chip" *ngIf="p.source === 'qms'" [matTooltip]="'POLICIES.QMS.FROM_QMS' | translate">
+            <mat-icon>verified</mat-icon> QMS<ng-container *ngIf="p.document_number"> · <span dir="ltr">{{ p.document_number }}</span></ng-container>
+          </span>
+          <span class="await-flag" *ngIf="isManager && isAwaiting(p)">
+            <mat-icon>hourglass_top</mat-icon> {{ 'POLICIES.QMS.WAITING_VERSION' | translate:{ version: awaitingVersion(p) } }}
+          </span>
         </div>
         <div class="pr-meta">
           <span *ngIf="p.effective_date">{{ 'POLICIES.EFFECTIVE_ON' | translate:{ date: (p.effective_date | locDate:'MMM d, y') } }}</span>
@@ -65,7 +78,9 @@
         <span class="read-total" *ngIf="isManager"><mat-icon>visibility</mat-icon> {{ p.reads_count || 0 }}</span>
         <button type="button" class="action-btn" *ngIf="isManager" (click)="onPolicyAction($event, 'report', p)"><mat-icon>fact_check</mat-icon><span>{{ 'POLICIES.REPORT' | translate }}</span></button>
         <button type="button" class="action-btn" *ngIf="isManager" (click)="onPolicyAction($event, 'edit', p)"><mat-icon>edit</mat-icon><span>{{ 'COMMON.EDIT' | translate }}</span></button>
-        <button type="button" class="action-btn warn" *ngIf="isManager" (click)="onPolicyAction($event, 'publish', p)"><mat-icon>{{ p.is_published ? 'visibility_off' : 'publish' }}</mat-icon><span>{{ (p.is_published ? 'POLICIES.DRAFT_ACTION' : 'POLICIES.PUBLISH') | translate }}</span></button>
+        <button type="button" class="action-btn publish" *ngIf="isManager && isAwaiting(p)" (click)="onPolicyAction($event, 'publish', p)"><mat-icon>publish</mat-icon><span>{{ 'POLICIES.QMS.PUBLISH_VERSION' | translate:{ version: awaitingVersion(p) } }}</span></button>
+        <button type="button" class="action-btn" *ngIf="isManager && p.source === 'qms' && !isAwaiting(p)" (click)="onPolicyAction($event, 'history', p)"><mat-icon>history</mat-icon><span>{{ 'POLICIES.QMS.HISTORY' | translate }}</span></button>
+        <button type="button" class="action-btn warn" *ngIf="isManager && !isAwaiting(p)" (click)="onPolicyAction($event, 'publish', p)"><mat-icon>{{ p.is_published ? 'visibility_off' : 'publish' }}</mat-icon><span>{{ (p.is_published ? 'POLICIES.DRAFT_ACTION' : 'POLICIES.PUBLISH') | translate }}</span></button>
         <button type="button" class="action-btn danger" *ngIf="isManager" (click)="onPolicyAction($event, 'delete', p)"><mat-icon>delete_outline</mat-icon><span>{{ 'COMMON.DELETE' | translate }}</span></button>
         <button type="button" class="action-btn" *ngIf="!isManager" (click)="onPolicyAction($event, 'open', p)"><mat-icon>open_in_new</mat-icon><span>{{ 'POLICIES.OPEN' | translate }}</span></button>
         <button type="button" class="icon-btn" (click)="onPolicyAction($event, 'open', p)" [matTooltip]="'POLICIES.VIEW_POLICY' | translate" [attr.aria-label]="'POLICIES.VIEW_POLICY' | translate"><mat-icon class="flip-rtl">chevron_right</mat-icon></button>
@@ -118,7 +133,7 @@
         <div class="pdf-error" *ngIf="pdfError"><mat-icon>error_outline</mat-icon> <span dir="auto">{{ pdfError }}</span></div>
         <div #pdfPages class="policy-pdf-pages" [attr.aria-label]="pdfPageCount ? ('POLICIES.READER.DOC_LABEL_PAGES' | translate:{ count: pdfPageCount }) : ('POLICIES.READER.DOC_LABEL' | translate)"></div>
       </div>
-      <div class="reader-empty" *ngIf="!isManager && selected.has_attachment && selected.attachment_mime !== 'application/pdf'">
+      <div class="reader-empty" *ngIf="!isManager && selected.has_attachment && selected.attachment_mime !== 'application/pdf' && !canDownloadAttachment(selected)">
         {{ 'POLICIES.READER.LEGACY_ATTACHMENT' | translate }}
       </div>
     </div>
@@ -159,7 +174,17 @@
         <select [(ngModel)]="form.audience_type">
           <option value="all">{{ 'POLICIES.ALL_DEPARTMENTS' | translate }}</option>
           <option value="departments">{{ 'POLICIES.SELECTED_DEPARTMENTS' | translate }}</option>
+          <option value="employees">{{ 'POLICIES.SPECIFIC_EMPLOYEES' | translate }}</option>
         </select>
+    </div>
+    <div class="target-box" *ngIf="form.audience_type === 'employees'">
+      <span class="target-hint">{{ 'POLICIES.FORM.SELECT_EMPLOYEES' | translate }} ({{ form.target_employee_ids.length }})</span>
+      <input class="emp-search" [(ngModel)]="employeeSearch" [placeholder]="'POLICIES.FORM.SEARCH_EMPLOYEES' | translate">
+      <label class="chip-check" *ngFor="let e of filteredEmployees(form.target_employee_ids, employeeSearch); trackBy: trackEmployee"
+             [class.on]="form.target_employee_ids.includes(e.id)">
+        <input type="checkbox" [checked]="form.target_employee_ids.includes(e.id)" (change)="toggleIn(form.target_employee_ids, e.id)">
+        {{ employeeLabel(e) }}
+      </label>
     </div>
     <div class="target-box" *ngIf="form.audience_type === 'departments'">
       <span class="target-hint">{{ 'POLICIES.FORM.SELECT_DEPARTMENTS' | translate }}</span>
@@ -192,6 +217,89 @@
     <button class="btn btn-primary" (click)="savePolicy()" [disabled]="submitting">
       <mat-icon>{{ submitting ? 'hourglass_empty' : 'save' }}</mat-icon>
       {{ (submitting ? 'COMMON.SAVING' : (editId ? 'COMMON.UPDATE' : 'COMMON.CREATE')) | translate }}
+    </button>
+  </div>
+</div>
+
+<!-- ── QMS document: publish waiting version / version history (HR) ──────── -->
+<div class="modal-backdrop" *ngIf="showQms" (click)="closeQms()"></div>
+<div class="modal-panel" *ngIf="showQms && qmsPolicy">
+  <div class="modal-hdr">
+    <h3><mat-icon>verified</mat-icon> <span dir="auto">{{ qmsPolicy.title }}</span></h3>
+    <button class="icon-btn" (click)="closeQms()" [attr.aria-label]="'COMMON.CLOSE' | translate"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="modal-body">
+    <div class="qms-meta">
+      <span *ngIf="qmsPolicy.document_number"><b>{{ 'POLICIES.QMS.DOC_NO' | translate }}</b> <span dir="ltr">{{ qmsPolicy.document_number }}</span></span>
+      <span *ngIf="qmsPolicy.document_type"><b>{{ 'POLICIES.DOCUMENT_TYPE' | translate }}</b> {{ documentTypeLabel(qmsPolicy.document_type) }}</span>
+      <span *ngIf="qmsPolicy.owner_department"><b>{{ 'POLICIES.QMS.OWNER_DEPT' | translate }}</b> {{ qmsPolicy.owner_department }}</span>
+      <span><b>{{ 'POLICIES.QMS.LIVE' | translate }}</b>
+        <ng-container *ngIf="qmsPolicy.is_published; else notLive"><span dir="ltr">v{{ qmsPolicy.version }}</span></ng-container>
+        <ng-template #notLive>{{ 'POLICIES.QMS.NOT_PUBLISHED' | translate }}</ng-template>
+      </span>
+    </div>
+
+    <ng-container *ngIf="isAwaiting(qmsPolicy)">
+      <div class="qms-waiting">
+        <mat-icon>hourglass_top</mat-icon>
+        <div>
+          <b>{{ 'POLICIES.QMS.WAITING_VERSION' | translate:{ version: awaitingVersion(qmsPolicy) } }}</b>
+          <div class="qms-sub" *ngIf="qmsPolicy.pending_version?.change_summary" dir="auto">{{ qmsPolicy.pending_version?.change_summary }}</div>
+          <div class="qms-sub" *ngIf="qmsPolicy.is_published">{{ 'POLICIES.QMS.KEEPS_LIVE' | translate:{ version: qmsPolicy.version } }}</div>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>{{ 'POLICIES.FORM.VISIBILITY' | translate }}</label>
+        <select [(ngModel)]="qmsForm.audience_type">
+          <option value="all">{{ 'POLICIES.ALL_DEPARTMENTS' | translate }}</option>
+          <option value="departments">{{ 'POLICIES.SELECTED_DEPARTMENTS' | translate }}</option>
+          <option value="employees">{{ 'POLICIES.SPECIFIC_EMPLOYEES' | translate }}</option>
+        </select>
+      </div>
+      <div class="target-box" *ngIf="qmsForm.audience_type === 'departments'">
+        <span class="target-hint">{{ 'POLICIES.FORM.SELECT_DEPARTMENTS' | translate }}</span>
+        <label class="chip-check" *ngFor="let d of departments" [class.on]="qmsForm.target_department_ids.includes(d.id)">
+          <input type="checkbox" [checked]="qmsForm.target_department_ids.includes(d.id)" (change)="toggleIn(qmsForm.target_department_ids, d.id)">
+          {{ d | locName }}
+        </label>
+      </div>
+      <div class="target-box" *ngIf="qmsForm.audience_type === 'employees'">
+        <span class="target-hint">{{ 'POLICIES.FORM.SELECT_EMPLOYEES' | translate }} ({{ qmsForm.target_employee_ids.length }})</span>
+        <input class="emp-search" [(ngModel)]="qmsSearch" [placeholder]="'POLICIES.FORM.SEARCH_EMPLOYEES' | translate">
+        <label class="chip-check" *ngFor="let e of filteredEmployees(qmsForm.target_employee_ids, qmsSearch); trackBy: trackEmployee" [class.on]="qmsForm.target_employee_ids.includes(e.id)">
+          <input type="checkbox" [checked]="qmsForm.target_employee_ids.includes(e.id)" (change)="toggleIn(qmsForm.target_employee_ids, e.id)">
+          {{ employeeLabel(e) }}
+        </label>
+      </div>
+      <div class="check-row">
+        <label><input type="checkbox" [(ngModel)]="qmsForm.requires_acknowledgement"> {{ 'POLICIES.FORM.REQUIRE_ACK' | translate }}</label>
+        <label><input type="checkbox" [(ngModel)]="qmsForm.mandatory"> {{ 'POLICIES.FORM.MANDATORY' | translate }}</label>
+      </div>
+      <div class="form-err" *ngIf="publishError"><mat-icon>error_outline</mat-icon> {{ publishError }}</div>
+    </ng-container>
+
+    <div class="qms-history">
+      <div class="qms-history-title"><mat-icon>history</mat-icon> {{ 'POLICIES.QMS.VERSION_HISTORY' | translate }}</div>
+      <div class="loading-wrap" *ngIf="qmsVersionsLoading"><mat-spinner diameter="24"></mat-spinner></div>
+      <div class="qms-ver" *ngFor="let v of qmsVersions">
+        <span class="ver-chip" dir="ltr">v{{ v.version }}</span>
+        <span class="ver-state" [class]="'st-' + v.status">{{ ('POLICIES.QMS.STATUS.' + v.status) | translate }}</span>
+        <span class="ver-when">
+          {{ (v.published_at ? 'POLICIES.QMS.PUBLISHED_ON' : 'POLICIES.QMS.RECEIVED_ON') | translate:{ date: ((v.published_at || v.received_at) | locDate:'MMM d, y, HH:mm') } }}
+          <ng-container *ngIf="v.publisher?.name"> · {{ v.publisher.name }}</ng-container>
+        </span>
+        <span class="ver-sum" dir="auto" *ngIf="v.change_summary">{{ v.change_summary }}</span>
+        <button class="link-btn" *ngIf="v.has_attachment" (click)="downloadVersion(v)"><mat-icon>download</mat-icon> {{ v.attachment_name }}</button>
+      </div>
+      <div class="qms-sub" *ngIf="!qmsVersionsLoading && !qmsVersions.length">{{ 'POLICIES.QMS.NO_HISTORY' | translate }}</div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" (click)="closeQms()">{{ 'COMMON.CLOSE' | translate }}</button>
+    <button class="btn btn-primary" *ngIf="isAwaiting(qmsPolicy)" (click)="publishQms()" [disabled]="publishing">
+      <mat-icon>{{ publishing ? 'hourglass_empty' : 'publish' }}</mat-icon>
+      {{ (publishing ? 'COMMON.SAVING' : 'POLICIES.QMS.PUBLISH_VERSION') | translate:{ version: awaitingVersion(qmsPolicy) } }}
     </button>
   </div>
 </div>
