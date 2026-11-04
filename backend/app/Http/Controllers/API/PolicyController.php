@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Policy;
 use App\Models\PolicyAcknowledgement;
 use App\Models\PolicyRead;
+use App\Models\PolicyVersion;
 use App\Models\PolicyCategory;
 use App\Services\Communications\NotificationService;
 use Illuminate\Http\JsonResponse;
@@ -67,11 +68,12 @@ class PolicyController extends Controller
 
         $departmentId = auth()->user()->employee?->department_id;
 
-        return $this->audienceIncludesDepartment(
-            $policy->audience_type,
-            $policy->target_department_ids,
-            $departmentId,
-        ) && (!$policy->category || $this->audienceIncludesDepartment(
+        // audience_type 'employees': only the listed people (category audience still applies)
+        $policyAudienceOk = ($policy->audience_type === 'employees')
+            ? in_array((int) $this->employeeId(), array_map('intval', $policy->target_employee_ids ?? []), true)
+            : $this->audienceIncludesDepartment($policy->audience_type, $policy->target_department_ids, $departmentId);
+
+        return $policyAudienceOk && (!$policy->category || $this->audienceIncludesDepartment(
             $policy->category->audience_type,
             $policy->category->target_department_ids,
             $departmentId,
@@ -129,9 +131,21 @@ class PolicyController extends Controller
             ? (int) $request->department_id
             : (auth()->user()->employee?->department_id ? (int) auth()->user()->employee->department_id : null);
 
-        return $query->where(function ($w) use ($departmentId) {
+        $employeeId = $this->isManager() ? null : $this->employeeId();
+
+        return $query->where(function ($w) use ($departmentId, $employeeId) {
             $w->where('audience_type', 'all')
                 ->orWhereNull('audience_type');
+
+            if ($employeeId) {
+                $w->orWhere(function ($e) use ($employeeId) {
+                    $e->where('audience_type', 'employees')
+                        ->where(function ($ids) use ($employeeId) {
+                            $ids->whereJsonContains('target_employee_ids', (int) $employeeId)
+                                ->orWhereJsonContains('target_employee_ids', (string) $employeeId);
+                        });
+                });
+            }
 
             if ($departmentId) {
                 $w->orWhere(function ($d) use ($departmentId) {
@@ -160,6 +174,32 @@ class PolicyController extends Controller
             ->all();
 
         return ['audience_type' => 'departments', 'target_department_ids' => $departmentIds];
+    }
+
+    /** Policy audience: all | departments | employees (specific people). */
+    private function normalizePolicyAudience(Request $request): array
+    {
+        $type = $request->input('audience_type', 'all');
+        $ids = fn(string $key) => collect($request->input($key, []))
+            ->filter(fn($id) => $id !== null && $id !== '')
+            ->map(fn($id) => (int) $id)->unique()->values()->all();
+
+        return match ($type) {
+            'departments' => ['audience_type' => 'departments', 'target_department_ids' => $ids('target_department_ids'), 'target_employee_ids' => null],
+            'employees'   => ['audience_type' => 'employees', 'target_department_ids' => null, 'target_employee_ids' => $ids('target_employee_ids')],
+            default       => ['audience_type' => 'all', 'target_department_ids' => null, 'target_employee_ids' => null],
+        };
+    }
+
+    private function audienceError(array $audience): ?JsonResponse
+    {
+        if ($audience['audience_type'] === 'departments' && empty($audience['target_department_ids'])) {
+            return response()->json(['message' => __('Select at least one department, or choose all departments.')], 422);
+        }
+        if ($audience['audience_type'] === 'employees' && empty($audience['target_employee_ids'])) {
+            return response()->json(['message' => __('Select at least one employee.')], 422);
+        }
+        return null;
     }
 
     // ── Categories ────────────────────────────────────────────────────────
@@ -267,6 +307,9 @@ class PolicyController extends Controller
         }
 
         $policies = $query->orderBy('title')->get();
+        if ($this->isManager()) {
+            $policies->load('pendingVersion');
+        }
         if (!$this->isManager()) {
             $policies = $policies
                 ->filter(fn($policy) => $this->policyVisibleToCurrentUser($policy))
@@ -330,9 +373,11 @@ class PolicyController extends Controller
 
         $data = $request->validate([
             'category_id'              => 'nullable|exists:policy_categories,id',
-            'audience_type'            => 'nullable|in:all,departments',
+            'audience_type'            => 'nullable|in:all,departments,employees',
             'target_department_ids'     => 'nullable|array',
             'target_department_ids.*'   => 'integer|exists:departments,id',
+            'target_employee_ids'      => 'nullable|array',
+            'target_employee_ids.*'    => 'integer|exists:employees,id',
             'title'                    => 'required|string|max:200',
             'content'                  => 'nullable|string',
             'version'                  => 'nullable|string|max:20',
@@ -344,15 +389,14 @@ class PolicyController extends Controller
             'attachment'               => 'nullable|file|mimes:pdf|max:10240',
         ]);
 
-        $audience = $this->normalizeAudience($request);
-        if ($audience['audience_type'] === 'departments' && empty($audience['target_department_ids'])) {
-            return response()->json(['message' => __('Select at least one department, or choose all departments.')], 422);
-        }
+        $audience = $this->normalizePolicyAudience($request);
+        if ($deny = $this->audienceError($audience)) return $deny;
 
         $policy = new Policy([
             'category_id'              => $data['category_id'] ?? null,
             'audience_type'            => $audience['audience_type'],
             'target_department_ids'     => $audience['target_department_ids'],
+            'target_employee_ids'      => $audience['target_employee_ids'],
             'title'                    => $data['title'],
             'content'                  => $data['content'] ?? null,
             'version'                  => $data['version'] ?? '1.0',
@@ -388,11 +432,13 @@ class PolicyController extends Controller
     private function notifyPolicyAudience(Policy $policy, string $action, string $event = 'published'): void
     {
         $departmentIds = $this->effectiveDepartmentIds($policy->loadMissing('category'));
-        $ids = $this->notifications->resolveAudience(
-            $departmentIds === null ? 'all' : 'departments',
-            $departmentIds,
-            null
-        );
+        $ids = $policy->audience_type === 'employees'
+            ? $this->notifications->resolveAudience('employees', null, null, false, $policy->target_employee_ids ?? [])
+            : $this->notifications->resolveAudience(
+                $departmentIds === null ? 'all' : 'departments',
+                $departmentIds,
+                null
+            );
         $emailMessage = "{$policy->title} {$action}.";
         $this->notifications->notifyMany(
             $ids, 'policy',
@@ -421,9 +467,11 @@ class PolicyController extends Controller
 
         $data = $request->validate([
             'category_id'              => 'nullable|exists:policy_categories,id',
-            'audience_type'            => 'nullable|in:all,departments',
+            'audience_type'            => 'nullable|in:all,departments,employees',
             'target_department_ids'     => 'nullable|array',
             'target_department_ids.*'   => 'integer|exists:departments,id',
+            'target_employee_ids'      => 'nullable|array',
+            'target_employee_ids.*'    => 'integer|exists:employees,id',
             'title'                    => 'sometimes|string|max:200',
             'content'                  => 'nullable|string',
             'version'                  => 'nullable|string|max:20',
@@ -439,16 +487,15 @@ class PolicyController extends Controller
         $wasPublished = (bool) $policy->is_published;
         // Only touch the audience when the request actually sends it; a partial update
         // (e.g. publish toggle) must not silently widen a department-targeted policy to "all".
-        $audienceSent = $request->has('audience_type') || $request->has('target_department_ids');
-        $audience = $audienceSent ? $this->normalizeAudience($request) : null;
-        if ($audience && $audience['audience_type'] === 'departments' && empty($audience['target_department_ids'])) {
-            return response()->json(['message' => __('Select at least one department, or choose all departments.')], 422);
-        }
-        unset($data['audience_type'], $data['target_department_ids']);
+        $audienceSent = $request->has('audience_type') || $request->has('target_department_ids') || $request->has('target_employee_ids');
+        $audience = $audienceSent ? $this->normalizePolicyAudience($request) : null;
+        if ($audience && ($deny = $this->audienceError($audience))) return $deny;
+        unset($data['audience_type'], $data['target_department_ids'], $data['target_employee_ids']);
         $policy->fill($data);
         if ($audience) {
             $policy->audience_type = $audience['audience_type'];
             $policy->target_department_ids = $audience['target_department_ids'];
+            $policy->target_employee_ids = $audience['target_employee_ids'];
         }
         if ($request->has('requires_acknowledgement')) $policy->requires_acknowledgement = $request->boolean('requires_acknowledgement');
         if ($request->has('mandatory'))                $policy->mandatory = $request->boolean('mandatory');
@@ -517,8 +564,11 @@ class PolicyController extends Controller
             $isInlinePreview = $request->boolean('inline')
                 || strtolower((string) $request->header('Sec-Fetch-Dest')) === 'empty';
 
+            // QMS Word / Excel / image files cannot use the secure PDF reader, so they are downloadable
+            $isQmsNonPdf = $policy->source === 'qms' && strtolower((string) $policy->attachment_mime) !== 'application/pdf';
+
             if (!$isInlinePreview) {
-                if (!$isForm) {
+                if (!$isForm && !$isQmsNonPdf) {
                     return response()->json(['message' => __('Only form documents can be downloaded.')], 403);
                 }
 
@@ -528,7 +578,20 @@ class PolicyController extends Controller
                 );
             }
 
-            if (strtolower((string) $policy->attachment_mime) !== 'application/pdf') {
+            $mime = strtolower((string) $policy->attachment_mime);
+            if (str_starts_with($mime, 'image/')) {
+                return Storage::disk($disk)->response($policy->attachment_path, 'policy', [
+                    'Content-Type' => $mime,
+                    'Content-Disposition' => 'inline; filename="policy"',
+                    'Cache-Control' => 'private, no-store, max-age=0',
+                    'X-Content-Type-Options' => 'nosniff',
+                ]);
+            }
+            if ($mime !== 'application/pdf') {
+                // Word / Excel from the QMS cannot be previewed securely — offer the file itself
+                if ($policy->source === 'qms') {
+                    return Storage::disk($disk)->download($policy->attachment_path, $policy->attachment_name ?: 'document');
+                }
                 return response()->json(['message' => __('This attachment is not available in secure preview format.')], 403);
             }
 
@@ -572,6 +635,125 @@ class PolicyController extends Controller
             $policy->attachment_path,
             $policy->attachment_name ?: 'policy'
         );
+    }
+
+    // ── QMS documents: publish & version history ─────────────────────────
+
+    /**
+     * Publish a policy, applying the version waiting from the QMS (if any).
+     * Optional audience / acknowledgement settings are applied at the same time.
+     */
+    public function publish(Request $request, int $id): JsonResponse
+    {
+        if ($deny = $this->ensureManager()) return $deny;
+
+        $request->validate([
+            'audience_type'            => 'nullable|in:all,departments,employees',
+            'target_department_ids'    => 'nullable|array',
+            'target_department_ids.*'  => 'integer|exists:departments,id',
+            'target_employee_ids'      => 'nullable|array',
+            'target_employee_ids.*'    => 'integer|exists:employees,id',
+            'category_id'              => 'nullable|exists:policy_categories,id',
+            'requires_acknowledgement' => 'nullable|boolean',
+            'mandatory'                => 'nullable|boolean',
+        ]);
+
+        $policy = Policy::with('pendingVersion')->findOrFail($id);
+        $pending = $policy->pendingVersion;
+        if ($policy->is_published && !$pending) {
+            return response()->json(['message' => __('This policy is already published.')], 422);
+        }
+
+        $audienceSent = $request->has('audience_type');
+        $audience = $audienceSent ? $this->normalizePolicyAudience($request) : null;
+        if ($audience && ($deny = $this->audienceError($audience))) return $deny;
+
+        $wasPublished = (bool) $policy->is_published;
+        $oldVersion = $policy->version;
+
+        DB::transaction(function () use ($policy, $pending, $audience, $request) {
+            if ($pending) {
+                $policy->fill([
+                    'title' => $pending->title, 'content' => $pending->content, 'version' => $pending->version,
+                    'document_type' => $pending->document_type, 'document_number' => $pending->document_number,
+                    'owner_department' => $pending->owner_department, 'effective_date' => $pending->effective_date,
+                    'review_date' => $pending->review_date, 'expiry_date' => $pending->expiry_date,
+                ]);
+                if ($pending->attachment_path) {
+                    $policy->forceFill([
+                        'attachment_path' => $pending->attachment_path, 'attachment_name' => $pending->attachment_name,
+                        'attachment_mime' => $pending->attachment_mime, 'attachment_size' => $pending->attachment_size,
+                    ]);
+                }
+                // The previously live version is kept in history (its file stays with it)
+                $policy->versions()->where('status', PolicyVersion::PUBLISHED)->update(['status' => PolicyVersion::SUPERSEDED]);
+                $pending->update(['status' => PolicyVersion::PUBLISHED, 'published_at' => now(), 'published_by' => auth()->id()]);
+            }
+            if ($audience) {
+                $policy->audience_type = $audience['audience_type'];
+                $policy->target_department_ids = $audience['target_department_ids'];
+                $policy->target_employee_ids = $audience['target_employee_ids'];
+            }
+            if ($request->filled('category_id')) $policy->category_id = (int) $request->category_id;
+            if ($request->has('requires_acknowledgement')) $policy->requires_acknowledgement = $request->boolean('requires_acknowledgement');
+            if ($request->has('mandatory')) $policy->mandatory = $request->boolean('mandatory');
+            $policy->is_published = true;
+            $policy->status = 'published';
+            $policy->approved_by = auth()->id();
+            $policy->approved_at = now();
+            $policy->save();
+        });
+
+        $versionChanged = $wasPublished && $policy->version !== $oldVersion;
+        if ($versionChanged) {
+            // Ack flags are version-specific, so employees are prompted to re-acknowledge
+            PolicyRead::where('policy_id', $policy->id)->delete();
+            $this->notifyPolicyAudience($policy, 'updated to v' . $policy->version . ' - please re-acknowledge', 'updated');
+        } else {
+            $this->notifyPolicyAudience(
+                $policy,
+                $policy->requires_acknowledgement ? 'requires your acknowledgement' : 'has been published'
+            );
+        }
+
+        return response()->json([
+            'message' => $versionChanged
+                ? __('Version :version published.', ['version' => $policy->version])
+                : __('Policy published.'),
+            'policy'  => $policy->fresh(['category', 'creator:id,name', 'pendingVersion']),
+        ]);
+    }
+
+    /** Version history of a policy (managers only). */
+    public function versions(int $id): JsonResponse
+    {
+        if ($deny = $this->ensureManager()) return $deny;
+        $policy = Policy::findOrFail($id);
+
+        return response()->json([
+            'versions' => $policy->versions()->with('publisher:id,name')
+                ->where('status', '!=', PolicyVersion::DISCARDED)->get(),
+        ]);
+    }
+
+    /** File of a specific version (managers only) — e.g. to review a pending version before publishing. */
+    public function versionAttachment(Request $request, int $id, int $versionId): StreamedResponse|JsonResponse
+    {
+        if ($deny = $this->ensureManager()) return $deny;
+        $version = PolicyVersion::where('policy_id', $id)->findOrFail($versionId);
+        if (!$version->attachment_path || !Storage::disk('local')->exists($version->attachment_path)) {
+            return response()->json(['message' => __('No attachment.')], 404);
+        }
+        $mime = strtolower((string) $version->attachment_mime);
+        $name = str_replace(["\r", "\n", '"'], '', basename($version->attachment_name ?: 'document'));
+        if ($request->boolean('inline') && ($mime === 'application/pdf' || str_starts_with($mime, 'image/'))) {
+            return Storage::disk('local')->response($version->attachment_path, $name, [
+                'Content-Type' => $mime,
+                'Content-Disposition' => 'inline; filename="' . $name . '"',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        }
+        return Storage::disk('local')->download($version->attachment_path, $name);
     }
 
     // ── Acknowledgement ───────────────────────────────────────────────────

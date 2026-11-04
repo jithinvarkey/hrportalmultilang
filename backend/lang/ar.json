@@ -409,5 +409,11 @@
     "leave": "إجازة",
     "manager": "المدير",
     "rejected": "مرفوض",
-    "unknown": "غير معروفة"
+    "unknown": "غير معروفة",
+    "This policy is already published.": "هذه السياسة منشورة بالفعل.",
+    "Version :version published.": "تم نشر الإصدار :version.",
+    "Policy published.": "تم نشر السياسة.",
+    "QMS document ready to publish": "مستند من نظام الجودة جاهز للنشر",
+    "New QMS version ready to publish": "إصدار جديد من نظام الجودة جاهز للنشر",
+    ":title (v:version) was approved in the QMS and is waiting for you to publish it.": "تم اعتماد :title (الإصدار :version) في نظام الجودة وهو بانتظار نشره."
 }

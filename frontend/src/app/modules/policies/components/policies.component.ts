@@ -13,9 +13,18 @@ interface Policy {
   review_date?: string | null;
   requires_acknowledgement: boolean;
   mandatory?: boolean;
-  audience_type?: 'all' | 'departments';
+  audience_type?: 'all' | 'departments' | 'employees';
   target_department_ids?: number[];
+  target_employee_ids?: number[];
   is_published: boolean;
+  status?: string | null;
+  /** 'qms' when the document was sent from the Quality Management System */
+  source?: string | null;
+  document_number?: string | null;
+  owner_department?: string | null;
+  expiry_date?: string | null;
+  /** A QMS version waiting for HR to publish (the live version stays on the policy) */
+  pending_version?: { id: number; version: string; change_summary?: string | null; received_at?: string | null; has_attachment?: boolean } | null;
   category: { id: number; name: string; icon?: string } | null;
   has_attachment: boolean;
   attachment_name: string | null;
@@ -25,7 +34,7 @@ interface Policy {
   reads_count?: number;
 }
 
-type PolicyAction = 'open' | 'report' | 'edit' | 'publish' | 'delete';
+type PolicyAction = 'open' | 'report' | 'edit' | 'publish' | 'delete' | 'history';
 
 /**
  * HR Policies library. All employees view and acknowledge; HR/Admin manage
@@ -49,9 +58,13 @@ export class PoliciesComponent implements OnInit, OnDestroy {
   policies: Policy[] = [];
   categories: any[] = [];
   departments: any[] = [];
+  employees: any[] = [];
+  employeeSearch = '';
+  onlyAwaiting = false;
   filterCategoryId: number | null = null;
   filterDepartmentId: number | null = null;
   search = '';
+  private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Reader
   selected: Policy | null = null;
@@ -84,6 +97,16 @@ export class PoliciesComponent implements OnInit, OnDestroy {
   reportPolicyId: number | null = null;
   reminding = false;
 
+  // QMS documents: publish panel + version history (HR)
+  showQms = false;
+  qmsPolicy: Policy | null = null;
+  qmsForm: any = {};
+  qmsSearch = '';
+  qmsVersions: any[] = [];
+  qmsVersionsLoading = false;
+  publishing = false;
+  publishError = '';
+
   successMsg = '';
 
   constructor(
@@ -98,6 +121,7 @@ export class PoliciesComponent implements OnInit, OnDestroy {
       || this.auth.can('policies.manage');
     this.loadCategories();
     this.loadDepartments();
+    this.loadEmployees();
     this.load();
   }
 
@@ -105,8 +129,49 @@ export class PoliciesComponent implements OnInit, OnDestroy {
     return { category_id: null, title: '', content: '', version: '1.0',
              effective_date: '', review_date: '', requires_acknowledgement: true,
              mandatory: false, is_published: true, audience_type: 'all',
-             target_department_ids: [] };
+             target_department_ids: [], target_employee_ids: [] };
   }
+
+  loadEmployees(): void {
+    if (!this.isManager) return;
+    this.http.get<any>('/api/v1/employees', { params: { per_page: 1000, status: 'active' } }).subscribe({
+      next: r => { this.employees = Array.isArray(r) ? r : (r?.data || []); this.cdr.markForCheck(); },
+      error: () => {},
+    });
+  }
+
+  employeeLabel(e: any): string {
+    return e.full_name || `${e.first_name || ''} ${e.last_name || ''}`.trim() || e.email || `#${e.id}`;
+  }
+
+  /** Employees matching a search box, selected ones first */
+  filteredEmployees(selected: number[], term: string): any[] {
+    const q = (term || '').trim().toLowerCase();
+    const list = q
+      ? this.employees.filter(e => `${this.employeeLabel(e)} ${e.email || ''} ${e.employee_code || ''}`.toLowerCase().includes(q))
+      : this.employees;
+    return [...list].sort((a, b) => Number(selected.includes(b.id)) - Number(selected.includes(a.id))).slice(0, 200);
+  }
+
+  employeeNames(ids: number[]): string {
+    return (ids || []).map(id => this.employees.find(e => e.id === id)).filter(Boolean).map(e => this.employeeLabel(e)).join(', ');
+  }
+
+  toggleIn(arr: number[], id: number): void {
+    const n = Number(id);
+    const i = arr.indexOf(n);
+    if (i >= 0) arr.splice(i, 1); else arr.push(n);
+    this.cdr.markForCheck();
+  }
+
+  /** QMS document waiting for HR (first version, or a new version of a live one) */
+  isAwaiting(p: Policy): boolean {
+    return p.source === 'qms' && (!!p.pending_version || (!p.is_published && p.status === 'pending_publication'));
+  }
+
+  get awaitingCount(): number { return this.policies.filter(p => this.isAwaiting(p)).length; }
+
+  awaitingVersion(p: Policy): string { return p.pending_version?.version || p.version; }
 
   loadCategories(): void {
     this.http.get<any>(`${this.api}/categories`).subscribe({
@@ -131,23 +196,42 @@ export class PoliciesComponent implements OnInit, OnDestroy {
     if (this.search.trim()) params.search = this.search.trim();
 
     this.http.get<any>(this.api, { params }).subscribe({
-      next: r => { this.policies = r?.policies || []; this.loading = false; this.cdr.markForCheck(); },
+      next: r => { this.setPolicies(r?.policies || []); this.loading = false; this.cdr.markForCheck(); },
       error: () => { this.loading = false; this.cdr.markForCheck(); },
     });
   }
 
-  onFilterChange(): void { this.load(); }
+  onFilterChange(): void {
+    if (this.searchTimer) { clearTimeout(this.searchTimer); this.searchTimer = null; }
+    this.load();
+  }
 
-  /** Policies grouped by category name for the accordion view (category null = uncategorized; label translated in the template). */
-  get grouped(): { name: string; category: Policy['category']; icon?: string; items: Policy[] }[] {
+  /** Search as you type, once typing pauses (Enter still searches immediately). */
+  onSearchInput(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => { this.searchTimer = null; this.load(); }, 400);
+  }
+
+  /**
+   * Policies grouped by category name for the accordion view (category null = uncategorized; label translated in
+   * the template). Built once per load — not as a getter — so typing in the page does not rebuild every row.
+   */
+  grouped: { name: string; category: Policy['category']; icon?: string; items: Policy[] }[] = [];
+
+  private setPolicies(list: Policy[]): void {
+    this.policies = list;
     const map = new Map<string, { name: string; category: Policy['category']; icon?: string; items: Policy[] }>();
-    for (const p of this.policies) {
+    for (const p of list) {
       const key = p.category?.name || '';
       if (!map.has(key)) map.set(key, { name: key, category: p.category?.name ? p.category : null, icon: p.category?.icon, items: [] });
       map.get(key)!.items.push(p);
     }
-    return Array.from(map.values());
+    this.grouped = Array.from(map.values());
   }
+
+  trackGroup = (_: number, g: { name: string }) => g.name;
+  trackPolicy = (_: number, p: Policy) => p.id;
+  trackEmployee = (_: number, e: any) => e.id;
 
   get pendingAckCount(): number {
     return this.policies.filter(p => p.requires_acknowledgement && !p.acknowledged).length;
@@ -316,6 +400,7 @@ export class PoliciesComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
     this.clearPolicyPreview();
   }
 
@@ -324,7 +409,8 @@ export class PoliciesComponent implements OnInit, OnDestroy {
   }
 
   canDownloadAttachment(p: Policy): boolean {
-    return this.isManager || (p.document_type || '').trim().toLowerCase() === 'form';
+    return this.isManager || (p.document_type || '').trim().toLowerCase() === 'form'
+      || (p.source === 'qms' && !!p.attachment_mime && p.attachment_mime !== 'application/pdf');
   }
 
   viewAttachment(p: Policy): void {
@@ -381,6 +467,11 @@ export class PoliciesComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (action === 'history') {
+      this.openQms(policy);
+      return;
+    }
+
     this.deletePolicy(policy);
   }
 
@@ -399,6 +490,7 @@ export class PoliciesComponent implements OnInit, OnDestroy {
         requires_acknowledgement: p.requires_acknowledgement, is_published: p.is_published,
         audience_type: p.audience_type || 'all',
         target_department_ids: (p.target_department_ids || []).map(Number),
+        target_employee_ids: (p.target_employee_ids || []).map(Number),
       };
     } else {
       this.editId = null;
@@ -446,6 +538,11 @@ export class PoliciesComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
       return;
     }
+    if (this.form.audience_type === 'employees' && !(this.form.target_employee_ids || []).length) {
+      this.formError = this.lang.t('POLICIES.MSG.SELECT_EMPLOYEE');
+      this.cdr.markForCheck();
+      return;
+    }
     this.submitting = true;
     this.formError = '';
 
@@ -460,6 +557,11 @@ export class PoliciesComponent implements OnInit, OnDestroy {
     if (this.form.audience_type === 'departments') {
       for (const id of this.form.target_department_ids || []) {
         fd.append('target_department_ids[]', String(id));
+      }
+    }
+    if (this.form.audience_type === 'employees') {
+      for (const id of this.form.target_employee_ids || []) {
+        fd.append('target_employee_ids[]', String(id));
       }
     }
     if (this.form.category_id) fd.append('category_id', String(this.form.category_id));
@@ -493,6 +595,8 @@ export class PoliciesComponent implements OnInit, OnDestroy {
   }
 
   togglePublish(p: Policy): void {
+    // QMS documents waiting for HR are published through the QMS panel (audience + version)
+    if (this.isAwaiting(p)) { this.openQms(p); return; }
     const nextPublished = !p.is_published;
     const confirmKey = nextPublished ? 'POLICIES.MSG.CONFIRM_PUBLISH' : 'POLICIES.MSG.CONFIRM_DRAFT';
     if (!confirm(this.lang.t(confirmKey, { title: p.title }))) return;
@@ -500,6 +604,7 @@ export class PoliciesComponent implements OnInit, OnDestroy {
     const payload = {
       audience_type: p.audience_type || 'all',
       target_department_ids: p.audience_type === 'departments' ? (p.target_department_ids || []) : [],
+      target_employee_ids: p.audience_type === 'employees' ? (p.target_employee_ids || []) : [],
       is_published: nextPublished,
     };
 
@@ -510,6 +615,82 @@ export class PoliciesComponent implements OnInit, OnDestroy {
         this.load();
       },
       error: err => this.toast(this.firstError(err) || this.lang.t('POLICIES.MSG.PUBLISH_FAILED')),
+    });
+  }
+
+  // ── QMS documents (HR): publish waiting version, version history ──────
+
+  openQms(p: Policy): void {
+    this.qmsPolicy = p;
+    this.publishError = '';
+    this.qmsSearch = '';
+    this.qmsForm = {
+      audience_type: p.audience_type || 'all',
+      target_department_ids: (p.target_department_ids || []).map(Number),
+      target_employee_ids: (p.target_employee_ids || []).map(Number),
+      requires_acknowledgement: p.requires_acknowledgement ?? true,
+      mandatory: p.mandatory ?? false,
+    };
+    this.showQms = true;
+    this.loadVersions(p.id);
+    this.cdr.markForCheck();
+  }
+
+  closeQms(): void { this.showQms = false; this.qmsPolicy = null; this.cdr.markForCheck(); }
+
+  loadVersions(id: number): void {
+    this.qmsVersions = [];
+    this.qmsVersionsLoading = true;
+    this.http.get<any>(`${this.api}/${id}/versions`).subscribe({
+      next: r => { this.qmsVersions = r?.versions || []; this.qmsVersionsLoading = false; this.cdr.markForCheck(); },
+      error: () => { this.qmsVersionsLoading = false; this.cdr.markForCheck(); },
+    });
+  }
+
+  publishQms(): void {
+    const p = this.qmsPolicy;
+    if (!p) return;
+    const f = this.qmsForm;
+    if (f.audience_type === 'departments' && !f.target_department_ids.length) { this.publishError = this.lang.t('POLICIES.MSG.SELECT_DEPARTMENT'); this.cdr.markForCheck(); return; }
+    if (f.audience_type === 'employees' && !f.target_employee_ids.length) { this.publishError = this.lang.t('POLICIES.MSG.SELECT_EMPLOYEE'); this.cdr.markForCheck(); return; }
+    if (!confirm(this.lang.t('POLICIES.QMS.CONFIRM_PUBLISH', { title: p.title, version: this.awaitingVersion(p) }))) return;
+
+    this.publishing = true;
+    this.publishError = '';
+    this.http.post<any>(`${this.api}/${p.id}/publish`, {
+      audience_type: f.audience_type,
+      target_department_ids: f.audience_type === 'departments' ? f.target_department_ids : [],
+      target_employee_ids: f.audience_type === 'employees' ? f.target_employee_ids : [],
+      requires_acknowledgement: f.requires_acknowledgement,
+      mandatory: f.mandatory,
+    }).subscribe({
+      next: r => {
+        this.publishing = false;
+        this.showQms = false;
+        this.toast(r?.message || this.lang.t('POLICIES.MSG.PUBLISHED'));
+        this.load();
+      },
+      error: err => {
+        this.publishing = false;
+        this.publishError = this.firstError(err) || this.lang.t('POLICIES.MSG.PUBLISH_FAILED');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Download / view the file of a specific version (e.g. to review a waiting version) */
+  downloadVersion(v: any): void {
+    if (!this.qmsPolicy) return;
+    this.http.get(`${this.api}/${this.qmsPolicy.id}/versions/${v.id}/attachment`, { responseType: 'blob' }).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = v.attachment_name || `v${v.version}`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      },
+      error: () => this.toast(this.lang.t('POLICIES.QMS.FILE_FAILED')),
     });
   }
 

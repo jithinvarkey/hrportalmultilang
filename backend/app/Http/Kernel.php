@@ -55,6 +55,7 @@ class Kernel extends HttpKernel
     protected $middlewareAliases = [
         'auth' => \App\Http\Middleware\Authenticate::class,
         'account.active' => \App\Http\Middleware\EnsureAccountActive::class,
+        'qms.key' => \App\Http\Middleware\VerifyQmsIntegrationKey::class,
         'role'       => \Spatie\Permission\Middleware\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,

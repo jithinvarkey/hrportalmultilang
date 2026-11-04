@@ -31,4 +31,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // QMS → HR portal document hand-off (shared secret, see VerifyQmsIntegrationKey)
+    'qms' => [
+        'integration_key' => env('QMS_INTEGRATION_KEY'),
+    ],
+
 ];

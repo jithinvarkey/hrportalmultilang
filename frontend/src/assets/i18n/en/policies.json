@@ -62,7 +62,9 @@
       "DOCUMENT": "Document (PDF, ≤10MB)",
       "REQUIRE_ACK": "Require acknowledgement",
       "MANDATORY": "Mandatory",
-      "PUBLISH": "Publish"
+      "PUBLISH": "Publish",
+      "SELECT_EMPLOYEES": "Select employees",
+      "SEARCH_EMPLOYEES": "Search by name, email or code"
     },
     "CATEGORY_FORM": {
       "POLICY_COUNT": "{{count}} policies",
@@ -112,7 +114,35 @@
       "CONFIRM_DELETE_CATEGORY": "Delete category \"{{name}}\"? Policies keep their content but lose this category.",
       "CATEGORY_DELETED": "Category deleted.",
       "CSV_FAILED": "CSV download failed.",
-      "REMINDERS_SENT": "Reminders sent."
+      "REMINDERS_SENT": "Reminders sent.",
+      "SELECT_EMPLOYEE": "Select at least one employee."
+    },
+    "SPECIFIC_EMPLOYEES": "Specific employees",
+    "QMS": {
+      "AWAITING_ONE": "1 document from the QMS is waiting for you to publish it.",
+      "AWAITING_MANY": "{{count}} documents from the QMS are waiting for you to publish them.",
+      "SHOW_ONLY_AWAITING": "Show only waiting",
+      "FROM_QMS": "Approved in the Quality Management System",
+      "WAITING_VERSION": "v{{version}} waiting to publish",
+      "PUBLISH_VERSION": "Publish v{{version}}",
+      "HISTORY": "Versions",
+      "CONFIRM_PUBLISH": "Publish \"{{title}}\" v{{version}} to the selected employees?",
+      "DOC_NO": "Document no.",
+      "OWNER_DEPT": "Owner department",
+      "LIVE": "Live version",
+      "NOT_PUBLISHED": "Not published yet",
+      "KEEPS_LIVE": "Employees keep seeing v{{version}} until you publish this version.",
+      "VERSION_HISTORY": "Version history",
+      "NO_HISTORY": "No versions received yet.",
+      "RECEIVED_ON": "Received {{date}}",
+      "PUBLISHED_ON": "Published {{date}}",
+      "FILE_FAILED": "Could not download the file.",
+      "STATUS": {
+        "pending": "Waiting",
+        "published": "Live",
+        "superseded": "Previous",
+        "discarded": "Replaced"
+      }
     }
   }
 }
