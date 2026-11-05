@@ -158,11 +158,24 @@ class AttendanceDeviceService
             if ($existing) {
                 // Rebuild biometric/API rows from all raw punches for the day; avoid overwriting completed manual entries.
                 if ($existing->source !== 'manual' || !$existing->check_out) {
+                    // Mobile punches never reach the device, so the day runs from the earliest to the latest of both.
+                    if ($existing->source === 'mobile') {
+                        $times = collect([$checkIn, $last->punch_time->format('H:i:s'), $existing->check_in, $existing->check_out])
+                            ->filter()
+                            ->sort()
+                            ->values();
+
+                        $checkIn  = $times->first();
+                        $checkOut = $times->last() !== $checkIn ? $times->last() : null;
+                        $status   = $this->attendancePolicy->statusForCheckIn($checkIn);
+                        $duration = $checkOut ? Carbon::parse("{$date} {$checkIn}")->diffInMinutes(Carbon::parse("{$date} {$checkOut}")) : null;
+                    }
+
                     $existing->update([
                         'check_in'       => $checkIn,
                         'check_out'      => $checkOut ?? $existing->check_out,
                         'status'         => $status,
-                        'source'         => 'api',
+                        'source'         => $existing->source === 'mobile' ? 'mobile' : 'api',
                         'total_minutes' => $duration ?? $existing->total_minutes,
                         'notes'          => 'Synced from ' . $device->name,
                     ]);

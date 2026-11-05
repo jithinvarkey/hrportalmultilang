@@ -120,7 +120,7 @@
         </div>
       </div>
     </div>
-    <div class="checkin-right" *ngIf="isHR || isAdmin">
+    <div class="checkin-right" *ngIf="data.punch_access?.can_punch">
       <button class="btn-ci" [disabled]="!canCheckIn || checkingIn" (click)="checkIn()">
         <mat-icon>login</mat-icon> {{ (checkingIn ? 'ATTENDANCE.RECORDING' : 'ATTENDANCE.CHECK_IN_BTN') | translate }}
       </button>

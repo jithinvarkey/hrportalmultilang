@@ -7,6 +7,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
 use App\Models\LeaveRequest;
+use App\Services\Attendance\AttendanceGeofenceService;
 use App\Services\Attendance\AttendancePolicyService;
 use App\Services\Attendance\MonthlyAttendanceReportService;
 use Carbon\Carbon;
@@ -20,7 +21,8 @@ class AttendanceController extends Controller
 {
     public function __construct(
         private MonthlyAttendanceReportService $monthlyReportService,
-        private AttendancePolicyService $attendancePolicy
+        private AttendancePolicyService $attendancePolicy,
+        private AttendanceGeofenceService $geofence
     ) {
     }
 
@@ -45,15 +47,20 @@ class AttendanceController extends Controller
             ], 422);
         }
 
+        $punch = $this->resolvePunch($request, 'check_in');
+        if ($punch instanceof JsonResponse) {
+            return $punch;
+        }
+
         $checkIn = now()->format('H:i:s');
         $log = AttendanceLog::updateOrCreate(
             ['employee_id' => $employee->id, 'date' => $today],
-            [
+            array_merge([
                 'check_in'   => $checkIn,
                 'source'     => 'api',
                 'ip_address' => $request->ip(),
                 'status'     => $this->attendancePolicy->statusForCheckIn($checkIn),
-            ]
+            ], $punch)
         );
 
         return response()->json(['message' => __('Check-in recorded'), 'log' => $log]);
@@ -71,17 +78,87 @@ class AttendanceController extends Controller
 
         $log           = AttendanceLog::where('employee_id', $employee->id)
             ->whereDate('date', $today)
-            ->firstOrFail();
+            ->first();
+
+        if (! $log?->check_in) {
+            return response()->json(['message' => __('You have not checked in today.')], 422);
+        }
+
+        $punch = $this->resolvePunch($request, 'check_out');
+        if ($punch instanceof JsonResponse) {
+            return $punch;
+        }
 
         $checkOutCarbon = now();
         $checkInCarbon  = Carbon::parse($today . ' ' . $log->check_in);
 
-        $log->update([
+        $log->update(array_merge([
             'check_out'     => $checkOutCarbon->format('H:i:s'),
             'total_minutes' => (int) $checkInCarbon->diffInMinutes($checkOutCarbon),
-        ]);
+        ], $punch));
 
         return response()->json(['message' => __('Check-out recorded'), 'log' => $log->fresh()]);
+    }
+
+    /**
+     * Apply the mobile punching rules to a check-in or check-out.
+     * Returns the extra log fields to store, or the response that refuses the punch.
+     */
+    private function resolvePunch(Request $request, string $punch): array|JsonResponse
+    {
+        $access = $this->punchAccess();
+
+        if (! $access['can_punch']) {
+            return response()->json(['message' => __('Mobile punching is not enabled for your account.')], 403);
+        }
+
+        if (! $access['requires_location']) {
+            return [];
+        }
+
+        $position = $request->validate([
+            'latitude'  => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'accuracy'  => 'required|numeric|min:0',
+        ]);
+
+        $result = $this->geofence->check(
+            (float) $position['latitude'],
+            (float) $position['longitude'],
+            (float) $position['accuracy']
+        );
+
+        if (! $result['allowed']) {
+            return response()->json([
+                'message'         => $result['message'],
+                'distance_meters' => $result['distance_meters'],
+            ], 422);
+        }
+
+        return [
+            'source'                   => 'mobile',
+            "{$punch}_location_id"     => $result['location']->id,
+            "{$punch}_latitude"        => $position['latitude'],
+            "{$punch}_longitude"       => $position['longitude'],
+            "{$punch}_distance_meters" => $result['distance_meters'],
+        ];
+    }
+
+    /**
+     * Mobile punching needs both the company-wide switch and the user's own switch.
+     * Without it, HR/admin keep the plain self check-in; everyone else has no self punching.
+     *
+     * @return array{can_punch: bool, requires_location: bool}
+     */
+    private function punchAccess(): array
+    {
+        $mobile = (bool) $this->attendancePolicy->settings()['mobile_punch_enabled']
+            && (bool) auth()->user()->mobile_punch_enabled;
+
+        return [
+            'can_punch'         => $mobile || $this->hasAnyRoleDB(['super_admin', 'ceo', 'hr_manager', 'hr_staff']),
+            'requires_location' => $mobile,
+        ];
     }
 
     // ── Today ─────────────────────────────────────────────────────────────
@@ -91,14 +168,14 @@ class AttendanceController extends Controller
         $employee = auth()->user()->employee;
 
         if (! $employee) {
-            return response()->json(['log' => null]);
+            return response()->json(['log' => null, 'punch_access' => ['can_punch' => false, 'requires_location' => false]]);
         }
 
         $log = AttendanceLog::where('employee_id', $employee->id)
             ->whereDate('date', now()->toDateString())
             ->first();
 
-        return response()->json(['log' => $log]);
+        return response()->json(['log' => $log, 'punch_access' => $this->punchAccess()]);
     }
 
     // ── Employee log ──────────────────────────────────────────────────────
@@ -457,6 +534,7 @@ class AttendanceController extends Controller
         return [
             'type'      => 'employee',
             'today_log' => $todayLog,
+            'punch_access' => $this->punchAccess(),
             'summary'   => [
                 'present_days'    => $presentDays,
                 'absent_days'     => $absentDays,
@@ -539,11 +617,13 @@ class AttendanceController extends Controller
             'full_day_hours'     => 'required|numeric|min:4|max:24',
             'grace_minutes'      => 'required|integer|min:0|max:60',
             'weekend_days'       => 'required|array',
+            'mobile_punch_enabled' => 'required|boolean',
         ]);
 
         $settings = $request->only([
             'work_start', 'late_after_minutes', 'half_day_hours',
             'full_day_hours', 'grace_minutes', 'weekend_days',
+            'mobile_punch_enabled',
         ]);
 
         $this->attendancePolicy->save($settings);

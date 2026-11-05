@@ -18,6 +18,7 @@ import { SharedModule } from '../../shared/shared.module';
 
 import { AttendanceComponent } from './components/attendance.component';
 import { AttendanceDashboardComponent } from './components/attendance-dashboard.component';
+import { AttendanceLocationsComponent } from './components/attendance-locations.component';
 import { BioTimeComponent } from './components/biotime.component';
 
 const routes: Routes = [
@@ -30,6 +31,7 @@ const routes: Routes = [
   declarations: [
     AttendanceComponent,
     AttendanceDashboardComponent,
+    AttendanceLocationsComponent,
     BioTimeComponent,         // ← declared here so mat-icon and all Material directives resolve
   ],
   imports: [

@@ -4,9 +4,10 @@ import {
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject, interval } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Observable, Subject, interval, of } from 'rxjs';
+import { switchMap, takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
+import { GeolocationService } from '../../../core/services/geolocation.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LanguageService } from '../../../core/services/language.service';
 
@@ -30,6 +31,7 @@ export interface AttendanceSettings {
   full_day_hours:      number;
   grace_minutes:       number;
   weekend_days:        number[];
+  mobile_punch_enabled: boolean;
 }
 
 @Component({
@@ -43,6 +45,8 @@ export class AttendanceComponent implements OnInit, OnDestroy {
 
   // ── State ─────────────────────────────────────────────────────────────
   todayLog:    AttendanceLog | null = null;
+  punchAccess = { can_punch: false, requires_location: false };
+  private locationAsked = false;
   reportRows:  any[] = [];
   reportPagination: any = null;
   reportPage = 1;
@@ -79,6 +83,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     full_day_hours:     8,
     grace_minutes:      5,
     weekend_days:       [5, 6],
+    mobile_punch_enabled: false,
   };
   settingsForm!: FormGroup;
 
@@ -111,6 +116,7 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly lang:  LanguageService,
+    private readonly geo:   GeolocationService,
   ) {}
 
   ngOnInit(): void {
@@ -145,6 +151,7 @@ this.isAdmin = this.auth.isAdminRole();
       full_day_hours:     [8,   [Validators.required, Validators.min(4), Validators.max(24)]],
       grace_minutes:      [5,   [Validators.required, Validators.min(0), Validators.max(60)]],
       weekend_days:       [[5, 6]],
+      mobile_punch_enabled: [false],
     });
 
     this.manualForm = this.fb.group({
@@ -193,14 +200,36 @@ this.isAdmin = this.auth.isAdminRole();
   loadToday(): void {
     this.loading = true;
     this.http.get<any>(`${this.api}/today`).pipe(takeUntil(this.destroy$)).subscribe({
-      next:  (r) => { this.todayLog = r.log ?? null; this.loading = false; this.cdr.markForCheck(); },
+      next:  (r) => {
+        this.todayLog = r.log ?? null;
+        this.punchAccess = r.punch_access ?? this.punchAccess;
+        this.loading = false; this.cdr.markForCheck();
+        this.askForLocation();
+      },
       error: () => { this.loading = false; this.cdr.markForCheck(); },
     });
   }
 
+  /** Ask once when the page opens, so a blocked location shows up before the employee taps a button. */
+  private askForLocation(): void {
+    if (this.locationAsked || !this.punchAccess.requires_location || !(this.canCheckIn || this.canCheckOut)) return;
+    this.locationAsked = true;
+    this.geo.requestAccess().pipe(takeUntil(this.destroy$)).subscribe(key => {
+      if (key) { this.errorMsg = this.lang.t(key); this.cdr.markForCheck(); }
+    });
+  }
+
+  /** The request body for a punch: the phone's position when mobile punching applies, else nothing. */
+  private punchBody(): Observable<object> {
+    return this.punchAccess.requires_location ? this.geo.current() : of({});
+  }
+
   checkIn(): void {
     this.checkingIn = true; this.clearMessages();
-    this.http.post<any>(`${this.api}/checkin`, {}).pipe(takeUntil(this.destroy$)).subscribe({
+    this.punchBody().pipe(
+      switchMap(body => this.http.post<any>(`${this.api}/checkin`, body)),
+      takeUntil(this.destroy$),
+    ).subscribe({
       next: (r) => {
         this.todayLog   = r.log;
         this.successMsg = this.lang.t('ATTENDANCE.MSG.CHECKED_IN', { time: r.log?.check_in });
@@ -209,7 +238,7 @@ this.isAdmin = this.auth.isAdminRole();
       },
       error: (err) => {
         if (err?.error?.log) this.todayLog = err.error.log;
-        this.errorMsg   = err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKIN_FAILED');
+        this.errorMsg   = typeof err === 'string' ? this.lang.t(err) : err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKIN_FAILED');
         this.checkingIn = false; this.cdr.markForCheck();
       },
     });
@@ -217,7 +246,10 @@ this.isAdmin = this.auth.isAdminRole();
 
   checkOut(): void {
     this.checkingOut = true; this.clearMessages();
-    this.http.post<any>(`${this.api}/checkout`, {}).pipe(takeUntil(this.destroy$)).subscribe({
+    this.punchBody().pipe(
+      switchMap(body => this.http.post<any>(`${this.api}/checkout`, body)),
+      takeUntil(this.destroy$),
+    ).subscribe({
       next: (r) => {
         this.todayLog    = r.log;
         this.successMsg  = this.lang.t('ATTENDANCE.MSG.CHECKED_OUT', { time: r.log?.check_out, duration: this.fmt(r.log?.total_minutes) });
@@ -226,7 +258,7 @@ this.isAdmin = this.auth.isAdminRole();
       },
       error: (err) => {
         if (err?.error?.log) this.todayLog = err.error.log;
-        this.errorMsg    = err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKOUT_FAILED');
+        this.errorMsg    = typeof err === 'string' ? this.lang.t(err) : err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKOUT_FAILED');
         this.checkingOut = false; this.cdr.markForCheck();
       },
     });
@@ -455,6 +487,7 @@ this.isAdmin = this.auth.isAdminRole();
           this.settings    = r.settings;
           this.settingsSaving = false;
           this.settingsSaved  = true;
+          this.loadToday();
           this.loadReport();
           setTimeout(() => { this.settingsSaved = false; this.cdr.markForCheck(); }, 3000);
           this.cdr.markForCheck();

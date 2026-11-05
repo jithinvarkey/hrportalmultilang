@@ -434,6 +434,21 @@ class AdminController extends Controller
         ]);
     }
 
+    public function updateUserMobilePunch(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate([
+            'mobile_punch_enabled' => 'required|boolean',
+        ]);
+
+        $user = User::with('roles', 'employee.department', 'employee.designation')->findOrFail($id);
+        $user->forceFill(['mobile_punch_enabled' => (bool) $data['mobile_punch_enabled']])->save();
+
+        return response()->json([
+            'message' => $user->mobile_punch_enabled ? __('Mobile punching enabled for this user.') : __('Mobile punching disabled for this user.'),
+            'user' => $user->fresh('roles', 'employee.department', 'employee.designation'),
+        ]);
+    }
+
     public function loginActivities(Request $request): JsonResponse
     {
         if (!$this->canViewLoginActivities()) {

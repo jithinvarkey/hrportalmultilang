@@ -26,7 +26,31 @@
     "SOURCES": {
       "biometric": "Biometric",
       "manual": "Manual",
+      "mobile": "Mobile",
       "system": "System"
+    },
+    "GEO": {
+      "UNSUPPORTED": "Location is not available in this browser. Open the portal over HTTPS on your phone.",
+      "DENIED": "Location access is blocked. Allow location for this site in your browser settings and try again.",
+      "TIMEOUT": "Could not get your location in time. Move near a window or outdoors and try again.",
+      "UNAVAILABLE": "Could not get your location. Turn on your phone's location and try again."
+    },
+    "LOCATIONS": {
+      "TITLE": "Mobile Punch Locations",
+      "SUB": "Employees can check in and out on their phone only within the radius of an active location",
+      "ADD": "Add Location",
+      "LATITUDE": "Latitude",
+      "LONGITUDE": "Longitude",
+      "USE_CURRENT": "Use my current location",
+      "LOCATING": "Getting location…",
+      "RADIUS": "Radius (meters)",
+      "RADIUS_HINT": "Between 50 and 5000 meters",
+      "RADIUS_VALUE": "{{m}} m radius",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "EMPTY": "No locations yet. Add one before enabling mobile punching.",
+      "CONFIRM_DELETE": "Delete location \"{{name}}\"?",
+      "SAVE_FAILED": "Failed to save location."
     },
     "TABS": {
       "LOG": "Attendance Log",
@@ -67,6 +91,8 @@
     "SETTINGS": {
       "TITLE": "Attendance Policy Settings",
       "SUB": "Configure working hours, late thresholds and weekend days",
+      "MOBILE_PUNCH": "Mobile Punching",
+      "MOBILE_PUNCH_HINT": "Check-in and check-out from a phone at a location below",
       "WORK_START": "Work Start Time",
       "WORK_START_HINT": "Expected daily check-in time",
       "GRACE": "Grace Period (minutes)",

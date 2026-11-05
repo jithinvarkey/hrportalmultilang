@@ -66,7 +66,7 @@
       </div>
     </div>
 
-    <div class="today-right" *ngIf="isAdmin || isHR">
+    <div class="today-right" *ngIf="punchAccess.can_punch">
       <span class="status-badge" [class]="statusClass(todayLog?.status || '')">
         {{ todayLog?.status ? (todayLog?.status | statusLabel) : ('ATTENDANCE.NOT_RECORDED' | translate) }}
       </span>
@@ -359,6 +359,15 @@
       <div class="settings-grid">
 
         <div class="setting-block">
+          <label class="field-label">{{ 'ATTENDANCE.SETTINGS.MOBILE_PUNCH' | translate }}</label>
+          <div class="field-hint">{{ 'ATTENDANCE.SETTINGS.MOBILE_PUNCH_HINT' | translate }}</div>
+          <select class="field-input" formControlName="mobile_punch_enabled">
+            <option [ngValue]="true">{{ 'COMMON.YES' | translate }}</option>
+            <option [ngValue]="false">{{ 'COMMON.NO' | translate }}</option>
+          </select>
+        </div>
+
+        <div class="setting-block">
           <label class="field-label">{{ 'ATTENDANCE.SETTINGS.WORK_START' | translate }}</label>
           <div class="field-hint">{{ 'ATTENDANCE.SETTINGS.WORK_START_HINT' | translate }}</div>
           <input class="field-input" type="time" dir="ltr" formControlName="work_start">
@@ -412,6 +421,8 @@
         </button>
       </div>
     </div>
+
+    <app-attendance-locations></app-attendance-locations>
 
   </ng-container>
 

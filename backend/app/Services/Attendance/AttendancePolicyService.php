@@ -17,6 +17,7 @@ class AttendancePolicyService
         'full_day_hours' => 8,
         'grace_minutes' => 5,
         'weekend_days' => [5, 6],
+        'mobile_punch_enabled' => false,
     ];
 
     public function settings(): array
