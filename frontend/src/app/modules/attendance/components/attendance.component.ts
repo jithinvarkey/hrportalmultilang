@@ -509,7 +509,8 @@ this.isAdmin = this.auth.isAdminRole();
   // ── Helpers ────────────────────────────────────────────────────────────
 
   get canCheckIn():  boolean { return !this.todayLog?.check_in; }
-  get canCheckOut(): boolean { return !!this.todayLog?.check_in && !this.todayLog?.check_out; }
+  // Check-out stays open after the first one: the latest check-out of the day is the one kept
+  get canCheckOut(): boolean { return !!this.todayLog?.check_in; }
 
   fmt(mins: number | null | undefined): string {
     if (!mins) return '—';

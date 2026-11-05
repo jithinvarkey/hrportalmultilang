@@ -192,7 +192,8 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
   }
 
   get canCheckIn():  boolean { return !this.data?.today_log?.check_in; }
-  get canCheckOut(): boolean { return !!this.data?.today_log?.check_in && !this.data?.today_log?.check_out; }
+  // Check-out stays open after the first one: the latest check-out of the day is the one kept
+  get canCheckOut(): boolean { return !!this.data?.today_log?.check_in; }
 
   // ── Helpers ──────────────────────────────────────────────────────────
 

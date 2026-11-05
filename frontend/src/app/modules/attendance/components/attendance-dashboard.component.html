@@ -83,7 +83,7 @@
 <!-- ══════════════════════════════════════════════════════════════════
      EMPLOYEE VIEW
 ══════════════════════════════════════════════════════════════════ -->
-<ng-container *ngIf="!loading && !isOverviewDashboard && data">
+<ng-container *ngIf="!loading && data && (!isOverviewDashboard || data.punch_access?.can_punch)">
 
   <!-- Check-in card -->
   <div class="checkin-card">
@@ -129,6 +129,10 @@
       </button>
     </div>
   </div>
+
+</ng-container>
+
+<ng-container *ngIf="!loading && !isOverviewDashboard && data">
 
   <!-- KPI strip -->
   <div class="kpi-strip">

@@ -102,6 +102,58 @@ class MobilePunchTest extends TestCase
     }
 
     /** @test */
+    public function department_manager_gets_the_check_in_card_on_the_dashboard(): void
+    {
+        $this->mobilePunching(true);
+        $this->office();
+        $manager = $this->userWithRole('department_manager');
+
+        $this->actingAs($manager, 'sanctum')->postJson('/api/v1/attendance/checkin', self::INSIDE)->assertOk();
+
+        $this->actingAs($manager, 'sanctum')->getJson('/api/v1/attendance/dashboard')
+            ->assertOk()
+            ->assertJsonPath('type', 'department')
+            ->assertJsonPath('punch_access.can_punch', true)
+            ->assertJsonPath('punch_access.requires_location', true)
+            ->assertJsonPath('today_log.source', 'mobile');
+    }
+
+    /** @test */
+    public function department_manager_switched_off_individually_cannot_punch(): void
+    {
+        $this->mobilePunching(true);
+        $this->office();
+        $manager = $this->userWithRole('department_manager');
+        $manager->forceFill(['mobile_punch_enabled' => false])->save();
+
+        $this->actingAs($manager, 'sanctum')->getJson('/api/v1/attendance/dashboard')
+            ->assertJsonPath('punch_access.can_punch', false);
+    }
+
+    /** @test */
+    public function the_latest_check_out_of_the_day_is_the_one_kept(): void
+    {
+        $this->mobilePunching(true);
+        $this->office();
+        $user = $this->userWithRole('employee');
+
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/attendance/checkin', self::INSIDE)->assertOk();
+
+        Carbon::setTestNow(Carbon::parse('2026-11-04 12:00:00'));
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/attendance/checkout', self::INSIDE)
+            ->assertOk()
+            ->assertJsonPath('log.total_minutes', 240);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-04 17:00:00'));
+        $this->actingAs($user, 'sanctum')->postJson('/api/v1/attendance/checkout', self::INSIDE)
+            ->assertOk()
+            ->assertJsonPath('log.check_out', '17:00:00')
+            ->assertJsonPath('log.total_minutes', 540);
+
+        $this->assertSame(1, AttendanceLog::count());
+    }
+
+    /** @test */
     public function punch_outside_the_radius_is_refused_and_not_recorded(): void
     {
         $this->mobilePunching(true);

@@ -334,11 +334,17 @@ class AttendanceController extends Controller
         }
 
         if ($user->hasRole('department_manager')) {
-            return response()->json($this->adminDashboard(
+            return response()->json(array_merge($this->adminDashboard(
                 $user->employee?->department_id,
                 $user->employee?->id,
                 'department'
-            ));
+            ), [
+                // Managers punch for themselves too, so their overview carries the check-in card
+                'today_log'    => $user->employee
+                    ? AttendanceLog::where('employee_id', $user->employee->id)->whereDate('date', now()->toDateString())->first()
+                    : null,
+                'punch_access' => $user->employee ? $this->punchAccess() : ['can_punch' => false, 'requires_location' => false],
+            ]));
         }
 
         return response()->json($this->employeeDashboard($user->employee));
