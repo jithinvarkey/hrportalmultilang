@@ -24,6 +24,7 @@ class User extends Authenticatable implements HasLocalePreference
         'email_verified_at' => 'datetime',
         'password'          => 'hashed',
         'otp_exempt'         => 'boolean',
+        'mobile_punch_enabled' => 'boolean',
     ];
 
     /**

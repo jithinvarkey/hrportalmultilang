@@ -415,5 +415,14 @@
     "Policy published.": "تم نشر السياسة.",
     "QMS document ready to publish": "مستند من نظام الجودة جاهز للنشر",
     "New QMS version ready to publish": "إصدار جديد من نظام الجودة جاهز للنشر",
-    ":title (v:version) was approved in the QMS and is waiting for you to publish it.": "تم اعتماد :title (الإصدار :version) في نظام الجودة وهو بانتظار نشره."
+    ":title (v:version) was approved in the QMS and is waiting for you to publish it.": "تم اعتماد :title (الإصدار :version) في نظام الجودة وهو بانتظار نشره.",
+    "You have not checked in today.": "لم تسجل حضورك اليوم.",
+    "Mobile punching is not enabled for your account.": "التسجيل عبر الجوال غير مفعّل لحسابك.",
+    "No attendance location has been set up. Please contact HR.": "لم يتم إعداد موقع للحضور. يرجى التواصل مع الموارد البشرية.",
+    "Your location is not accurate enough (:accuracy m). Move near a window or outdoors and try again.": "دقة موقعك غير كافية (:accuracy م). اقترب من نافذة أو اخرج إلى مكان مفتوح ثم حاول مرة أخرى.",
+    "You are :distance m from :location. Punching is only allowed within :radius m.": "أنت على بعد :distance م من :location. يُسمح بالتسجيل ضمن نطاق :radius م فقط.",
+    "Attendance location saved.": "تم حفظ موقع الحضور.",
+    "Attendance location deleted.": "تم حذف موقع الحضور.",
+    "Mobile punching enabled for this user.": "تم تفعيل التسجيل عبر الجوال لهذا المستخدم.",
+    "Mobile punching disabled for this user.": "تم إيقاف التسجيل عبر الجوال لهذا المستخدم."
 }

@@ -1,0 +1,73 @@
+<div class="form-card">
+  <div class="form-card-header">
+    <mat-icon>place</mat-icon>
+    <div class="header-text">
+      <div class="form-card-title">{{ 'ATTENDANCE.LOCATIONS.TITLE' | translate }}</div>
+      <div class="form-card-sub">{{ 'ATTENDANCE.LOCATIONS.SUB' | translate }}</div>
+    </div>
+    <button class="btn-outline" type="button" *ngIf="!showForm" (click)="openForm()">
+      <mat-icon>add</mat-icon> {{ 'ATTENDANCE.LOCATIONS.ADD' | translate }}
+    </button>
+  </div>
+
+  <div class="alert-error" *ngIf="errorMsg"><mat-icon>error_outline</mat-icon> {{ errorMsg }}</div>
+
+  <div class="location-form" *ngIf="showForm" [formGroup]="form">
+    <div class="form-grid">
+      <div class="field-group full-width">
+        <label class="field-label">{{ 'COMMON.NAME' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="text" maxlength="100" formControlName="name">
+      </div>
+      <div class="field-group">
+        <label class="field-label">{{ 'ATTENDANCE.LOCATIONS.LATITUDE' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="number" step="any" dir="ltr" formControlName="latitude">
+      </div>
+      <div class="field-group">
+        <label class="field-label">{{ 'ATTENDANCE.LOCATIONS.LONGITUDE' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="number" step="any" dir="ltr" formControlName="longitude">
+      </div>
+      <div class="field-group full-width">
+        <button class="btn-outline use-here" type="button" [disabled]="locating" (click)="useCurrentPosition()">
+          <mat-icon>my_location</mat-icon>
+          {{ (locating ? 'ATTENDANCE.LOCATIONS.LOCATING' : 'ATTENDANCE.LOCATIONS.USE_CURRENT') | translate }}
+        </button>
+      </div>
+      <div class="field-group">
+        <label class="field-label">{{ 'ATTENDANCE.LOCATIONS.RADIUS' | translate }} <span class="req">*</span></label>
+        <input class="field-input" type="number" min="50" max="5000" dir="ltr" formControlName="radius_meters">
+        <div class="field-hint">{{ 'ATTENDANCE.LOCATIONS.RADIUS_HINT' | translate }}</div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">{{ 'ATTENDANCE.LOCATIONS.ACTIVE' | translate }}</label>
+        <select class="field-input" formControlName="is_active">
+          <option [ngValue]="true">{{ 'COMMON.YES' | translate }}</option>
+          <option [ngValue]="false">{{ 'COMMON.NO' | translate }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-footer">
+      <button class="btn-outline" type="button" (click)="closeForm()">{{ 'COMMON.CANCEL' | translate }}</button>
+      <button class="btn-primary" type="button" [disabled]="saving" (click)="save()">
+        <mat-icon>{{ saving ? 'hourglass_empty' : 'save' }}</mat-icon>
+        {{ (saving ? 'COMMON.SAVING' : 'COMMON.SAVE') | translate }}
+      </button>
+    </div>
+  </div>
+
+  <div class="location-empty" *ngIf="!locations.length && !showForm">{{ 'ATTENDANCE.LOCATIONS.EMPTY' | translate }}</div>
+
+  <div class="location-row" *ngFor="let l of locations" [class.inactive]="!l.is_active">
+    <div class="location-info">
+      <div class="location-name">
+        {{ l.name }}
+        <span class="inactive-tag" *ngIf="!l.is_active">{{ 'ATTENDANCE.LOCATIONS.INACTIVE' | translate }}</span>
+      </div>
+      <div class="location-meta">
+        <span dir="ltr">{{ l.latitude }}, {{ l.longitude }}</span> ·
+        {{ 'ATTENDANCE.LOCATIONS.RADIUS_VALUE' | translate:{m: l.radius_meters} }}
+      </div>
+    </div>
+    <button class="icon-btn" type="button" [attr.aria-label]="'COMMON.EDIT' | translate" (click)="openForm(l)"><mat-icon>edit</mat-icon></button>
+    <button class="icon-btn" type="button" [attr.aria-label]="'COMMON.DELETE' | translate" (click)="remove(l)"><mat-icon>delete</mat-icon></button>
+  </div>
+</div>

@@ -18,6 +18,7 @@ use App\Http\Controllers\API\PolicyController;
 use App\Http\Controllers\API\QmsDocumentController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\AttendanceController;
+use App\Http\Controllers\API\AttendanceLocationController;
 use App\Http\Controllers\API\ContractController;
 use App\Http\Controllers\API\ContractRenewalController;
 use App\Http\Controllers\API\RecruitmentController;
@@ -282,6 +283,12 @@ Route::prefix('v1')->group(function () {
             Route::put('/{id}',              [AttendanceController::class, 'update'])->whereNumber('id')->middleware('role:super_admin|ceo|hr_manager|hr_staff');
             Route::get('/settings',          [AttendanceController::class, 'getSettings']);
             Route::post('/settings',         [AttendanceController::class, 'saveSettings'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
+            Route::prefix('locations')->middleware('role:super_admin|ceo|hr_manager|hr_staff')->group(function () {
+                Route::get('/',         [AttendanceLocationController::class, 'index']);
+                Route::post('/',        [AttendanceLocationController::class, 'store']);
+                Route::put('/{id}',     [AttendanceLocationController::class, 'update'])->whereNumber('id');
+                Route::delete('/{id}',  [AttendanceLocationController::class, 'destroy'])->whereNumber('id');
+            });
         });
 
         // BioTime / ZKTeco biometric devices
@@ -513,6 +520,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('/{id}/assign-role',    [AdminController::class, 'assignRole'])->whereNumber('id');
                 Route::post('/{id}/toggle-status',  [AdminController::class, 'toggleUserStatus'])->whereNumber('id');
                 Route::put('/{id}/otp-exemption',   [AdminController::class, 'updateUserOtpExemption'])->whereNumber('id');
+                Route::put('/{id}/mobile-punch',    [AdminController::class, 'updateUserMobilePunch'])->whereNumber('id');
             });
 
             Route::prefix('roles')->middleware('role_or_permission:super_admin|admin.manage_roles')->group(function () {

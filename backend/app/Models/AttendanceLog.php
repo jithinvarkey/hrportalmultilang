@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $check_out       HH:MM:SS
  * @property int|null    $total_minutes
  * @property string      $status          present|absent|late|half_day
- * @property string      $source          api|manual|biometric
+ * @property string      $source          api|manual|biometric|mobile
  * @property string|null $ip_address
  * @property string|null $notes
  *
@@ -37,6 +37,14 @@ class AttendanceLog extends Model
         'ip_address',
         'notes',
         'missed_checkout_notified_at',
+        'check_in_location_id',
+        'check_in_latitude',
+        'check_in_longitude',
+        'check_in_distance_meters',
+        'check_out_location_id',
+        'check_out_latitude',
+        'check_out_longitude',
+        'check_out_distance_meters',
     ];
 
     protected $casts = [

@@ -51,7 +51,7 @@ export class AdminComponent implements OnInit {
   editablePerms: Set<string> = new Set();
 
   // ── Table columns ─────────────────────────────────────────────────────
-  userColumns  = ['user','role','employee','otp','actions'];
+  userColumns  = ['user','role','employee','otp','mobilePunch','actions'];
   roleColumns  = ['role','users','description','actions'];
 
   /** `label` holds a translation key, rendered with the translate pipe. */
@@ -646,6 +646,16 @@ export class AdminComponent implements OnInit {
         this.loadUsers(this.currentPage);
       },
       error: err => this.adminError = this.firstError(err) || this.lang.t('ADMIN.MSG.OTP_UPDATE_FAILED')
+    });
+  }
+
+  toggleMobilePunch(user: any) {
+    this.http.put<any>(`/api/v1/admin/users/${user.id}/mobile-punch`, { mobile_punch_enabled: !user.mobile_punch_enabled }).subscribe({
+      next: r => {
+        this.settingsMessage = r.message;
+        this.loadUsers(this.currentPage);
+      },
+      error: err => this.adminError = this.firstError(err) || this.lang.t('ADMIN.MSG.MOBILE_PUNCH_UPDATE_FAILED')
     });
   }
 

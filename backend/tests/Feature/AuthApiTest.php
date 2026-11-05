@@ -20,6 +20,21 @@ class AuthApiTest extends TestCase
     use RefreshDatabase;
 
     /** @test */
+    public function token_stops_working_eight_hours_after_login(): void
+    {
+        $token = User::factory()->create()->createToken('hrms-token')->plainTextToken;
+
+        $this->travel(479)->minutes();
+        $this->withToken($token)->getJson('/api/v1/auth/me')->assertOk();
+
+        // The guard remembers the user between requests in one test, so make it check the token again.
+        $this->app['auth']->forgetGuards();
+
+        $this->travel(2)->minutes();
+        $this->withToken($token)->getJson('/api/v1/auth/me')->assertUnauthorized();
+    }
+
+    /** @test */
     public function user_can_login_with_valid_credentials(): void
     {
         // OTP-exempt accounts receive the token directly; others get an OTP challenge first.

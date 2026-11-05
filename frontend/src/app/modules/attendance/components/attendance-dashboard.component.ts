@@ -9,9 +9,10 @@ import {
 import { HttpClient } from '@angular/common/http';
 import { formatDate } from '@angular/common';
 import { TranslateService } from '@ngx-translate/core';
-import { Subject, interval } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Observable, Subject, interval, of } from 'rxjs';
+import { switchMap, takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
+import { GeolocationService } from '../../../core/services/geolocation.service';
 import { LanguageService } from '../../../core/services/language.service';
 
 declare const Chart: any;
@@ -41,6 +42,7 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
 
   private readonly api      = '/api/v1/attendance';
   private readonly destroy$ = new Subject<void>();
+  private locationAsked = false;
   private charts: any[]     = [];
   isHR = false;
 
@@ -50,6 +52,7 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
     private readonly cdr:  ChangeDetectorRef,
     private readonly lang: LanguageService,
     private readonly translate: TranslateService,
+    private readonly geo: GeolocationService,
   ) {}
 
   ngOnInit(): void {
@@ -85,6 +88,7 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
           this.loading = false;
           this.cdr.markForCheck();
           setTimeout(() => this.renderCharts(), 100);
+          this.askForLocation();
         },
         error: () => { this.loading = false; this.cdr.markForCheck(); },
       });
@@ -92,12 +96,29 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
 
   // ── Check-in / out ───────────────────────────────────────────────────
 
+  /** Ask once when the page opens, so a blocked location shows up before the employee taps a button. */
+  private askForLocation(): void {
+    if (this.locationAsked || !this.data?.punch_access?.requires_location || !(this.canCheckIn || this.canCheckOut)) return;
+    this.locationAsked = true;
+    this.geo.requestAccess().pipe(takeUntil(this.destroy$)).subscribe(key => {
+      if (key) { this.actionError = this.lang.t(key); this.cdr.markForCheck(); }
+    });
+  }
+
+  /** The request body for a punch: the phone's position when mobile punching applies, else nothing. */
+  private punchBody(): Observable<object> {
+    return this.data?.punch_access?.requires_location ? this.geo.current() : of({});
+  }
+
   checkIn(): void {
     this.checkingIn  = true;
     this.actionMsg   = '';
     this.actionError = '';
-    this.http.post<any>(`${this.api}/checkin`, {})
-      .pipe(takeUntil(this.destroy$))
+    this.punchBody()
+      .pipe(
+        switchMap(body => this.http.post<any>(`${this.api}/checkin`, body)),
+        takeUntil(this.destroy$),
+      )
       .subscribe({
         next: (res) => {
           if (this.data) this.data.today_log = res.log;
@@ -107,7 +128,7 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
         },
         error: (err) => {
           if (err?.error?.log && this.data) this.data.today_log = err.error.log;
-          this.actionError = err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKIN_FAILED');
+          this.actionError = typeof err === 'string' ? this.lang.t(err) : err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKIN_FAILED');
           this.checkingIn  = false;
           this.cdr.markForCheck();
         },
@@ -118,8 +139,11 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
     this.checkingOut = true;
     this.actionMsg   = '';
     this.actionError = '';
-    this.http.post<any>(`${this.api}/checkout`, {})
-      .pipe(takeUntil(this.destroy$))
+    this.punchBody()
+      .pipe(
+        switchMap(body => this.http.post<any>(`${this.api}/checkout`, body)),
+        takeUntil(this.destroy$),
+      )
       .subscribe({
         next: (res) => {
           if (this.data) this.data.today_log = res.log;
@@ -129,7 +153,7 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
         },
         error: (err) => {
           if (err?.error?.log && this.data) this.data.today_log = err.error.log;
-          this.actionError = err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKOUT_FAILED');
+          this.actionError = typeof err === 'string' ? this.lang.t(err) : err?.error?.message ?? this.lang.t('ATTENDANCE.MSG.CHECKOUT_FAILED');
           this.checkingOut = false;
           this.cdr.markForCheck();
         },
@@ -168,7 +192,8 @@ export class AttendanceDashboardComponent implements OnInit, AfterViewInit, OnDe
   }
 
   get canCheckIn():  boolean { return !this.data?.today_log?.check_in; }
-  get canCheckOut(): boolean { return !!this.data?.today_log?.check_in && !this.data?.today_log?.check_out; }
+  // Check-out stays open after the first one: the latest check-out of the day is the one kept
+  get canCheckOut(): boolean { return !!this.data?.today_log?.check_in; }
 
   // ── Helpers ──────────────────────────────────────────────────────────
 
