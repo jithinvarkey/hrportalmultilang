@@ -360,6 +360,8 @@ class RequestManagementController extends Controller {
                     'handling_department_id' => $request->handling_department_id
         ]);
 
+        $this->sendSubmissionEmails($req->fresh(['employee.manager.user', 'employee.department.manager.user', 'requestType']));
+
         return response()->json(['message' => __('Request submitted successfully.'), 'request' => $req->load('requestType')], 201);
     }
 
@@ -542,6 +544,7 @@ class RequestManagementController extends Controller {
         if (in_array($req->status, ['completed', 'cancelled', 'rejected'])) {
             return response()->json(['message' => __('Cannot reject at this stage.')], 422);
         }
+        $wasAwaitingManager = $req->status === 'pending_manager';
         $req->update([
             'status' => 'rejected',
             'rejection_reason' => $request->reason,
@@ -551,7 +554,8 @@ class RequestManagementController extends Controller {
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
             'rejected',
-            $request->reason
+            $request->reason,
+            $wasAwaitingManager
         );
         return response()->json(['message' => __('Request rejected.')]);
     }
@@ -567,26 +571,69 @@ class RequestManagementController extends Controller {
         if (!in_array($req->status, ['pending', 'pending_manager'])) {
             return response()->json(['message' => __('Request cannot be cancelled at this stage.')], 422);
         }
+        $wasAwaitingManager = $req->status === 'pending_manager';
         $req->update(['status' => 'cancelled']);
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
             'cancelled',
-            null // the mail adds the standard note in the recipient's language
+            null, // the mail adds the standard note in the recipient's language
+            $wasAwaitingManager // let the manager know it no longer needs their approval
         );
         return response()->json(['message' => __('Request cancelled.')]);
     }
 
-    private function sendStatusUpdateEmails(EmployeeRequest $req, string $status, ?string $note = null): void
+    /**
+     * Notify on a new submission:
+     *  - the requester (confirmation),
+     *  - the direct manager when the request type needs manager approval,
+     *  - otherwise the handling department, since the request goes straight to them.
+     */
+    private function sendSubmissionEmails(EmployeeRequest $req): void
+    {
+        $needsManager = $req->status === 'pending_manager';
+        $recipients = collect();
+
+        if ($requester = $this->requesterRecipient($req)) {
+            $recipients->push($requester + [
+                'note_key' => $needsManager ? 'mail_request.note.submitted_awaiting_manager' : 'mail_request.note.submitted',
+                'subject_key' => 'submitted',
+            ]);
+        }
+
+        if ($needsManager) {
+            $manager = $this->directManagerRecipient($req);
+            if ($manager) {
+                $recipients->push($manager + [
+                    'note_key' => 'mail_request.note.approval_required',
+                    'subject_key' => 'approval_required',
+                ]);
+            } else {
+                Log::warning('Request needs manager approval but requester has no manager with an email', [
+                    'request_id' => $req->id,
+                    'reference' => $req->reference,
+                    'employee_id' => $req->employee_id,
+                ]);
+            }
+        } else {
+            $this->handlingDepartmentRecipients($req)->each(fn($r) => $recipients->push($r + [
+                'note_key' => 'mail_request.note.new_for_department',
+            ]));
+        }
+
+        $this->queueRequestMails($req, $req->status, $recipients);
+    }
+
+    private function sendStatusUpdateEmails(EmployeeRequest $req, string $status, ?string $note = null, bool $notifyManager = false): void
     {
         $req->loadMissing(['employee', 'requestType', 'assignedTo']);
 
         $recipients = collect();
-        if ($req->employee?->email) {
-            $recipients->push([
-                'email' => $req->employee->email,
-                'name' => trim($req->employee->first_name . ' ' . $req->employee->last_name) ?: null,
-                'name_ar' => $req->employee->arabic_name,
-            ]);
+        if ($requester = $this->requesterRecipient($req)) {
+            $recipients->push($requester);
+        }
+
+        if ($notifyManager && ($manager = $this->directManagerRecipient($req))) {
+            $recipients->push($manager);
         }
 
         if ($req->assignedTo?->email) {
@@ -597,32 +644,93 @@ class RequestManagementController extends Controller {
             ]);
         }
 
-        if ($status === 'pending' && $req->requestType?->handling_department_id) {
-            User::whereHas('employee', function ($q) use ($req) {
-                $q->where('department_id', $req->requestType->handling_department_id)
-                    ->where('status', 'active');
-            })
-                ->whereNotNull('email')
-                ->where('email', '<>', '')
-                ->get(['id', 'name', 'email'])
-                ->each(fn($user) => $recipients->push([
-                    'email' => $user->email,
-                    'name' => $user->name ?: null,
-                ]));
+        if ($status === 'pending') {
+            $this->handlingDepartmentRecipients($req)->each(fn($r) => $recipients->push($r));
         }
 
+        $this->queueRequestMails($req, $status, $recipients, $note);
+    }
+
+    private function requesterRecipient(EmployeeRequest $req): ?array
+    {
+        $employee = $req->employee;
+        $email = $employee?->email ?: $employee?->user?->email;
+        if (!$email) {
+            return null;
+        }
+
+        return [
+            'email' => $email,
+            'name' => trim($employee->first_name . ' ' . $employee->last_name) ?: null,
+            'name_ar' => $employee->arabic_name,
+        ];
+    }
+
+    /**
+     * The requester's direct manager (employees.manager_id); falls back to the department manager
+     * when no direct manager is set. Never the requester themself.
+     */
+    private function directManagerRecipient(EmployeeRequest $req): ?array
+    {
+        $employee = $req->employee;
+        if (!$employee) {
+            return null;
+        }
+        $employee->loadMissing(['manager.user', 'department.manager.user']);
+
+        foreach ([$employee->manager, $employee->department?->manager] as $manager) {
+            if (!$manager || (int) $manager->id === (int) $employee->id) {
+                continue;
+            }
+            $email = $manager->email ?: $manager->user?->email;
+            if ($email) {
+                return [
+                    'email' => $email,
+                    'name' => trim($manager->first_name . ' ' . $manager->last_name) ?: null,
+                    'name_ar' => $manager->arabic_name,
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    private function handlingDepartmentRecipients(EmployeeRequest $req): \Illuminate\Support\Collection
+    {
+        $req->loadMissing('requestType');
+        $deptId = $req->handling_department_id ?: $req->requestType?->handling_department_id;
+        if (!$deptId) {
+            return collect();
+        }
+
+        return User::whereHas('employee', function ($q) use ($deptId) {
+            $q->where('department_id', $deptId)->where('status', 'active');
+        })
+            ->whereNotNull('email')
+            ->where('email', '<>', '')
+            ->get(['id', 'name', 'email'])
+            ->map(fn($user) => [
+                'email' => $user->email,
+                'name' => $user->name ?: null,
+            ]);
+    }
+
+    private function queueRequestMails(EmployeeRequest $req, string $status, \Illuminate\Support\Collection $recipients, ?string $note = null): void
+    {
         $recipients
             ->filter(fn($recipient) => !empty($recipient['email']))
-            ->unique('email')
+            ->unique(fn($recipient) => strtolower(trim($recipient['email'])))
             ->values()
             ->each(function ($recipient) use ($req, $status, $note) {
                 try {
                     Mail::to($recipient['email'])->queue(new RequestStatusMail(
                         $req,
                         $status,
-                        $recipient['name'],
+                        $recipient['name'] ?? null,
                         $note,
-                        $recipient['name_ar'] ?? null
+                        $recipient['name_ar'] ?? null,
+                        $recipient['note_key'] ?? null,
+                        $recipient['subject_key'] ?? null
                     ));
                 } catch (\Throwable $e) {
                     Log::warning('Request status email failed', [

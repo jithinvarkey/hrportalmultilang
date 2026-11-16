@@ -3,6 +3,9 @@
 return [
     'subject' => [
         'pending'     => 'طلب بانتظار المعالجة - :reference',
+        'pending_manager' => 'طلب بانتظار اعتماد المدير - :reference',
+        'submitted'   => 'تم تقديم الطلب - :reference',
+        'approval_required' => 'مطلوب اعتمادك: طلب جديد من فريقك - :reference',
         'in_progress' => 'الطلب قيد التنفيذ - :reference',
         'completed'   => 'تم إنجاز الطلب - :reference',
         'rejected'    => 'تم رفض الطلب - :reference',
@@ -18,6 +21,10 @@ return [
         'in_progress'   => 'تم إسناد الطلب إلى :name.',
         'handling_team' => 'الفريق المختص',
         'cancelled'     => 'ألغى مقدّم الطلب هذا الطلب.',
+        'submitted'     => 'تم تقديم طلبك بنجاح وإحالته للمعالجة.',
+        'submitted_awaiting_manager' => 'تم تقديم طلبك وإرساله إلى مديرك المباشر للاعتماد.',
+        'approval_required' => 'قدّم :name طلبًا يتطلب اعتمادك. يرجى تسجيل الدخول إلى بوابة الموارد البشرية لمراجعته.',
+        'new_for_department' => 'يوجد طلب جديد من :name بانتظار المعالجة من قِبل إدارتكم.',
     ],
 
     'labels' => [
