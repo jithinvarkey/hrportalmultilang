@@ -27,7 +27,7 @@
       <img src="{{ $backgroundImage }}" width="600" alt="{{ __('mail_people.birthday.image_alt') }}"
            style="display:block;width:100%;max-width:600px;height:auto;border:0">
     </td></tr>
-    @else
+    @endif
     <tr><td style="padding:32px;color:#1f2937;font-size:15px;line-height:1.7">
       <table width="100%" cellpadding="0" cellspacing="0" dir="{{ $dir }}"><tr>
         @foreach($columns as $column)
@@ -42,7 +42,6 @@
         @endforeach
       </tr></table>
     </td></tr>
-    @endif
     <tr><td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:11px;text-align:center">{{ __('mail_people.sent_by_hr') }}</td></tr>
   </table>
 </td></tr></table>

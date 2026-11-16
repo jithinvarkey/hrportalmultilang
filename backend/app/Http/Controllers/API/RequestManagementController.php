@@ -316,10 +316,13 @@ class RequestManagementController extends Controller {
     // CREATE (employee submits)
     // ══════════════════════════════════════════════════════════════════════
     public function store(Request $request) {
+        // Work-from-home requests are often raised after the fact, so they may carry a past date.
+        $isWfh = RequestType::where('id', $request->request_type_id)->value('code') === 'HR_WFH';
+
         $request->validate([
             'request_type_id' => 'required|exists:request_types,id',
             'details' => 'required|string|min:5',
-            'required_by' => 'nullable|date|after:today',
+            'required_by' => $isWfh ? 'nullable|date' : 'nullable|date|after:today',
             'copies_needed' => 'nullable|integer|min:1|max:20',
             'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
         ]);

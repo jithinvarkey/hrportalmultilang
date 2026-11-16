@@ -95,7 +95,7 @@
       "MESSAGE_AR": "Message (Arabic)",
       "INSERT": "Insert:",
       "BACKGROUND": "Background image",
-      "BACKGROUND_HINT": "JPG, PNG or WebP, up to 5 MB. The birthday message is overlaid at the top.",
+      "BACKGROUND_HINT": "JPG, PNG or WebP, up to 5 MB. The employee's name is written on the image and the message appears below it.",
       "ARTWORK": "Birthday email artwork",
       "REMOVE_BACKGROUND": "Remove background image",
       "TODAY": "Today's birthdays",
@@ -104,7 +104,16 @@
       "SENDING": "Sending…",
       "SEND_TODAY": "Send Today's Wishes",
       "RESEND_TODAY": "Resend Today's Wishes",
-      "SAVE_TEMPLATE": "Save Template"
+      "SAVE_TEMPLATE": "Save Template",
+      "NAME_AREA": "Name position",
+      "NAME_AREA_HINT": "Place the dashed box over the empty part of the artwork. The name is centred in it and shrinks to fit.",
+      "NAME_SAMPLE": "Employee name",
+      "AREA_LEFT": "From left",
+      "AREA_TOP": "From top",
+      "AREA_WIDTH": "Width",
+      "AREA_HEIGHT": "Height",
+      "NAME_COLOR": "Name colour",
+      "CENTRE_NAME": "Centre in image"
     },
     "MSG": {
       "FILE_TOO_LARGE": "File must be 10 MB or smaller.",

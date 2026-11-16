@@ -4,60 +4,63 @@ namespace App\Services;
 
 use RuntimeException;
 
+/**
+ * Writes the birthday person's name onto HR's artwork, inside a text area chosen on the Birthday wishes screen
+ * (for example the blank frame in the middle of the picture). The message itself is sent as normal email text.
+ */
 class BirthdayWishImageComposer
 {
     private const WIDTH = 1200;
+    public const DEFAULT_AREA = ['x' => 25, 'y' => 35, 'width' => 50, 'height' => 30];
+    public const DEFAULT_COLOR = '#1e3a5f';
 
-    public function compose(string $sourcePath, string $message, string $messageAr = ''): string
+    /**
+     * @param array{x: float, y: float, width: float, height: float} $area text area as percentages of the image
+     */
+    public function compose(string $sourcePath, string $name, string $nameAr = '', array $area = self::DEFAULT_AREA, string $color = self::DEFAULT_COLOR): string
     {
         $source = $this->openImage($sourcePath);
-        $sourceWidth = imagesx($source);
-        $sourceHeight = imagesy($source);
-        $height = max(1, (int) round(self::WIDTH * $sourceHeight / $sourceWidth));
-
+        $height = max(1, (int) round(self::WIDTH * imagesy($source) / imagesx($source)));
         $canvas = imagecreatetruecolor(self::WIDTH, $height);
-        $white = imagecolorallocate($canvas, 255, 255, 255);
-        imagefill($canvas, 0, 0, $white);
-        imagecopyresampled($canvas, $source, 0, 0, 0, 0, self::WIDTH, $height, $sourceWidth, $sourceHeight);
-        imagedestroy($source);
+        imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
+        imagecopyresampled($canvas, $source, 0, 0, 0, 0, self::WIDTH, $height, imagesx($source), imagesy($source));
+
+        $boxLeft = (int) round(self::WIDTH * $area['x'] / 100);
+        $boxTop = (int) round($height * $area['y'] / 100);
+        $boxWidth = max(40, (int) round(self::WIDTH * $area['width'] / 100));
+        $boxHeight = max(40, (int) round($height * $area['height'] / 100));
 
         $font = $this->fontPath();
-        $fontSize = 34;
-        $lineHeight = 50;
-        $columnWidth = $messageAr !== '' ? 470 : self::WIDTH - 170;
-        $lines = $this->wrap($message, $font, $fontSize, $columnWidth);
-        $linesAr = $messageAr !== '' ? $this->wrap($messageAr, $font, $fontSize, $columnWidth) : [];
-        if (max(count($lines), count($linesAr)) > 12) {
-            $fontSize = 27;
-            $lineHeight = 41;
-            $lines = $this->wrap($message, $font, $fontSize, $columnWidth);
-            $linesAr = $messageAr !== '' ? $this->wrap($messageAr, $font, $fontSize, $columnWidth) : [];
+        $nameAr = trim($nameAr);
+        // Largest size at which the name and the Arabic name fit the area. The first pass keeps the layout tidy
+        // (English on at most two lines, Arabic on one); only if nothing fits that way may they wrap further.
+        foreach ([[2, 1], [3, 3]] as [$maxLines, $maxLinesAr]) {
+            for ($size = 72; $size >= 16; $size -= 2) {
+                $lines = $this->wrap(trim($name), $font, $size, $boxWidth);
+                $arSize = (int) round($size * 0.8);
+                $linesAr = $nameAr !== '' ? $this->wrap($nameAr, $font, $arSize, $boxWidth) : [];
+                $lineHeight = (int) round($size * 1.3);
+                $arLineHeight = (int) round($arSize * 1.4);
+                $total = count($lines) * $lineHeight + ($linesAr ? (int) round($size * 0.3) + count($linesAr) * $arLineHeight : 0);
+                if (count($lines) <= $maxLines && count($linesAr) <= $maxLinesAr && $total <= $boxHeight
+                    && $this->widest($lines, $font, $size) <= $boxWidth
+                    && $this->widest(array_map(fn ($l) => $this->shapeArabicForGd($l), $linesAr), $font, $arSize) <= $boxWidth) {
+                    break 2;
+                }
+            }
         }
 
-        $panelTop = 50;
-        $panelHeight = min($height - 100, max(130, max(count($lines), count($linesAr)) * $lineHeight + 70));
-        $panel = imagecolorallocatealpha($canvas, 255, 255, 255, 22);
-        imagefilledrectangle($canvas, 50, $panelTop, self::WIDTH - 50, $panelTop + $panelHeight, $panel);
-
-        $textColor = imagecolorallocate($canvas, 31, 41, 55);
-        $y = $panelTop + 58;
+        $textColor = $this->allocateHex($canvas, $color);
+        $y = $boxTop + (int) round(($boxHeight - $total) / 2);
         foreach ($lines as $line) {
-            if ($y > $panelTop + $panelHeight - 20) break;
-            imagettftext($canvas, $fontSize, 0, 85, $y, $textColor, $font, $line);
+            $this->centered($canvas, $font, $size, $boxLeft, $boxWidth, $y + (int) round($size * 1.05), $textColor, $line);
             $y += $lineHeight;
         }
-
         if ($linesAr) {
-            $divider = imagecolorallocatealpha($canvas, 31, 41, 55, 85);
-            imageline($canvas, self::WIDTH / 2, $panelTop + 30, self::WIDTH / 2, $panelTop + $panelHeight - 30, $divider);
-            $y = $panelTop + 58;
+            $y += (int) round($size * 0.3);
             foreach ($linesAr as $line) {
-                if ($y > $panelTop + $panelHeight - 20) break;
-                $line = $this->shapeArabicForGd($line);
-                $box = imagettfbbox($fontSize, 0, $font, $line);
-                $lineWidth = abs($box[2] - $box[0]);
-                imagettftext($canvas, $fontSize, 0, self::WIDTH - 85 - $lineWidth, $y, $textColor, $font, $line);
-                $y += $lineHeight;
+                $this->centered($canvas, $font, $arSize, $boxLeft, $boxWidth, $y + (int) round($arSize * 1.1), $textColor, $this->shapeArabicForGd($line));
+                $y += $arLineHeight;
             }
         }
 
@@ -67,12 +70,38 @@ class BirthdayWishImageComposer
         }
         $output = $directory . DIRECTORY_SEPARATOR . uniqid('birthday-', true) . '.jpg';
         if (!imagejpeg($canvas, $output, 90)) {
-            imagedestroy($canvas);
             throw new RuntimeException('Unable to render the birthday email image.');
         }
-        imagedestroy($canvas);
 
         return $output;
+    }
+
+    /** Draw one line centred horizontally in the box, with a faint white halo so it stays legible on busy artwork. */
+    private function centered($canvas, string $font, int $size, int $left, int $width, int $baseline, int $color, string $text): void
+    {
+        $box = imagettfbbox($size, 0, $font, $text);
+        $x = $left + (int) round(($width - abs($box[2] - $box[0])) / 2) - $box[0];
+        $halo = imagecolorallocatealpha($canvas, 255, 255, 255, 70);
+        foreach ([[-2, 0], [2, 0], [0, -2], [0, 2]] as [$dx, $dy]) {
+            imagettftext($canvas, $size, 0, $x + $dx, $baseline + $dy, $halo, $font, $text);
+        }
+        imagettftext($canvas, $size, 0, $x, $baseline, $color, $font, $text);
+    }
+
+    private function widest(array $lines, string $font, int $size): int
+    {
+        $widest = 0;
+        foreach ($lines as $line) {
+            $box = imagettfbbox($size, 0, $font, $line);
+            $widest = max($widest, abs($box[2] - $box[0]));
+        }
+        return $widest;
+    }
+
+    private function allocateHex($canvas, string $hex): int
+    {
+        $hex = preg_match('/^#?([0-9a-f]{6})$/i', $hex, $m) ? $m[1] : ltrim(self::DEFAULT_COLOR, '#');
+        return imagecolorallocate($canvas, hexdec(substr($hex, 0, 2)), hexdec(substr($hex, 2, 2)), hexdec(substr($hex, 4, 2)));
     }
 
     private function openImage(string $path)

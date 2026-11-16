@@ -61,9 +61,28 @@
         <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onBirthdayBackgroundSelected($event)">
         <small class="file-hint">{{ 'ANNOUNCEMENTS.BIRTHDAY.BACKGROUND_HINT' | translate }}</small>
       </div>
-      <div class="birthday-background-preview" *ngIf="birthdayBackgroundPreview" [style.background-image]="'url(' + birthdayBackgroundPreview + ')'">
-        <div>{{ 'ANNOUNCEMENTS.BIRTHDAY.ARTWORK' | translate }}</div>
-        <button class="icon-btn danger" type="button" (click)="clearBirthdayBackground()" [matTooltip]="'ANNOUNCEMENTS.BIRTHDAY.REMOVE_BACKGROUND' | translate" [attr.aria-label]="'ANNOUNCEMENTS.BIRTHDAY.REMOVE_BACKGROUND' | translate"><mat-icon>delete_outline</mat-icon></button>
+      <div class="birthday-artwork" *ngIf="birthdayBackgroundPreview">
+        <!-- Preview keeps the image's own proportions so the name area (in % of the image) lines up exactly. -->
+        <div class="birthday-background-preview" dir="ltr">
+          <img [src]="birthdayBackgroundPreview" [alt]="'ANNOUNCEMENTS.BIRTHDAY.ARTWORK' | translate">
+          <div class="name-area" [style.left.%]="birthdaySettings.name_area.x" [style.top.%]="birthdaySettings.name_area.y"
+               [style.width.%]="birthdaySettings.name_area.width" [style.height.%]="birthdaySettings.name_area.height"
+               [style.color]="birthdaySettings.name_color">{{ 'ANNOUNCEMENTS.BIRTHDAY.NAME_SAMPLE' | translate }}</div>
+          <button class="icon-btn danger" type="button" (click)="clearBirthdayBackground()" [matTooltip]="'ANNOUNCEMENTS.BIRTHDAY.REMOVE_BACKGROUND' | translate" [attr.aria-label]="'ANNOUNCEMENTS.BIRTHDAY.REMOVE_BACKGROUND' | translate"><mat-icon>delete_outline</mat-icon></button>
+        </div>
+        <div class="name-area-fields">
+          <strong>{{ 'ANNOUNCEMENTS.BIRTHDAY.NAME_AREA' | translate }}</strong>
+          <small>{{ 'ANNOUNCEMENTS.BIRTHDAY.NAME_AREA_HINT' | translate }}</small>
+          <div class="area-grid">
+            <label *ngFor="let f of nameAreaFields">{{ f.label | translate }}
+              <span><input type="number" [min]="f.min" [max]="f.max" step="1" [(ngModel)]="birthdaySettings.name_area[f.key]"> %</span>
+            </label>
+            <label>{{ 'ANNOUNCEMENTS.BIRTHDAY.NAME_COLOR' | translate }}
+              <span><input type="color" [(ngModel)]="birthdaySettings.name_color"></span>
+            </label>
+          </div>
+          <button type="button" class="btn-outline center-name" (click)="centreNameArea()"><mat-icon>filter_center_focus</mat-icon> {{ 'ANNOUNCEMENTS.BIRTHDAY.CENTRE_NAME' | translate }}</button>
+        </div>
       </div>
       <section class="today-birthdays">
         <div class="birthday-section-head"><strong>{{ 'ANNOUNCEMENTS.BIRTHDAY.TODAY' | translate }}</strong><span>{{ todaysBirthdays.length }}</span></div>
