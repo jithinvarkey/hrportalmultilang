@@ -117,15 +117,19 @@ class RequestManagementController extends Controller {
                             })
 
                             // Assigned to me
-                            ->orWhere('assigned_to', $user->id);
+                            ->orWhere('assigned_to', $user->id)
+
+                            // My direct reports
+                            ->orWhereHas('employee', fn($eq) => $eq->where('manager_id', $user->employee->id));
                 });
             } else {
 
-                // Own requests + requests assigned to me
+                // Own requests + requests assigned to me + my direct reports' requests
                 $baseQuery->where(function ($q) use ($user) {
 
                     $q->where('employee_id', $user->employee->id)
-                            ->orWhere('assigned_to', $user->id);
+                            ->orWhere('assigned_to', $user->id)
+                            ->orWhereHas('employee', fn($eq) => $eq->where('manager_id', $user->employee->id));
                 });
             }
         }
@@ -213,6 +217,13 @@ class RequestManagementController extends Controller {
 
                             // Assigned to me
                             $inner->where('assigned_to', $user->id);
+
+                            // Requests of employees who report to me (direct manager), whatever my role
+                            if ($user->employee?->id) {
+                                $inner->orWhereHas('employee', function ($eq) use ($user) {
+                                    $eq->where('manager_id', $user->employee->id);
+                                });
+                            }
 
                             // Department manager can also see department-routed requests
 
@@ -373,24 +384,17 @@ class RequestManagementController extends Controller {
         if ($req->status !== 'pending_manager') {
             return response()->json(['message' => __('Not awaiting manager approval.')], 422);
         }
-        $userRoles = rescue(fn() => DB::table('model_has_roles')
-                        ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-                        ->where('model_has_roles.model_id', auth()->id())
-                        ->pluck('roles.name')->toArray(), [], false);
+        $userRoles = $this->currentRoles();
 
-        $canApprove = (bool) array_intersect($userRoles, [
-                    'super_admin', 'hr_manager', 'hr_staff', 'department_manager'
-        ]);
-        if (!$canApprove) {
-            return response()->json(['message' => __('Only managers can approve at this stage.')], 403);
-        }
-        // A department manager may approve only requests of their own department's employees,
-        // and nobody (other than HR) approves their own request.
-        if (!$this->isHRAdminUser()) {
+        // HR may approve anything. Otherwise: the requester's direct manager, or a department
+        // manager of the requester's department — and never one's own request.
+        if (!(bool) array_intersect($userRoles, ['super_admin', 'hr_manager', 'hr_staff'])) {
             $me = auth()->user()->employee;
             $req->loadMissing('employee');
-            if (!$me || $this->isOwnRequest($req)
-                || (int) $req->employee?->department_id !== (int) $me->department_id) {
+            $isDeptManager = in_array('department_manager', $userRoles, true)
+                && $me && (int) $req->employee?->department_id === (int) $me->department_id;
+
+            if (!$me || $this->isOwnRequest($req) || (!$this->isDirectManagerOf($req) && !$isDeptManager)) {
                 return response()->json(['message' => __('Only managers can approve at this stage.')], 403);
             }
         }
@@ -419,7 +423,8 @@ class RequestManagementController extends Controller {
 
         $req = EmployeeRequest::findOrFail($id);
 
-        if (!$this->isHRAdminUser() && ($this->isOwnRequest($req) || !$this->isRequestStaff($req))) {
+        // Assigning is for HR / handling staff; being the requester's direct manager is not enough.
+        if (!$this->isHRAdminUser() && ($this->isOwnRequest($req) || !$this->isRequestStaff($req, false))) {
             return $this->forbidden();
         }
 
@@ -768,7 +773,7 @@ class RequestManagementController extends Controller {
      * True when the current user handles this request: HR, the assignee, or a department
      * manager of the requester's department or of the type's handling department.
      */
-    private function isRequestStaff(EmployeeRequest $req): bool
+    private function isRequestStaff(EmployeeRequest $req, bool $includeDirectManager = true): bool
     {
         $user = auth()->user();
         $roles = $this->currentRoles();
@@ -781,6 +786,10 @@ class RequestManagementController extends Controller {
             return true;
         }
 
+        if ($includeDirectManager && $this->isDirectManagerOf($req)) {
+            return true;
+        }
+
         if (in_array('department_manager', $roles, true) && $user->employee?->department_id) {
             $req->loadMissing(['employee', 'requestType']);
             return (int) $req->employee?->department_id === (int) $user->employee->department_id
@@ -788,6 +797,19 @@ class RequestManagementController extends Controller {
         }
 
         return false;
+    }
+
+    /** True when the current user is the requester's direct manager (employees.manager_id). */
+    private function isDirectManagerOf(EmployeeRequest $req): bool
+    {
+        $me = auth()->user()?->employee;
+        if (!$me) {
+            return false;
+        }
+        $req->loadMissing('employee');
+
+        return $req->employee && (int) $req->employee->manager_id === (int) $me->id
+            && (int) $req->employee->id !== (int) $me->id;
     }
 
     private function canAccessRequestFile(EmployeeRequest $req): bool

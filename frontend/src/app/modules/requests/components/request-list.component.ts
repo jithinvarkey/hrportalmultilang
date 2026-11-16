@@ -573,6 +573,13 @@ export class RequestListComponent implements OnInit, OnDestroy {
       && String(empId) === String(this.currentEmployeeId);
   }
 
+  /** True when the request was raised by someone who reports to me (employees.manager_id). */
+  private isDirectManagerOf(req: any): boolean {
+    const managerId = req?.employee?.manager_id;
+    return this.currentEmployeeId !== null && managerId !== undefined && managerId !== null
+      && String(managerId) === String(this.currentEmployeeId);
+  }
+
   get columns(): string[] {
     return this.activeTab === 'mine' ? this.mineColumns : this.displayedColumns;
   }
@@ -641,6 +648,11 @@ export class RequestListComponent implements OnInit, OnDestroy {
       return true;
     }
 
+    // The requester's direct manager can approve, whatever their role
+    if (this.isDirectManagerOf(req)) {
+      return true;
+    }
+
     // Manager can approve only employees from the same department
     if (this.isMgr) {
       const employeeDeptId = req?.employee?.department_id;
@@ -669,6 +681,11 @@ export class RequestListComponent implements OnInit, OnDestroy {
 
     // HR can always reject
     if (this.isHR) {
+      return true;
+    }
+
+    // The direct manager decides at the approval stage
+    if (req.status === 'pending_manager' && this.isDirectManagerOf(req)) {
       return true;
     }
 
