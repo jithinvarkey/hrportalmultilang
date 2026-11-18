@@ -59,6 +59,8 @@
     },
     "REQUESTS": {
       "SEARCH_EMPLOYEE": "ابحث عن موظف…",
+      "ALL_EMPLOYEES": "جميع الموظفين",
+      "NO_EMPLOYEES": "لم يتم العثور على موظفين",
       "ALL_TYPES": "جميع الأنواع",
       "LEAVE_REPORT": "تقرير الإجازات",
       "DATE_TIME": "التاريخ / الوقت",

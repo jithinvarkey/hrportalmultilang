@@ -99,10 +99,10 @@
         </button>
       </div>
       <div class="filter-row">
-        <div class="search-wrap">
-          <mat-icon class="search-ico">search</mat-icon>
-          <input class="search-input" [placeholder]="'LEAVE.REQUESTS.SEARCH_EMPLOYEE' | translate" [attr.aria-label]="'LEAVE.REQUESTS.SEARCH_EMPLOYEE' | translate" [(ngModel)]="filterSearch" (ngModelChange)="onRequestSearchChange()" (keyup.enter)="load(1)">
-        </div>
+        <app-employee-picker class="compact" *ngIf="activeTab==='requests' && (isHR || isMgr)"
+          [employees]="filterEmployees" [(ngModel)]="filterEmployeeId" (ngModelChange)="load(1)"
+          placeholder="LEAVE.REQUESTS.SEARCH_EMPLOYEE" allLabel="LEAVE.REQUESTS.ALL_EMPLOYEES"
+          emptyLabel="LEAVE.REQUESTS.NO_EMPLOYEES"></app-employee-picker>
         <select class="field-select" [(ngModel)]="filterType" (change)="load(1)" [attr.aria-label]="'COMMON.TYPE' | translate">
           <option value="">{{ 'LEAVE.REQUESTS.ALL_TYPES' | translate }}</option>
           <option *ngFor="let t of leaveTypes" [value]="t.id">{{ t | locName }}</option>

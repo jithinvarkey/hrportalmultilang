@@ -320,6 +320,8 @@ this.isAdmin = this.auth.isAdminRole();
   }
 
   allEmployees: any[] = [];
+  /** Manual entry: only employees currently working (active or on probation). */
+  manualEmployeeOptions: any[] = [];
 
   loadEmployees(): void {
     // Direct managers (non-HR) can only filter by the employees who report to them
@@ -329,55 +331,21 @@ this.isAdmin = this.auth.isAdminRole();
     this.http.get<any>(url).pipe(takeUntil(this.destroy$)).subscribe({
       next: r => {
         this.allEmployees = r?.data || [];
+        this.manualEmployeeOptions = this.allEmployees.filter(e => ['active', 'probation'].includes(e.status));
         this.refreshEmployeeOptions();
         this.cdr.markForCheck();
       },
     });
   }
 
-  // ── Employee filter (department-aware, searchable) ─────────────────────
+  // ── Employee filter (department-aware; search lives in <app-employee-picker>)
   filterEmployeeOptions: any[] = [];
-  empSearch     = '';
-  empSearchOpen = false;
-
-  get selectedEmployeeLabel(): string {
-    const id = this.filterForm?.value.employee_id;
-    if (!id) return '';
-    const e = this.allEmployees.find(x => String(x.id) === String(id));
-    return e ? `${e.first_name} ${e.last_name}` : '';
-  }
 
   refreshEmployeeOptions(deptId = this.filterForm?.value.department_id): void {
-    const term   = this.empSearch.trim().toLowerCase();
     this.filterEmployeeOptions = this.allEmployees.filter(e => {
       if (!['active', 'probation'].includes(e.status)) return false;
-      if (deptId && String(e.department_id) !== String(deptId)) return false;
-      if (!term) return true;
-      return `${e.first_name ?? ''} ${e.last_name ?? ''} ${e.employee_code ?? ''}`
-        .toLowerCase().includes(term);
+      return !deptId || String(e.department_id) === String(deptId);
     });
-  }
-
-  openEmpSearch(): void {
-    this.empSearch = '';
-    this.empSearchOpen = true;
-    this.refreshEmployeeOptions();
-  }
-
-  onEmpSearch(value: string): void {
-    this.empSearch = value;
-    this.refreshEmployeeOptions();
-  }
-
-  closeEmpSearch(): void {
-    this.empSearchOpen = false;
-    this.empSearch = '';
-  }
-
-  selectFilterEmployee(e: any | null): void {
-    this.filterForm.patchValue({ employee_id: e ? e.id : '' });
-    this.closeEmpSearch();
-    (document.activeElement as HTMLElement | null)?.blur();
   }
 
   private onFilterDepartmentChange(deptId: any): void {

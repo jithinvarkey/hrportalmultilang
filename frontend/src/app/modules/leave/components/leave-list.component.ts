@@ -55,9 +55,11 @@ export class LeaveListComponent implements OnInit {
   filterSearch = '';
   filterType = '';
   filterDept = '';
+  /** Requests tab employee filter ('' = all); options are role-scoped like the attendance log. */
+  filterEmployeeId: any = '';
+  filterEmployees: any[] = [];
   balanceYear = new Date().getFullYear();
   balanceYears: number[] = [new Date().getFullYear()];
-  private searchTimer: any = null;
   currentPage = 1;
   pageSize = 10;
 
@@ -166,6 +168,7 @@ export class LeaveListComponent implements OnInit {
       this.activeStatus = '';
     }
     this.loadStats();
+    this.loadFilterEmployees();
     this.loadTypes();
     this.loadMyBalance();
     this.loadAnnualBalanceToday();
@@ -225,7 +228,7 @@ export class LeaveListComponent implements OnInit {
       params.status = this.activeStatus;
     }
     if (this.filterType) params.leave_type_id = this.filterType;
-    if (this.filterSearch) params.search = this.filterSearch;
+    if (this.filterEmployeeId && this.activeTab === 'requests') params.employee_id = this.filterEmployeeId;
 
     this.http.get<any>('/api/v1/leave/requests', { params }).subscribe({
       next: r => { this.requests = r?.data || []; this.pagination = r; this.loading = false; },
@@ -243,9 +246,17 @@ export class LeaveListComponent implements OnInit {
 
   changePageSize() { this.load(1); }
 
-  onRequestSearchChange() {
-    clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => this.load(1), 350);
+  /** Same source as the attendance log filter: HR sees everyone, managers their direct reports. */
+  loadFilterEmployees() {
+    if (!this.isHR && !this.isMgr) return;
+    const url = this.isMgr && !this.isHR
+      ? '/api/v1/attendance/direct-reports'
+      : '/api/v1/employees?per_page=500';
+    this.http.get<any>(url).subscribe({
+      next: r => {
+        this.filterEmployees = (r?.data || []).filter((e: any) => ['active', 'probation'].includes(e.status));
+      },
+    });
   }
 
   statusCount(statusId: string): number {
@@ -511,7 +522,7 @@ export class LeaveListComponent implements OnInit {
       params.status = this.activeStatus;
     }
     if (this.filterType) params.leave_type_id = this.filterType;
-    if (this.filterSearch) params.search = this.filterSearch;
+    if (this.filterEmployeeId) params.employee_id = this.filterEmployeeId;
 
     this.http.get('/api/v1/leave/details-report', {
       params,

@@ -253,6 +253,8 @@ export class RequestListComponent implements OnInit, OnDestroy {
     if (!this.selectedReq) return;
     this.http.get<any>(`/api/v1/requests/${this.selectedReq.id}`).subscribe({
       next: r => { this.selectedReq = r.request; this.cdr.markForCheck(); },
+      // e.g. a direct manager loses access once the request has left the approval stage
+      error: () => { this.showDetail = false; this.selectedReq = null; this.cdr.markForCheck(); },
     });
   }
 

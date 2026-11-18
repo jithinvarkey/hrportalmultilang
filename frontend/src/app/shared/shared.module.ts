@@ -32,6 +32,7 @@ import { MainLayoutComponent } from './components/main-layout/main-layout.compon
 import { LanguageSwitcherComponent } from './components/language-switcher/language-switcher.component';
 import { BilingualNameComponent } from './components/bilingual-name/bilingual-name.component';
 import { ButtonClickLoadingDirective } from './directives/button-click-loading.directive';
+import { EmployeePickerComponent } from './components/employee-picker/employee-picker.component';
 import { I18N_PIPES } from './pipes/i18n.pipes';
 
 const MATERIAL = [
@@ -46,7 +47,7 @@ const MATERIAL = [
 
 // Every feature module imports SharedModule, so the translate pipe, i18n pipes
 // and the language switcher are available on every page.
-const I18N = [TranslateModule, BidiModule, LanguageSwitcherComponent, BilingualNameComponent, ...I18N_PIPES];
+const I18N = [TranslateModule, BidiModule, LanguageSwitcherComponent, BilingualNameComponent, EmployeePickerComponent, ...I18N_PIPES];
 
 @NgModule({
   declarations: [MainLayoutComponent],

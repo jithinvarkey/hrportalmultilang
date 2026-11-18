@@ -119,17 +119,19 @@ class RequestManagementController extends Controller {
                             // Assigned to me
                             ->orWhere('assigned_to', $user->id)
 
-                            // My direct reports
-                            ->orWhereHas('employee', fn($eq) => $eq->where('manager_id', $user->employee->id));
+                            // My direct reports' requests awaiting my approval
+                            ->orWhere(fn($dq) => $dq->where('status', 'pending_manager')
+                                ->whereHas('employee', fn($eq) => $eq->where('manager_id', $user->employee->id)));
                 });
             } else {
 
-                // Own requests + requests assigned to me + my direct reports' requests
+                // Own requests + requests assigned to me + my direct reports' requests awaiting my approval
                 $baseQuery->where(function ($q) use ($user) {
 
                     $q->where('employee_id', $user->employee->id)
                             ->orWhere('assigned_to', $user->id)
-                            ->orWhereHas('employee', fn($eq) => $eq->where('manager_id', $user->employee->id));
+                            ->orWhere(fn($dq) => $dq->where('status', 'pending_manager')
+                                ->whereHas('employee', fn($eq) => $eq->where('manager_id', $user->employee->id)));
                 });
             }
         }
@@ -218,10 +220,11 @@ class RequestManagementController extends Controller {
                             // Assigned to me
                             $inner->where('assigned_to', $user->id);
 
-                            // Requests of employees who report to me (direct manager), whatever my role
+                            // Direct manager (whatever my role): my reports' requests awaiting my approval only
                             if ($user->employee?->id) {
-                                $inner->orWhereHas('employee', function ($eq) use ($user) {
-                                    $eq->where('manager_id', $user->employee->id);
+                                $inner->orWhere(function ($dq) use ($user) {
+                                    $dq->where('status', 'pending_manager')
+                                        ->whereHas('employee', fn($eq) => $eq->where('manager_id', $user->employee->id));
                                 });
                             }
 
@@ -407,7 +410,9 @@ class RequestManagementController extends Controller {
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
             'pending',
-            null // the mail adds the standard note in the recipient's language
+            null, // the mail adds the standard note in the recipient's language
+            false,
+            true // manager decision: inform HR as well as the requester
         );
         return response()->json(['message' => __('Approved — forwarded to HR.'), 'request' => $req->fresh()]);
     }
@@ -477,7 +482,8 @@ class RequestManagementController extends Controller {
             return response()->json(['message' => __('Only the assigned person or HR can complete this request.')], 403);
         }
 
-        if (in_array($req->status, ['completed', 'rejected', 'cancelled'], true)) {
+        // The direct manager must approve first; HR gives the final approval afterwards.
+        if (in_array($req->status, ['pending_manager', 'completed', 'rejected', 'cancelled'], true)) {
             return response()->json(['message' => __('Request cannot be completed at this stage.')], 422);
         }
 
@@ -560,7 +566,8 @@ class RequestManagementController extends Controller {
             $req->fresh(['employee', 'requestType', 'assignedTo']),
             'rejected',
             $request->reason,
-            $wasAwaitingManager
+            $wasAwaitingManager && !$this->isDirectManagerOf($req), // tell the manager unless they rejected it themself
+            $wasAwaitingManager // rejected at the manager-approval stage: inform HR
         );
         return response()->json(['message' => __('Request rejected.')]);
     }
@@ -628,7 +635,7 @@ class RequestManagementController extends Controller {
         $this->queueRequestMails($req, $req->status, $recipients);
     }
 
-    private function sendStatusUpdateEmails(EmployeeRequest $req, string $status, ?string $note = null, bool $notifyManager = false): void
+    private function sendStatusUpdateEmails(EmployeeRequest $req, string $status, ?string $note = null, bool $notifyManager = false, bool $notifyHR = false): void
     {
         $req->loadMissing(['employee', 'requestType', 'assignedTo']);
 
@@ -653,7 +660,32 @@ class RequestManagementController extends Controller {
             $this->handlingDepartmentRecipients($req)->each(fn($r) => $recipients->push($r));
         }
 
+        if ($notifyHR) {
+            $this->hrRecipients()->each(fn($r) => $recipients->push($r));
+        }
+
         $this->queueRequestMails($req, $status, $recipients, $note);
+    }
+
+    /** Users with an HR role (hr_manager, hr_staff) who have an email address. */
+    private function hrRecipients(): \Illuminate\Support\Collection
+    {
+        $userIds = rescue(fn() => DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->whereIn('roles.name', ['hr_manager', 'hr_staff'])
+            ->pluck('model_has_roles.model_id'), collect(), false);
+
+        return User::with('employee:id,user_id,arabic_name,status')
+            ->whereIn('id', $userIds)
+            ->whereNotNull('email')
+            ->where('email', '<>', '')
+            ->get(['id', 'name', 'email'])
+            ->reject(fn($user) => $user->employee && $user->employee->status !== 'active')
+            ->map(fn($user) => [
+                'email' => $user->email,
+                'name' => $user->name ?: null,
+                'name_ar' => $user->employee?->arabic_name,
+            ]);
     }
 
     private function requesterRecipient(EmployeeRequest $req): ?array
@@ -786,7 +818,8 @@ class RequestManagementController extends Controller {
             return true;
         }
 
-        if ($includeDirectManager && $this->isDirectManagerOf($req)) {
+        // A direct manager only handles the request while it awaits their approval.
+        if ($includeDirectManager && $req->status === 'pending_manager' && $this->isDirectManagerOf($req)) {
             return true;
         }
 
