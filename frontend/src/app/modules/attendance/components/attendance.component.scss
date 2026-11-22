@@ -423,3 +423,12 @@
   .today-meta { flex-wrap:wrap; gap:6px; }
   .modal-hdr, .modal-body, .modal-footer { padding-inline:14px; }
 }
+
+// Work From Home request for the day
+.wfh-tag {
+  display:inline-flex; align-items:center; gap:3px; margin-inline-start:6px; vertical-align:middle;
+  font-size:10px; font-weight:700; padding:2px 6px; border-radius:6px; cursor:help;
+  background:rgba(139,92,246,.14); color:#8b5cf6;
+  mat-icon { font-size:13px; width:13px; height:13px; }
+  &.wfh-pending { background:rgba(245,158,11,.14); color:#d97706; }
+}

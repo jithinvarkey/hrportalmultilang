@@ -7,6 +7,7 @@ return [
         'submitted'   => 'Request Submitted - :reference',
         'approval_required' => 'Approval Required: New Request from Your Team - :reference',
         'in_progress' => 'Request In Progress - :reference',
+        'final_approval_required' => 'Final Approval Required - :reference',
         'completed'   => 'Request Completed - :reference',
         'rejected'    => 'Request Rejected - :reference',
         'cancelled'   => 'Request Cancelled - :reference',
@@ -25,6 +26,7 @@ return [
         'submitted'     => 'Your request has been submitted successfully and forwarded for processing.',
         'submitted_awaiting_manager' => 'Your request has been submitted and sent to your direct manager for approval.',
         'approval_required' => ':name has submitted a request that requires your approval. Please log in to the HR portal to review it.',
+        'final_approval_required' => 'The direct manager has approved the request from :name. It has been assigned to you for final approval. Please log in to the HR portal to review it.',
         'new_for_department' => 'A new request from :name is awaiting processing by your department.',
     ],
 

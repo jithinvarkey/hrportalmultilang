@@ -192,6 +192,10 @@
               </td>
               <td>
                 <span class="status-badge" [class]="statusClass(r.status)">{{ r.status | statusLabel }}</span>
+                <span class="wfh-tag" *ngIf="r.wfh" [class.wfh-pending]="r.wfh.status !== 'completed'"
+                      [matTooltip]="r.wfh.reference + ' · ' + (wfhStatusKey(r.wfh.status) | translate) + (r.wfh.details ? ' — ' + r.wfh.details : '')">
+                  <mat-icon>home_work</mat-icon>{{ 'ATTENDANCE.TABLE.WFH' | translate }}
+                </span>
               </td>
               <td>
                 <span class="source-badge" [class]="'src-' + r.source">{{ sourceLabel(r.source) }}</span>

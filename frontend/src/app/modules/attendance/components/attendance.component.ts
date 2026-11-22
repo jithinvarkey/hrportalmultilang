@@ -21,6 +21,8 @@ export interface AttendanceLog {
   status:        string;
   source:        string;
   has_active_leave?: boolean | number | null;
+  /** Work From Home request whose "Needed By" date is this day */
+  wfh?: { id: number; reference: string; status: string; details?: string | null } | null;
   notes?:        string;
 }
 
@@ -265,6 +267,12 @@ this.isAdmin = this.auth.isAdminRole();
   }
 
   // ── Report ─────────────────────────────────────────────────────────────
+
+  wfhStatusKey(status: string): string {
+    if (status === 'completed') return 'ATTENDANCE.TABLE.WFH_APPROVED';
+    if (status === 'pending_manager') return 'ATTENDANCE.TABLE.WFH_AWAITING_MANAGER';
+    return 'ATTENDANCE.TABLE.WFH_AWAITING_HR';
+  }
 
   loadReport(page = this.reportPage): void {
     this.reportLoading = true;

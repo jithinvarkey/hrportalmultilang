@@ -84,57 +84,10 @@ class RequestManagementController extends Controller {
     // STATS
     // ══════════════════════════════════════════════════════════════════════
 
-    public function stats(): JsonResponse {
-        $user = auth()->user();
-
-        $userRoles = rescue(fn() => DB::table('model_has_roles')
-                        ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-                        ->where('model_has_roles.model_id', $user->id)
-                        ->pluck('roles.name')
-                        ->toArray(), [], false);
-
-        $isHRAdmin = (bool) array_intersect($userRoles, [
-                    'super_admin',
-                    'hr_manager',
-                    'hr_staff'
-        ]);
-
-        $isMgr = in_array('department_manager', $userRoles);
-
+    public function stats(Request $request): JsonResponse {
         $baseQuery = EmployeeRequest::query();
-
-        if (!$isHRAdmin && $user->employee) {
-
-            if ($isMgr) {
-
-                $deptId = $user->employee->department_id;
-
-                $baseQuery->where(function ($q) use ($deptId, $user) {
-
-                    // Employees in my department
-                    $q->whereHas('employee', function ($eq) use ($deptId) {
-                                $eq->where('department_id', $deptId);
-                            })
-
-                            // Assigned to me
-                            ->orWhere('assigned_to', $user->id)
-
-                            // My direct reports' requests awaiting my approval
-                            ->orWhere(fn($dq) => $dq->where('status', 'pending_manager')
-                                ->whereHas('employee', fn($eq) => $eq->where('manager_id', $user->employee->id)));
-                });
-            } else {
-
-                // Own requests + requests assigned to me + my direct reports' requests awaiting my approval
-                $baseQuery->where(function ($q) use ($user) {
-
-                    $q->where('employee_id', $user->employee->id)
-                            ->orWhere('assigned_to', $user->id)
-                            ->orWhere(fn($dq) => $dq->where('status', 'pending_manager')
-                                ->whereHas('employee', fn($eq) => $eq->where('manager_id', $user->employee->id)));
-                });
-            }
-        }
+        // Same visibility as the list for the active tab, so the cards match what is shown.
+        $this->applyVisibilityScope($baseQuery, $request->scope === 'mine');
 
         $safe = fn($fn) => rescue($fn, 0, false);
 
@@ -178,6 +131,53 @@ class RequestManagementController extends Controller {
         ]);
     }
 
+    /**
+     * Restrict a request query to what the current user may see in the request list.
+     * "My requests" is the user's own requests (HR included); otherwise HR/admin see everything
+     * and everyone else sees what is assigned to them, their direct reports' requests awaiting
+     * their approval, and (department managers) their department's requests.
+     */
+    private function applyVisibilityScope($query, bool $isMine): void
+    {
+        $user = auth()->user();
+        $isHRAdmin = $this->isHRAdminUser();
+        if ($isHRAdmin && !$isMine) {
+            return;
+        }
+
+        $isMgr = in_array('department_manager', $this->currentRoles(), true);
+        $employeeId = $user->employee?->id;
+        $deptId = $user->employee?->department_id;
+
+        $query->where(function ($inner) use ($user, $employeeId, $deptId, $isMgr, $isMine) {
+            if ($isMine) {
+                $inner->where('employee_requests.employee_id', $employeeId ?? 0);
+                return;
+            }
+
+            // Assigned to me
+            $inner->where('employee_requests.assigned_to', $user->id);
+
+            // Direct manager (whatever my role): my reports' requests awaiting my approval only
+            if ($employeeId) {
+                $inner->orWhere(fn($dq) => $dq->where('employee_requests.status', 'pending_manager')
+                    ->whereHas('employee', fn($eq) => $eq->where('manager_id', $employeeId)));
+            }
+
+            if ($isMgr && $deptId) {
+                // Requests from my department that require manager approval
+                $inner->orWhere(fn($mgrQ) => $mgrQ
+                    ->whereHas('employee', fn($eq) => $eq->where('department_id', $deptId))
+                    ->whereHas('requestType', fn($rq) => $rq->where('requires_manager_approval', 1)));
+
+                // Requests routed to my department after manager approval
+                $inner->orWhere(fn($deptQ) => $deptQ
+                    ->where('employee_requests.status', '!=', 'pending_manager')
+                    ->whereHas('requestType', fn($rq) => $rq->where('handling_department_id', $deptId)));
+            }
+        });
+    }
+
     // ══════════════════════════════════════════════════════════════════════
     // LIST
     // ══════════════════════════════════════════════════════════════════════
@@ -186,76 +186,12 @@ class RequestManagementController extends Controller {
         $user = auth()->user();
         $isMine = $request->scope === 'mine';
 
-        // Role-based scope via raw DB (bypasses Spatie guard issues)
-        $userRoles = rescue(fn() => DB::table('model_has_roles')
-                        ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-                        ->where('model_has_roles.model_id', $user->id)
-                        ->pluck('roles.name')->toArray(), [], false);
-
-        $isHRAdmin = (bool) array_intersect($userRoles, ['super_admin', 'ceo', 'hr_manager', 'hr_staff']);
-        $isMgr = in_array('department_manager', $userRoles);
-
-        // If not HR/admin and not explicitly requesting own, restrict to own
-        $scopeToOwn = !$isHRAdmin && ($isMine || !$isMgr);
-
-        $deptId = $user->employee?->department_id;
-
         $query = EmployeeRequest::with([
                     'employee.department',
                     'requestType',
                     'assignedTo'
                 ])
-                // "My requests" applies to everyone (HR included); other non-HR views are
-                // always scoped, even for accounts without a linked employee record.
-                ->when(!$isHRAdmin || $isMine, function ($q) use ($user, $deptId, $isMgr, $isMine) {
-
-                    $q->where(function ($inner) use ($user, $deptId, $isMgr, $isMine) {
-
-
-                        if ($isMine) {
-                            // Own requests
-                            $inner->where('employee_id', $user->employee?->id ?? 0);
-                        } else {
-
-                            // Assigned to me
-                            $inner->where('assigned_to', $user->id);
-
-                            // Direct manager (whatever my role): my reports' requests awaiting my approval only
-                            if ($user->employee?->id) {
-                                $inner->orWhere(function ($dq) use ($user) {
-                                    $dq->where('status', 'pending_manager')
-                                        ->whereHas('employee', fn($eq) => $eq->where('manager_id', $user->employee->id));
-                                });
-                            }
-
-                            // Department manager can also see department-routed requests
-
-                            if ($isMgr) {
-
-
-                                // Employee belongs to my department and requires manager approval
-                                $inner->orWhere(function ($mgrQ) use ($deptId) {
-
-                                    $mgrQ->whereHas('employee', function ($eq) use ($deptId) {
-                                        $eq->where('department_id', $deptId);
-                                    })
-                                    ->whereHas('requestType', function ($rq) {
-                                        $rq->where('requires_manager_approval', 1);
-                                    });
-                                });
-
-                                // Request routed to my department after manager approval
-                                $inner->orWhere(function ($deptQ) use ($deptId) {
-
-                                    $deptQ->where('status', '!=', 'pending_manager')
-                                    ->whereHas('requestType', function ($rq) use ($deptId) {
-                                        $rq->where('handling_department_id', $deptId);
-                                    });
-                                });
-                            }
-                        }
-                    });
-                })
+                ->where(fn($q) => $this->applyVisibilityScope($q, $isMine))
                 ->when($request->status, function ($q) use ($request, $isMine) {
 
                     if ($request->status === 'pending') {
@@ -407,6 +343,42 @@ class RequestManagementController extends Controller {
             'manager_approved_at' => now(),
             'manager_notes' => $request->notes,
         ]);
+
+        // Work From Home: once the direct manager approves, hand it straight to the active HR manager
+        // for the final approval instead of leaving it in the general HR queue.
+        $req->loadMissing(['requestType', 'employee']);
+        if ($req->requestType?->code === 'HR_WFH' && ($hrManager = $this->activeHrManager($req))) {
+            $req->update(['status' => 'in_progress', 'assigned_to' => $hrManager->id]);
+
+            RequestComment::create([
+                'request_id' => $req->id,
+                'user_id' => auth()->id(),
+                'comment' => 'Approved by manager. Assigned to ' . $hrManager->name . ' (HR Manager) for final approval.',
+                'is_internal' => true,
+            ]);
+
+            $req = $req->fresh(['employee', 'requestType', 'assignedTo']);
+            $recipients = collect();
+            if ($requester = $this->requesterRecipient($req)) {
+                $recipients->push($requester);
+            }
+            if ($hrManager->email) {
+                $recipients->push([
+                    'email' => $hrManager->email,
+                    'name' => $hrManager->name ?: null,
+                    'name_ar' => $hrManager->employee?->arabic_name,
+                    'note_key' => 'mail_request.note.final_approval_required',
+                    'subject_key' => 'final_approval_required',
+                ]);
+            }
+            $this->queueRequestMails($req, 'in_progress', $recipients);
+
+            return response()->json([
+                'message' => __('Approved — assigned to the HR Manager for final approval.'),
+                'request' => $req,
+            ]);
+        }
+
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
             'pending',
@@ -665,6 +637,26 @@ class RequestManagementController extends Controller {
         }
 
         $this->queueRequestMails($req, $status, $recipients, $note);
+    }
+
+    /**
+     * The active HR manager who gives the final approval (the first by id when there are several).
+     * Never the requester themself.
+     */
+    private function activeHrManager(EmployeeRequest $req): ?User
+    {
+        $userIds = rescue(fn() => DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('roles.name', 'hr_manager')
+            ->where('model_has_roles.model_type', User::class)
+            ->pluck('model_has_roles.model_id'), collect(), false);
+
+        return User::with('employee:id,user_id,arabic_name,status')
+            ->whereIn('id', $userIds)
+            ->when($req->employee?->user_id, fn($q, $uid) => $q->where('id', '<>', $uid))
+            ->orderBy('id')
+            ->get()
+            ->first(fn($user) => !$user->employee || $user->employee->status === 'active');
     }
 
     /** Users with an HR role (hr_manager, hr_staff) who have an email address. */

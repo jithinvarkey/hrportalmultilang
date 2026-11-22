@@ -10,9 +10,12 @@ class TrustProxies extends Middleware
     /**
      * The trusted proxies for this application.
      *
+     * Apache on the same machine proxies the public HTTPS site to this app over
+     * http://127.0.0.1:8089, so trust it to pass on the original scheme, host and client IP.
+     *
      * @var array<int, string>|string|null
      */
-    protected $proxies;
+    protected $proxies = ['127.0.0.1', '::1'];
 
     /**
      * The headers that should be used to detect proxies.

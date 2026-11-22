@@ -156,10 +156,10 @@
   &::placeholder{color:var(--text3);}}
 
 /* ── Modals ───────────────────────────────────────────────────────────── */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;animation:fadeIn .15s ease;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;animation:fadeIn .15s ease;}
 .modal-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   width:min(540px,95vw);max-height:90vh;overflow-y:auto;
-  background:var(--surface);border:1px solid var(--border2);border-radius:16px;z-index:101;animation:slideUp .2s ease;}
+  background:var(--surface);border:1px solid var(--border2);border-radius:16px;z-index:301;animation:slideUp .2s ease;}
 .wide-modal{width:min(720px,95vw);}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;
   border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1;
@@ -698,3 +698,11 @@
   .checkbox-row { flex-direction:column;gap:10px; }
   .type-info-strip { align-items:flex-start; }
 }
+
+// ── Action in progress (approve / reject / complete / cancel) ──
+.btn-spinner { display:inline-block; vertical-align:middle; }
+.btn-spinner ::ng-deep circle { stroke: currentColor !important; }
+.row-btn:disabled { opacity:.5; cursor:not-allowed; pointer-events:none; }
+.row-btn .btn-spinner { margin:auto; }
+.btn-outline:disabled, .btn-primary:disabled, .btn-danger:disabled { opacity:.6; cursor:not-allowed; }
+.dw-footer-actions button, .modal-footer button { display:inline-flex; align-items:center; gap:6px; }

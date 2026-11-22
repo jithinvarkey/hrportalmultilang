@@ -7,6 +7,7 @@ return [
         'submitted'   => 'تم تقديم الطلب - :reference',
         'approval_required' => 'مطلوب اعتمادك: طلب جديد من فريقك - :reference',
         'in_progress' => 'الطلب قيد التنفيذ - :reference',
+        'final_approval_required' => 'مطلوب الاعتماد النهائي - :reference',
         'completed'   => 'تم إنجاز الطلب - :reference',
         'rejected'    => 'تم رفض الطلب - :reference',
         'cancelled'   => 'تم إلغاء الطلب - :reference',
@@ -24,6 +25,7 @@ return [
         'submitted'     => 'تم تقديم طلبك بنجاح وإحالته للمعالجة.',
         'submitted_awaiting_manager' => 'تم تقديم طلبك وإرساله إلى مديرك المباشر للاعتماد.',
         'approval_required' => 'قدّم :name طلبًا يتطلب اعتمادك. يرجى تسجيل الدخول إلى بوابة الموارد البشرية لمراجعته.',
+        'final_approval_required' => 'اعتمد المدير المباشر الطلب المقدّم من :name، وتم إسناده إليك للاعتماد النهائي. يرجى تسجيل الدخول إلى بوابة الموارد البشرية لمراجعته.',
         'new_for_department' => 'يوجد طلب جديد من :name بانتظار المعالجة من قِبل إدارتكم.',
     ],
 

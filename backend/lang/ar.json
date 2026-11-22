@@ -41,6 +41,7 @@
     "Approved at manager level. Awaiting HR approval.": "تمت الموافقة على مستوى المدير. بانتظار موافقة الموارد البشرية.",
     "Approved by HR. Awaiting CEO approval.": "تمت الموافقة من الموارد البشرية. بانتظار موافقة الرئيس التنفيذي.",
     "Approved — forwarded to HR.": "تمت الموافقة — أُحيل إلى الموارد البشرية.",
+    "Approved — assigned to the HR Manager for final approval.": "تمت الموافقة — أُسند إلى مدير الموارد البشرية للاعتماد النهائي.",
     "Approved — job posting #:id created.": "تمت الموافقة — تم إنشاء الإعلان الوظيفي رقم :id.",
     "Approved.": "تمت الموافقة.",
     "Asset \":name\" is currently :status and cannot be assigned.": "العهدة \":name\" حالتها حاليًا :status ولا يمكن تسليمها.",

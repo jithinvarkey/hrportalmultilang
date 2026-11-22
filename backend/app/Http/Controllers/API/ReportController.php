@@ -158,8 +158,16 @@ class ReportController extends Controller
             )
             ->when($request->status, fn($q) => $q->where('status',$request->status))
             ->orderBy('date','desc')->orderBy('employee_id')
-            ->get()
-            ->map(fn($l) => [
+            ->get();
+
+        $wfhLookup = app(\App\Services\Attendance\WorkFromHomeLookup::class);
+        $wfh = $rows->isEmpty() ? [] : $wfhLookup->byEmployeeDate(
+            $rows->pluck('employee_id'),
+            $rows->min(fn($l) => Carbon::parse($l->date)->toDateString()),
+            $rows->max(fn($l) => Carbon::parse($l->date)->toDateString())
+        );
+
+        $rows = $rows->map(fn($l) => [
                 'code'       => $l->employee?->employee_code,
                 'name'       => trim("{$l->employee?->first_name} {$l->employee?->last_name}"),
                 'department' => $l->employee?->department?->name ?? '—',
@@ -174,6 +182,8 @@ class ReportController extends Controller
                 ),
                 'source'     => $l->source ?? 'system',
                 'notes'      => $l->notes ?? '',
+                'wfh'        => ($w = $wfh[$l->employee_id . '|' . Carbon::parse($l->date)->toDateString()] ?? null)
+                    ? $wfhLookup->describe($w) : '',
             ]);
 
         return response()->json(['data' => $rows, 'total' => $rows->count()]);
@@ -261,7 +271,7 @@ class ReportController extends Controller
             'payroll'        => ['Code','Name','Department','Basic','Housing Allow.','Transport Allow.','Other Earnings','Gross','GOSI Employee','Other Deductions','Total Deductions','Net Salary','Working Days','Absent Days'],
             'leave-balance'  => ['Code','Name','Department','Leave Type','Entitlement','Used','Pending','Remaining','Year'],
             'leave-requests' => ['Code','Name','Department','Leave Type','From','To','Days','Status','Reason','Approved By'],
-            'attendance'     => ['Code','Name','Department','Date','Check In','Check Out','Hours','Status','Source','Notes'],
+            'attendance'     => ['Code','Name','Department','Date','Check In','Check Out','Hours','Status','Source','Notes','Work From Home'],
             'loans'          => ['Code','Name','Department','Loan Type','Amount (SAR)','Outstanding (SAR)','Monthly Installment','Installments (Paid/Total)','Disbursed Date','Status'],
             default          => [],
         };

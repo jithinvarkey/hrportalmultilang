@@ -19,7 +19,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://127.0.0.1:8087','http://192.168.100.189:8087', 'http://localhost:8087'],
+    // Comma-separated in .env, e.g. CORS_ALLOWED_ORIGINS=https://hr.example.com
+    'allowed_origins' => array_values(array_filter(array_map('trim', explode(',', (string) env(
+        'CORS_ALLOWED_ORIGINS',
+        'http://127.0.0.1:8087,http://192.168.100.189:8087,http://localhost:8087'
+    ))))),
 
     'allowed_origins_patterns' => [],
 

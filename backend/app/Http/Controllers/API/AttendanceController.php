@@ -249,7 +249,19 @@ class AttendanceController extends Controller
             ->orderBy('id', 'desc')
             ->paginate($perPage);
 
-        $data->getCollection()->each(function (AttendanceLog $log): void {
+        // Work From Home requests for these days (matched by the request's "Needed By" date)
+        $rows = $data->getCollection();
+        $wfh = $rows->isEmpty() ? [] : app(\App\Services\Attendance\WorkFromHomeLookup::class)->byEmployeeDate(
+            $rows->pluck('employee_id'),
+            $rows->min(fn($l) => \Carbon\Carbon::parse($l->date)->toDateString()),
+            $rows->max(fn($l) => \Carbon\Carbon::parse($l->date)->toDateString())
+        );
+
+        $data->getCollection()->each(function (AttendanceLog $log) use ($wfh): void {
+            $wfhRequest = $wfh[$log->employee_id . '|' . \Carbon\Carbon::parse($log->date)->toDateString()] ?? null;
+            $log->setAttribute('wfh', $wfhRequest
+                ? app(\App\Services\Attendance\WorkFromHomeLookup::class)->toArray($wfhRequest)
+                : null);
             $log->status = $this->attendancePolicy->statusForReport(
                 $log->check_in ? (string) $log->check_in : null,
                 (string) $log->status,
