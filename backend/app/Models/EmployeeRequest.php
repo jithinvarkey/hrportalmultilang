@@ -27,6 +27,20 @@ class EmployeeRequest extends Model {
     public function rejectedBy()      { return $this->belongsTo(User::class,'rejected_by'); }
     public function comments()        { return $this->hasMany(RequestComment::class,'request_id')->orderBy('created_at'); }
 
+    /** Adds an entry to the activity log, which the requester can see too. */
+    public function logActivity(string $text): void
+    {
+        if (!auth()->id()) {
+            return; // entries always belong to a user
+        }
+
+        $this->comments()->create([
+            'user_id' => auth()->id(),
+            'comment' => $text,
+            'is_internal' => false,
+        ]);
+    }
+
     public function getHasCompletionFileAttribute(): bool
     {
         return (bool) $this->completion_file && Storage::disk('public')->exists($this->completion_file);

@@ -254,7 +254,7 @@ class RequestManagementController extends Controller {
             return $this->forbidden();
         }
 
-        // Internal notes are for the people handling the request, not the requester.
+        // Internal notes (not activity log entries) are for the people handling the request, not the requester.
         if (!$this->isRequestStaff($req)) {
             $req->setRelation('comments', $req->comments->reject(fn($c) => $c->is_internal)->values());
         }
@@ -310,6 +310,8 @@ class RequestManagementController extends Controller {
                     'handling_department_id' => $request->handling_department_id
         ]);
 
+        $req->logActivity('Request submitted.');
+
         $this->sendSubmissionEmails($req->fresh(['employee.manager.user', 'employee.department.manager.user', 'requestType']));
 
         return response()->json(['message' => __('Request submitted successfully.'), 'request' => $req->load('requestType')], 201);
@@ -350,12 +352,7 @@ class RequestManagementController extends Controller {
         if ($req->requestType?->code === 'HR_WFH' && ($hrManager = $this->activeHrManager($req))) {
             $req->update(['status' => 'in_progress', 'assigned_to' => $hrManager->id]);
 
-            RequestComment::create([
-                'request_id' => $req->id,
-                'user_id' => auth()->id(),
-                'comment' => 'Approved by manager. Assigned to ' . $hrManager->name . ' (HR Manager) for final approval.',
-                'is_internal' => true,
-            ]);
+            $req->logActivity('Approved by manager. Assigned to ' . $hrManager->name . ' (HR Manager) for final approval.');
 
             $req = $req->fresh(['employee', 'requestType', 'assignedTo']);
             $recipients = collect();
@@ -378,6 +375,8 @@ class RequestManagementController extends Controller {
                 'request' => $req,
             ]);
         }
+
+        $req->logActivity('Approved by manager. Forwarded to HR.');
 
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
@@ -418,14 +417,9 @@ class RequestManagementController extends Controller {
             'hr_notes' => $request->hr_notes,
         ]);
 
-        // Activity log comment
+        // Activity log entry, visible to the requester as well
         $label = $assigneeId === auth()->id() ? 'self' : optional($assignee)->name;
-        RequestComment::create([
-            'request_id' => $req->id,
-            'user_id' => auth()->id(),
-            'comment' => 'Request assigned to ' . $label . ' and is now in progress.',
-            'is_internal' => true,
-        ]);
+        $req->logActivity('Request assigned to ' . $label . ' and is now in progress.');
 
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
@@ -476,15 +470,7 @@ class RequestManagementController extends Controller {
             'hr_notes' => $request->hr_notes ?? $req->hr_notes,
         ]);
 
-        // Auto-add a comment
-        if ($request->completion_notes) {
-            RequestComment::create([
-                'request_id' => $req->id,
-                'user_id' => auth()->id(),
-                'comment' => 'Request completed. ' . $request->completion_notes,
-                'is_internal' => false,
-            ]);
-        }
+        $req->logActivity(trim('Request completed. ' . $request->completion_notes));
 
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
@@ -534,6 +520,7 @@ class RequestManagementController extends Controller {
             'rejected_by' => auth()->id(),
             'rejected_at' => now(),
         ]);
+        $req->logActivity('Request rejected. ' . $request->reason);
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
             'rejected',
@@ -557,6 +544,7 @@ class RequestManagementController extends Controller {
         }
         $wasAwaitingManager = $req->status === 'pending_manager';
         $req->update(['status' => 'cancelled']);
+        $req->logActivity('Request cancelled.');
         $this->sendStatusUpdateEmails(
             $req->fresh(['employee', 'requestType', 'assignedTo']),
             'cancelled',
