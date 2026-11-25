@@ -811,6 +811,79 @@
       </div>
     </div>
 
+    <div class="settings-panel mail-server-panel">
+      <div class="settings-heading">
+        <div class="settings-icon"><mat-icon>mail</mat-icon></div>
+        <div>
+          <div class="settings-title">{{ 'ADMIN.SETTINGS.MAIL_SERVER.TITLE' | translate }}</div>
+          <div class="settings-sub">{{ 'ADMIN.SETTINGS.MAIL_SERVER.SUB' | translate }}</div>
+        </div>
+      </div>
+
+      <div class="settings-feedback note" *ngIf="mailServerInfo.source === 'env'"><mat-icon>info</mat-icon>{{ 'ADMIN.SETTINGS.MAIL_SERVER.FROM_ENV' | translate }}</div>
+      <div class="settings-feedback error" *ngIf="mailServerInfo.password_unreadable"><mat-icon>error_outline</mat-icon>{{ 'ADMIN.SETTINGS.MAIL_SERVER.PASSWORD_UNREADABLE' | translate }}</div>
+      <div class="settings-feedback note" *ngIf="mailServerInfo.redirected_to"><mat-icon>info</mat-icon>{{ 'ADMIN.SETTINGS.MAIL_SERVER.TEST_MODE' | translate:{ email: mailServerInfo.redirected_to } }}</div>
+      <div class="settings-feedback note" *ngIf="mailServerInfo.mailer !== 'smtp'"><mat-icon>info</mat-icon>{{ 'ADMIN.SETTINGS.MAIL_SERVER.NOT_SMTP' | translate:{ mailer: mailServerInfo.mailer } }}</div>
+
+      <div class="ticket-policy-grid">
+        <div class="policy-group">
+          <strong>{{ 'ADMIN.SETTINGS.MAIL_SERVER.CONNECTION' | translate }}</strong>
+          <label>{{ 'ADMIN.SETTINGS.MAIL_SERVER.HOST' | translate }}
+            <input dir="ltr" autocomplete="off" [(ngModel)]="mailServer.host" placeholder="smtp.office365.com">
+          </label>
+          <label>{{ 'ADMIN.SETTINGS.MAIL_SERVER.ENCRYPTION' | translate }}
+            <select [(ngModel)]="mailServer.encryption">
+              <option value="tls">{{ 'ADMIN.SETTINGS.MAIL_SERVER.TLS' | translate }}</option>
+              <option value="ssl">{{ 'ADMIN.SETTINGS.MAIL_SERVER.SSL' | translate }}</option>
+              <option value="none">{{ 'ADMIN.SETTINGS.MAIL_SERVER.NONE' | translate }}</option>
+            </select>
+          </label>
+          <label>{{ 'ADMIN.SETTINGS.MAIL_SERVER.PORT' | translate }}
+            <input type="number" dir="ltr" min="1" max="65535" [(ngModel)]="mailServer.port">
+          </label>
+        </div>
+        <div class="policy-group">
+          <strong>{{ 'ADMIN.SETTINGS.MAIL_SERVER.LOGIN' | translate }}</strong>
+          <label>{{ 'ADMIN.SETTINGS.MAIL_SERVER.USERNAME' | translate }}
+            <input dir="ltr" autocomplete="off" [(ngModel)]="mailServer.username" placeholder="hr@example.com">
+          </label>
+          <label>{{ 'ADMIN.SETTINGS.MAIL_SERVER.PASSWORD' | translate }}
+            <input type="password" dir="ltr" autocomplete="new-password" [(ngModel)]="mailServer.password"
+                   [placeholder]="mailServerInfo.has_password ? ('ADMIN.SETTINGS.MAIL_SERVER.PASSWORD_KEEP' | translate) : ''">
+          </label>
+        </div>
+        <div class="policy-group">
+          <strong>{{ 'ADMIN.SETTINGS.MAIL_SERVER.SENDER' | translate }}</strong>
+          <label>{{ 'ADMIN.SETTINGS.MAIL_SERVER.FROM_ADDRESS' | translate }}
+            <input type="email" dir="ltr" autocomplete="off" [(ngModel)]="mailServer.from_address" placeholder="hr@example.com">
+          </label>
+          <label>{{ 'ADMIN.SETTINGS.MAIL_SERVER.FROM_NAME' | translate }}
+            <input dir="auto" autocomplete="off" [(ngModel)]="mailServer.from_name">
+          </label>
+        </div>
+        <div class="policy-group">
+          <strong>{{ 'ADMIN.SETTINGS.MAIL_SERVER.TEST' | translate }}</strong>
+          <span>{{ 'ADMIN.SETTINGS.MAIL_SERVER.TEST_HINT' | translate }}</span>
+          <label>{{ 'ADMIN.SETTINGS.MAIL_SERVER.TEST_TO' | translate }}
+            <input type="email" dir="ltr" autocomplete="email" [(ngModel)]="mailServerTestTo" placeholder="you@example.com">
+          </label>
+        </div>
+      </div>
+
+      <div class="settings-feedback success" *ngIf="mailServerMessage"><mat-icon>check_circle</mat-icon>{{ mailServerMessage }}</div>
+      <div class="settings-feedback error" *ngIf="mailServerError"><mat-icon>error_outline</mat-icon>{{ mailServerError }}</div>
+      <div class="settings-actions">
+        <button class="btn-outline" (click)="sendMailServerTest()" [disabled]="mailServerTesting || mailServerSaving || mailServerChanged || !mailServerTestTo.trim()">
+          <mat-icon>{{ mailServerTesting ? 'hourglass_empty' : 'send' }}</mat-icon>
+          {{ (mailServerTesting ? 'ADMIN.SETTINGS.MAIL_SERVER.TEST_SENDING' : 'ADMIN.SETTINGS.MAIL_SERVER.TEST_SEND') | translate }}
+        </button>
+        <button class="btn-primary" (click)="saveMailServer()" [disabled]="mailServerSaving || mailServerTesting || !mailServer.host || !mailServer.port || !mailServer.from_address || !mailServer.from_name">
+          <mat-icon>{{ mailServerSaving ? 'hourglass_empty' : 'save' }}</mat-icon>
+          {{ (mailServerSaving ? 'COMMON.SAVING' : 'ADMIN.SETTINGS.MAIL_SERVER.SAVE') | translate }}
+        </button>
+      </div>
+    </div>
+
     <div class="settings-panel unifonic-panel">
       <div class="settings-heading">
         <div class="settings-icon"><mat-icon>sms</mat-icon></div>

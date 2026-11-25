@@ -103,6 +103,8 @@ class AllEmailNotificationsLanguageTest extends TestCase
             'announcement published', 'policy published', 'birthday wish',
             // Authentication
             'login OTP', 'password reset OTP',
+            // Admin settings
+            'mail server test',
         ], array_map(fn ($n) => [$n], $names));
     }
 
@@ -291,6 +293,7 @@ class AllEmailNotificationsLanguageTest extends TestCase
             'birthday wish' => new Mail\BirthdayWishMail('Happy Birthday Sara | عيد ميلاد سعيد سارة', "Dear Sara,\nHappy birthday!", "عزيزتي سارة،\nكل عام وأنتِ بخير!"),
             'login OTP' => new Mail\OtpMail('Sara', '123456', 'login', 3, 'سارة خان'),
             'password reset OTP' => new Mail\OtpMail('Sara', '654321', 'password_reset', 3),
+            'mail server test' => new Mail\MailServerTestMail(),
         };
     }
 }

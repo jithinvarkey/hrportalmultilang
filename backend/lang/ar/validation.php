@@ -402,6 +402,10 @@ return [
         // Devices & settings
         'ip_address' => 'عنوان IP',
         'port' => 'المنفذ',
+        'host' => 'خادم SMTP',
+        'encryption' => 'التشفير',
+        'from_address' => 'عنوان المرسل',
+        'from_name' => 'اسم المرسل',
         'api_url' => 'رابط واجهة البرمجة',
         'is_active' => 'نشط',
         'sort_order' => 'ترتيب العرض',

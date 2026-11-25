@@ -28,5 +28,10 @@ return [
         'subject' => 'Your Password Has Been Reset',
     ],
 
+    'server_test' => [
+        'subject' => 'HR Portal test email',
+        'body'    => 'The outgoing mail server settings of the HR Portal are working.',
+    ],
+
     'minutes' => '{1} :count minute|[2,*] :count minutes',
 ];
