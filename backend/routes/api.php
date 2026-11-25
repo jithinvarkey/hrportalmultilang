@@ -508,6 +508,9 @@ Route::prefix('v1')->group(function () {
               Route::put('/settings/unifonic',                 [AdminController::class, 'updateUnifonicSettings']);
               Route::get('/settings/email',                    [AdminController::class, 'emailSettings']);
               Route::put('/settings/email',                    [AdminController::class, 'updateEmailSettings']);
+              Route::get('/settings/mail-server',              [AdminController::class, 'mailServerSettings']);
+              Route::put('/settings/mail-server',              [AdminController::class, 'updateMailServerSettings']);
+              Route::post('/settings/mail-server/test',        [AdminController::class, 'sendMailServerTest'])->middleware('throttle:5,1');
               Route::get('/settings/hdf-template',             [AdminController::class, 'hdfTemplate']);
               Route::post('/settings/hdf-template',            [AdminController::class, 'uploadHdfTemplate']);
               Route::post('/legacy-migration/import',           [LegacyMigrationController::class, 'import']);

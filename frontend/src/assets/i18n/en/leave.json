@@ -59,6 +59,8 @@
     },
     "REQUESTS": {
       "SEARCH_EMPLOYEE": "Search employee…",
+      "ALL_EMPLOYEES": "All Employees",
+      "NO_EMPLOYEES": "No employees found",
       "ALL_TYPES": "All Types",
       "LEAVE_REPORT": "Leave Report",
       "DATE_TIME": "Date / Time",

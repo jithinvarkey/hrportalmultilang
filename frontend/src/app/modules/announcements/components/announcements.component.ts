@@ -91,7 +91,15 @@ export class AnnouncementsComponent implements OnInit {
   birthdaySaving = false;
   birthdaySending = false;
   birthdayError = '';
-  birthdaySettings: any = { enabled: true, subject: '', body: '', subject_ar: '', body_ar: '' };
+  birthdaySettings: any = { enabled: true, subject: '', body: '', subject_ar: '', body_ar: '',
+    name_area: { x: 25, y: 35, width: 50, height: 30 }, name_color: '#1e3a5f' };
+  /** Where the employee's name is written on the artwork, in % of the image. */
+  readonly nameAreaFields = [
+    { key: 'x', label: 'ANNOUNCEMENTS.BIRTHDAY.AREA_LEFT', min: 0, max: 95 },
+    { key: 'y', label: 'ANNOUNCEMENTS.BIRTHDAY.AREA_TOP', min: 0, max: 95 },
+    { key: 'width', label: 'ANNOUNCEMENTS.BIRTHDAY.AREA_WIDTH', min: 5, max: 100 },
+    { key: 'height', label: 'ANNOUNCEMENTS.BIRTHDAY.AREA_HEIGHT', min: 5, max: 100 },
+  ];
   birthdayBackgroundFile: File | null = null;
   birthdayBackgroundPreview: string | null = null;
   removeBirthdayBackground = false;
@@ -428,6 +436,13 @@ export class AnnouncementsComponent implements OnInit {
     });
   }
 
+  /** Keep the name box's size and move it to the middle of the artwork. */
+  centreNameArea(): void {
+    const area = this.birthdaySettings.name_area;
+    area.x = Math.max(0, Math.round((100 - Number(area.width)) / 2));
+    area.y = Math.max(0, Math.round((100 - Number(area.height)) / 2));
+  }
+
   closeBirthdayWishes(): void { this.showBirthdayWishes = false; this.cdr.markForCheck(); }
 
   insertBirthdayPlaceholder(token: string, language: 'en' | 'ar' = 'en'): void {
@@ -473,6 +488,8 @@ export class AnnouncementsComponent implements OnInit {
     formData.append('body_ar', this.birthdaySettings.body_ar || '');
     if (this.birthdayBackgroundFile) formData.append('background_image', this.birthdayBackgroundFile);
     if (this.removeBirthdayBackground) formData.append('remove_background_image', '1');
+    for (const f of this.nameAreaFields) formData.append(`name_area[${f.key}]`, String(this.birthdaySettings.name_area?.[f.key] ?? ''));
+    if (this.birthdaySettings.name_color) formData.append('name_color', this.birthdaySettings.name_color);
     this.http.post<any>(`${this.api}/birthday-wishes/settings`, formData).subscribe({
       next: r => {
         this.birthdaySettings = r.settings;

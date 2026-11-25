@@ -102,28 +102,6 @@
   &:focus { border-color:var(--accent); }
 }
 
-/* Searchable employee filter */
-.emp-combo { position:relative; min-width:240px; }
-.emp-combo-input { width:100%; box-sizing:border-box; padding-inline-end:30px; }
-.emp-combo-caret {
-  position:absolute; inset-inline-end:6px; top:50%; transform:translateY(-50%);
-  font-size:18px; width:18px; height:18px; color:var(--text3); pointer-events:none;
-}
-.emp-combo-list {
-  position:absolute; top:calc(100% + 4px); inset-inline:0; z-index:20;
-  max-height:260px; overflow-y:auto;
-  background:var(--surface); border:1px solid var(--border2); border-radius:8px;
-  box-shadow:0 8px 24px rgba(0,0,0,.12);
-}
-.emp-combo-opt {
-  display:flex; justify-content:space-between; gap:8px;
-  padding:7px 11px; font-size:13px; color:var(--text); cursor:pointer;
-  &:hover { background:var(--surface2); }
-  &.active { color:var(--accent); font-weight:600; }
-}
-.emp-combo-code  { font-size:11px; color:var(--text3); }
-.emp-combo-empty { padding:8px 11px; font-size:12px; color:var(--text3); }
-
 /* ── Data card / table ────────────────────────────────────────────── */
 .data-card {
   background:var(--surface); border:1px solid var(--border);
@@ -394,7 +372,6 @@
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .today-card { padding:16px; }
-  .emp-combo  { min-width:200px; }
 }
 
 @media (max-width: 768px) {
@@ -418,7 +395,6 @@
   .filter-row   { flex-direction:column; align-items:stretch; }
   .filter-group { width:100%; }
   .filter-input, .filter-select { width:100%; box-sizing:border-box; min-height:38px; }
-  .emp-combo    { min-width:0; width:100%; }
   .apply-btn    { align-self:stretch; justify-content:center; min-height:40px; }
 
   .card-hdr   { flex-wrap:wrap; gap:8px; }
@@ -446,4 +422,13 @@
   .time-val  { font-size:14px; }
   .today-meta { flex-wrap:wrap; gap:6px; }
   .modal-hdr, .modal-body, .modal-footer { padding-inline:14px; }
+}
+
+// Work From Home request for the day
+.wfh-tag {
+  display:inline-flex; align-items:center; gap:3px; margin-inline-start:6px; vertical-align:middle;
+  font-size:10px; font-weight:700; padding:2px 6px; border-radius:6px; cursor:help;
+  background:rgba(139,92,246,.14); color:#8b5cf6;
+  mat-icon { font-size:13px; width:13px; height:13px; }
+  &.wfh-pending { background:rgba(245,158,11,.14); color:#d97706; }
 }

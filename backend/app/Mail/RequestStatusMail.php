@@ -21,14 +21,18 @@ class RequestStatusMail extends BaseMailable
         public ?string $recipientName = null,
         public ?string $note = null,
         public ?string $recipientNameAr = null,
+        // Optional translation key overriding the standard note/subject (e.g. new submission, manager approval needed).
+        public ?string $noteKey = null,
+        public ?string $subjectKey = null,
     ) {
     }
 
     public function envelope(): Envelope
     {
-        $key = in_array($this->status, ['pending', 'in_progress', 'completed', 'rejected', 'cancelled'], true)
-            ? $this->status
-            : 'default';
+        $key = $this->subjectKey
+            ?? (in_array($this->status, ['pending', 'pending_manager', 'in_progress', 'completed', 'rejected', 'cancelled'], true)
+                ? $this->status
+                : 'default');
 
         return new Envelope(subject: __('mail_request.subject.' . $key, ['reference' => $this->request->reference]));
     }
@@ -43,6 +47,17 @@ class RequestStatusMail extends BaseMailable
     {
         if ($this->note !== null && trim($this->note) !== '') {
             return $this->note;
+        }
+
+        if ($this->noteKey !== null) {
+            $employee = $this->request->employee;
+
+            return __($this->noteKey, [
+                'name' => \App\Mail\Support\MailFormat::name(
+                    trim(($employee?->first_name ?? '') . ' ' . ($employee?->last_name ?? '')),
+                    $employee?->arabic_name
+                ),
+            ]);
         }
 
         return match ($this->status) {

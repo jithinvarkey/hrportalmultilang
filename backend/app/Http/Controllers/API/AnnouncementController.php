@@ -48,9 +48,17 @@ class AnnouncementController extends Controller
             'body_ar' => 'nullable|string|max:5000',
             'background_image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
             'remove_background_image' => 'nullable|boolean',
+            'name_area' => 'nullable|array',
+            'name_area.x' => 'required_with:name_area|numeric|between:0,95',
+            'name_area.y' => 'required_with:name_area|numeric|between:0,95',
+            'name_area.width' => 'required_with:name_area|numeric|between:5,100',
+            'name_area.height' => 'required_with:name_area|numeric|between:5,100',
+            'name_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
         ]);
         $current = $this->birthdayWishes->settings();
         $data['background_image_path'] = $current['background_image_path'] ?? null;
+        $data['name_area'] = $data['name_area'] ?? $current['name_area'];
+        $data['name_color'] = $data['name_color'] ?? $current['name_color'];
 
         if ($request->boolean('remove_background_image') && $data['background_image_path']) {
             Storage::disk('public')->delete($data['background_image_path']);

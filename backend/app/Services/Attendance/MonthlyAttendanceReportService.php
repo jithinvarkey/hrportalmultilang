@@ -18,7 +18,10 @@ class MonthlyAttendanceReportService
     private int $fullDayMinutes = 480;
     private array $weekendDays = [5, 6];
 
-    public function __construct(private AttendancePolicyService $attendancePolicy)
+    public function __construct(
+        private AttendancePolicyService $attendancePolicy,
+        private WorkFromHomeLookup $wfhLookup
+    )
     {
     }
 
@@ -56,6 +59,7 @@ class MonthlyAttendanceReportService
 
         $leavesByDate = $this->leavesByEmployeeDate($leaveRequests, $periodStart, $periodEnd);
         $holidays = $this->holidayNamesByDate($periodStart, $periodEnd);
+        $wfhByDate = $this->wfhLookup->byEmployeeDate($employeeIds, $periodStart->toDateString(), $periodEnd->toDateString());
 
         $summaryRows = [];
         $sheets = [];
@@ -80,7 +84,13 @@ class MonthlyAttendanceReportService
                 $requiredMinutes += $minimum;
                 $row = $this->dailyRow($day, $log, $minimum, $isWeekend, $holidayName, $approvedLeaves, $pendingLeaves);
                 $workedMinutes += (int) $row[4];
+                $wfhRequest = $wfhByDate[$dateKey] ?? null;
+                $row[] = $wfhRequest ? $this->wfhLookup->describe($wfhRequest) : '';
                 $employeeRows[] = $row;
+
+                if ($wfhRequest) {
+                    $pendingNotes[] = $date . ': ' . $this->wfhLookup->describe($wfhRequest);
+                }
 
                 if ($pendingLeaves->isNotEmpty()) {
                     $pendingNotes[] = $date . ': ' . $this->leaveDetails($pendingLeaves, true);
@@ -100,7 +110,7 @@ class MonthlyAttendanceReportService
 
             $sheets[] = [
                 'name' => $employee->full_name,
-                'headers' => ['Date', 'DateString', 'First In', 'Last Out', 'Total', 'Minimum hours', 'Status', 'Leave request'],
+                'headers' => ['Date', 'DateString', 'First In', 'Last Out', 'Total', 'Minimum hours', 'Status', 'Leave request', 'Work From Home'],
                 'rows' => $employeeRows,
             ];
         }

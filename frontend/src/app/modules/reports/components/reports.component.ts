@@ -90,8 +90,8 @@ export class ReportsComponent implements OnInit {
       icon:        'fingerprint',
       color:       '#0ea5e9',
       filters:     ['month', 'from', 'to', 'department', 'status'],
-      columns:     ['code','name','department','date','check_in','check_out','hours','status'],
-      headers:     ['CODE','NAME','DEPT','DATE','IN','OUT','HOURS','STATUS'],
+      columns:     ['code','name','department','date','check_in','check_out','hours','status','wfh'],
+      headers:     ['CODE','NAME','DEPT','DATE','IN','OUT','HOURS','STATUS','WFH'],
     },
     {
       id:          'loans',

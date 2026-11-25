@@ -23,11 +23,15 @@ use App\Services\MonthlyLeaveReminderService;
 use App\Services\UnifonicSettingsService;
 use App\Services\HdfTemplateService;
 use App\Services\EmailSettingsService;
+use App\Services\MailServerSettingsService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\MailServerTestMail;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -44,7 +48,8 @@ class AdminController extends Controller
         MonthlyLeaveReminderService $monthlyLeaveReminderService,
         UnifonicSettingsService $unifonicSettingsService,
         protected HdfTemplateService $hdfTemplates,
-        protected EmailSettingsService $emailSettings
+        protected EmailSettingsService $emailSettings,
+        protected MailServerSettingsService $mailServerSettings
     )
     {
         $this->loanApprovalService = $loanApprovalService;
@@ -75,6 +80,64 @@ class AdminController extends Controller
         return response()->json([
             'message' => __('Email notification settings updated.'),
             'settings' => $this->emailSettings->updateSettings($data),
+        ]);
+    }
+
+    public function mailServerSettings(): JsonResponse
+    {
+        if (!$this->isSuperAdmin()) {
+            return response()->json(['message' => __('Only a super admin can manage email settings.')], 403);
+        }
+
+        return response()->json(['settings' => $this->mailServerSettings->settings()]);
+    }
+
+    public function updateMailServerSettings(Request $request): JsonResponse
+    {
+        if (!$this->isSuperAdmin()) {
+            return response()->json(['message' => __('Only a super admin can manage email settings.')], 403);
+        }
+
+        $data = $request->validate([
+            'host' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z0-9](?:[A-Za-z0-9.\-]*[A-Za-z0-9])?$/'],
+            'port' => 'required|integer|min:1|max:65535',
+            'encryption' => 'required|in:tls,ssl,none',
+            'username' => 'nullable|string|max:255',
+            'password' => 'nullable|string|max:255',
+            'from_address' => 'required|email:rfc|max:255',
+            'from_name' => 'required|string|max:150',
+        ]);
+
+        return response()->json([
+            'message' => __('Outgoing mail server settings updated.'),
+            'settings' => $this->mailServerSettings->updateSettings($data),
+        ]);
+    }
+
+    public function sendMailServerTest(Request $request): JsonResponse
+    {
+        if (!$this->isSuperAdmin()) {
+            return response()->json(['message' => __('Only a super admin can manage email settings.')], 403);
+        }
+
+        $data = $request->validate(['to' => 'required|email:rfc|max:255']);
+
+        try {
+            Mail::to($data['to'])->send(new MailServerTestMail());
+        } catch (\Throwable $e) {
+            Log::warning('SMTP test email failed.', ['to' => $data['to'], 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => __('The test email could not be sent: :error', ['error' => $e->getMessage()]),
+            ], 422);
+        }
+
+        $redirectedTo = $this->mailServerSettings->redirectAddress();
+
+        return response()->json([
+            'message' => $redirectedTo
+                ? __('Test email sent to :email because test mode is on.', ['email' => $redirectedTo])
+                : __('Test email sent to :email.', ['email' => $data['to']]),
         ]);
     }
 

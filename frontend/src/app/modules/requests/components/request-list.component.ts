@@ -23,6 +23,9 @@ export class RequestListComponent implements OnInit, OnDestroy {
   activeStatus = '';
   loading = false;
   submitting = false;
+  /** Request currently being approved / rejected / completed / cancelled, and which action. */
+  busyReqId: number | null = null;
+  busyAction = '';
 
   // ── Data ─────────────────────────────────────────────────────────────────
   requests: any[] = [];
@@ -167,7 +170,8 @@ export class RequestListComponent implements OnInit, OnDestroy {
   // ── Data loaders ────────────────────────────────────────────────────────
 
   loadStats(): void {
-    this.http.get<any>('/api/v1/requests/stats').subscribe({
+    const params: any = this.activeTab === 'mine' ? { scope: 'mine' } : {};
+    this.http.get<any>('/api/v1/requests/stats', { params }).subscribe({
       next: r => {
         this.stats = r;
         this.statItems = [
@@ -229,7 +233,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
     this.activeTab = id;
     this.activeStatus = '';
     this.filterCategory = '';
-    if (id !== 'types') this.load();
+    if (id !== 'types') { this.load(); this.loadStats(); }
   }
 
   switchStatus(id: string): void { this.activeStatus = id; this.load(1); }
@@ -253,6 +257,8 @@ export class RequestListComponent implements OnInit, OnDestroy {
     if (!this.selectedReq) return;
     this.http.get<any>(`/api/v1/requests/${this.selectedReq.id}`).subscribe({
       next: r => { this.selectedReq = r.request; this.cdr.markForCheck(); },
+      // e.g. a direct manager loses access once the request has left the approval stage
+      error: () => { this.showDetail = false; this.selectedReq = null; this.cdr.markForCheck(); },
     });
   }
 
@@ -315,17 +321,39 @@ export class RequestListComponent implements OnInit, OnDestroy {
     this.completionFile = (event.target as HTMLInputElement).files?.[0] ?? null;
   }
 
+  // ── Busy state (one action at a time) ─────────────────────────────────
+
+  isBusy(req: any, action?: string): boolean {
+    return !!req && this.busyReqId === req.id && (!action || this.busyAction === action);
+  }
+
+  private startBusy(req: any, action: string): boolean {
+    if (!req || this.busyReqId !== null) return false; // ignore double clicks
+    this.busyReqId = req.id;
+    this.busyAction = action;
+    this.cdr.markForCheck();
+    return true;
+  }
+
+  private endBusy(): void {
+    this.busyReqId = null;
+    this.busyAction = '';
+    this.cdr.markForCheck();
+  }
+
   // ── Manager approve ─────────────────────────────────────────────────────
 
   managerApprove(req: any): void {
+    if (!this.startBusy(req, 'approve')) return;
     this.http.post(`/api/v1/requests/${req.id}/manager-approve`, {}).subscribe({
       next: () => {
+        this.endBusy();
         this.load(this.currentPage);
         this.loadStats();
         if (this.showDetail) this.reloadDetail();
         this.cdr.markForCheck();
       },
-      error: (e: any) => alert(this.lang.t('REQUESTS.MSG.APPROVE_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') })),
+      error: (e: any) => { this.endBusy(); alert(this.lang.t('REQUESTS.MSG.APPROVE_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') })); },
     });
   }
 
@@ -383,6 +411,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
   }
 
   submitComplete(): void {
+    if (!this.startBusy(this.selectedReq, 'complete')) return;
     const fd = new FormData();
     if (this.completeForm.completion_notes) fd.append('completion_notes', this.completeForm.completion_notes);
     if (this.completeForm.hr_notes) fd.append('hr_notes', this.completeForm.hr_notes);
@@ -390,6 +419,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
 
     this.http.post(`/api/v1/requests/${this.selectedReq.id}/complete`, fd).subscribe({
       next: () => {
+        this.endBusy();
         this.showComplete = false;
         this.completionFile = null;
         this.load(this.currentPage);
@@ -398,6 +428,7 @@ export class RequestListComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
       error: (e: any) => {
+        this.endBusy();
         alert(this.lang.t('REQUESTS.MSG.COMPLETE_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') }));
         this.cdr.markForCheck();
       },
@@ -442,31 +473,34 @@ export class RequestListComponent implements OnInit, OnDestroy {
   }
 
   confirmReject(): void {
-    if (!this.rejectReason.trim()) return;
+    if (!this.rejectReason.trim() || !this.startBusy(this.rejectTarget, 'reject')) return;
     this.http.post(`/api/v1/requests/${this.rejectTarget.id}/reject`, { reason: this.rejectReason }).subscribe({
       next: () => {
+        this.endBusy();
         this.showReject = false;
         this.load(this.currentPage);
         this.loadStats();
         if (this.showDetail) this.showDetail = false;
         this.cdr.markForCheck();
       },
-      error: (e: any) => alert(this.lang.t('REQUESTS.MSG.REJECT_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') })),
+      error: (e: any) => { this.endBusy(); alert(this.lang.t('REQUESTS.MSG.REJECT_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') })); },
     });
   }
 
   // ── Cancel ──────────────────────────────────────────────────────────────
 
   cancelReq(req: any): void {
-    if (!confirm(this.lang.t('REQUESTS.MSG.CONFIRM_CANCEL'))) return;
+    if (this.busyReqId !== null || !confirm(this.lang.t('REQUESTS.MSG.CONFIRM_CANCEL'))) return;
+    if (!this.startBusy(req, 'cancel')) return;
     this.http.post(`/api/v1/requests/${req.id}/cancel`, {}).subscribe({
       next: () => {
+        this.endBusy();
         this.load(this.currentPage);
         this.loadStats();
         if (this.showDetail) this.showDetail = false;
         this.cdr.markForCheck();
       },
-      error: (e: any) => alert(this.lang.t('REQUESTS.MSG.CANCEL_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') })),
+      error: (e: any) => { this.endBusy(); alert(this.lang.t('REQUESTS.MSG.CANCEL_FAILED', { error: e?.error?.message || this.lang.t('REQUESTS.MSG.SERVER_ERROR') })); },
     });
   }
 
@@ -573,6 +607,13 @@ export class RequestListComponent implements OnInit, OnDestroy {
       && String(empId) === String(this.currentEmployeeId);
   }
 
+  /** True when the request was raised by someone who reports to me (employees.manager_id). */
+  private isDirectManagerOf(req: any): boolean {
+    const managerId = req?.employee?.manager_id;
+    return this.currentEmployeeId !== null && managerId !== undefined && managerId !== null
+      && String(managerId) === String(this.currentEmployeeId);
+  }
+
   get columns(): string[] {
     return this.activeTab === 'mine' ? this.mineColumns : this.displayedColumns;
   }
@@ -641,6 +682,11 @@ export class RequestListComponent implements OnInit, OnDestroy {
       return true;
     }
 
+    // The requester's direct manager can approve, whatever their role
+    if (this.isDirectManagerOf(req)) {
+      return true;
+    }
+
     // Manager can approve only employees from the same department
     if (this.isMgr) {
       const employeeDeptId = req?.employee?.department_id;
@@ -669,6 +715,11 @@ export class RequestListComponent implements OnInit, OnDestroy {
 
     // HR can always reject
     if (this.isHR) {
+      return true;
+    }
+
+    // The direct manager decides at the approval stage
+    if (req.status === 'pending_manager' && this.isDirectManagerOf(req)) {
       return true;
     }
 

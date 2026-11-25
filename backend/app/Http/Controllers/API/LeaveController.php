@@ -755,6 +755,7 @@ class LeaveController extends Controller {
                 'leave_request_id' => $leave->id,
                 'linked_service' => $service,
             ]));
+            $linked->logActivity("Request updated from annual leave request #{$leave->id}.");
             return;
         }
 
@@ -762,7 +763,7 @@ class LeaveController extends Controller {
             'reference' => $this->generateLeaveRef(),
             'leave_request_id' => $leave->id,
             'linked_service' => $service,
-        ]));
+        ]))->logActivity("Request created from annual leave request #{$leave->id}.");
     }
 
     private function ticketPassengerManifest(LeaveRequest $leave, $employee): string {

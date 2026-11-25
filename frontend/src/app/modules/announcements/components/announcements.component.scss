@@ -151,9 +151,20 @@
 .placeholder-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px; font-size:11px; color:var(--text3);
   button { border:1px solid var(--border2); border-radius:6px; padding:4px 7px; background:var(--surface2); color:var(--accent); font-family:monospace; font-size:11px; cursor:pointer; } }
 .optional-label { margin-inline-start:5px; color:var(--text3); font-weight:400; }
-.birthday-background-preview { min-height:220px; display:flex; align-items:flex-start; justify-content:center; position:relative; padding:20px; border:1px solid var(--border); border-radius:8px; background-size:cover; background-position:center top;
-  > div { padding:16px 22px; border-radius:6px; background:rgba(255,255,255,.88); color:#1f2937; font-size:13px; font-weight:700; }
+.birthday-artwork { display:flex; gap:16px; align-items:flex-start; }
+.birthday-background-preview { position:relative; flex:0 0 260px; max-width:260px; border:1px solid var(--border); border-radius:8px; overflow:hidden; line-height:0;
+  > img { display:block; width:100%; height:auto; }
+  .name-area { position:absolute; display:flex; align-items:center; justify-content:center; border:2px dashed currentColor; background:rgba(255,255,255,.35);
+    font-size:12px; font-weight:700; line-height:1.2; text-align:center; overflow:hidden; }
   > button { position:absolute; top:8px; inset-inline-end:8px; background:rgba(255,255,255,.9); } }
+.name-area-fields { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--text);
+  small { color:var(--text3); }
+  .area-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px 12px; margin-top:4px; }
+  label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--text2); }
+  label span { display:flex; align-items:center; gap:6px; }
+  input[type=number] { width:100%; min-width:0; }
+  input[type=color] { width:48px; height:32px; padding:2px; }
+  .center-name { align-self:flex-start; margin-top:6px; } }
 .today-birthdays { border-top:1px solid var(--border); padding-top:14px; }
 .birthday-section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; color:var(--text); font-size:13px;
   span { min-width:24px; padding:2px 7px; border-radius:999px; background:var(--surface2); text-align:center; color:var(--text2); } }
@@ -194,7 +205,8 @@
   .modal-footer { padding:12px 16px; flex-wrap:wrap;
     > button { flex:1 1 auto; justify-content:center; min-height:40px; } }
   .birthday-footer { flex-direction:column-reverse; button { width:100%; justify-content:center; } }
-  .birthday-background-preview { min-height:160px; }
+  .birthday-artwork { flex-direction:column; }
+  .birthday-background-preview { flex-basis:auto; max-width:100%; width:100%; }
   .stats-drawer { width:100vw; border-inline-start:0; }
   .drawer-body { padding:16px; }
   .stat-cols { grid-template-columns:1fr; }

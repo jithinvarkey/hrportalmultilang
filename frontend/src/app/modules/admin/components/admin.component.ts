@@ -138,6 +138,15 @@ export class AdminComponent implements OnInit {
     sender: '',
   };
   emailSettings = { reply_to_email: '' };
+  mailServer = { host: '', port: 587, encryption: 'tls', username: '', password: '', from_address: '', from_name: '' };
+  /** Read-only state reported by the server (the password itself is never returned). */
+  mailServerInfo = { source: 'database', has_password: false, password_unreadable: false, mailer: 'smtp', redirected_to: null as string | null };
+  mailServerTestTo = '';
+  mailServerSaving = false;
+  mailServerTesting = false;
+  mailServerMessage = '';
+  mailServerError = '';
+  private mailServerSaved = '';
   ticketSettingsSaving = false;
   leaveReminderSaving = false;
   unifonicSaving = false;
@@ -314,7 +323,7 @@ export class AdminComponent implements OnInit {
     if (id === 'units')        this.loadUnits();
     if (id === 'departments')  this.loadDepartments();
     if (id === 'designations') { this.loadDesignations(); this.loadDepartments(); }
-    if (id === 'settings')     { this.loadCarryForwardSettings(); this.loadLoanSettings(); this.loadAnnualTicketSettings(); this.loadMonthlyLeaveReminderSettings(); this.loadUnifonicSettings(); this.loadEmailSettings(); this.loadHdfTemplate(); }
+    if (id === 'settings')     { this.loadCarryForwardSettings(); this.loadLoanSettings(); this.loadAnnualTicketSettings(); this.loadMonthlyLeaveReminderSettings(); this.loadUnifonicSettings(); this.loadEmailSettings(); this.loadMailServer(); this.loadHdfTemplate(); }
   }
 
   onMigrationFile(event: Event) {
@@ -578,6 +587,55 @@ export class AdminComponent implements OnInit {
         this.emailSettingsSaving = false;
       }
     });
+  }
+
+  loadMailServer() {
+    this.mailServerMessage = ''; this.mailServerError = '';
+    this.http.get<any>('/api/v1/admin/settings/mail-server').subscribe({
+      next: r => this.setMailServer(r.settings),
+      error: err => this.mailServerError = this.firstError(err) || this.lang.t('ADMIN.MSG.MAIL_SERVER_LOAD_FAILED')
+    });
+  }
+
+  saveMailServer() {
+    this.mailServerSaving = true; this.mailServerMessage = ''; this.mailServerError = '';
+    this.http.put<any>('/api/v1/admin/settings/mail-server', this.mailServer).subscribe({
+      next: r => {
+        this.setMailServer(r.settings);
+        this.mailServerMessage = r.message;
+        this.mailServerSaving = false;
+      },
+      error: err => {
+        this.mailServerError = this.firstError(err) || this.lang.t('ADMIN.MSG.MAIL_SERVER_SAVE_FAILED');
+        this.mailServerSaving = false;
+      }
+    });
+  }
+
+  sendMailServerTest() {
+    this.mailServerTesting = true; this.mailServerMessage = ''; this.mailServerError = '';
+    this.http.post<any>('/api/v1/admin/settings/mail-server/test', { to: this.mailServerTestTo.trim() }).subscribe({
+      next: r => {
+        this.mailServerMessage = r.message;
+        this.mailServerTesting = false;
+      },
+      error: err => {
+        this.mailServerError = this.firstError(err) || this.lang.t('ADMIN.MSG.MAIL_SERVER_TEST_FAILED');
+        this.mailServerTesting = false;
+      }
+    });
+  }
+
+  /** The test uses the saved settings, so it waits until the form is saved. */
+  get mailServerChanged(): boolean {
+    return JSON.stringify(this.mailServer) !== this.mailServerSaved;
+  }
+
+  private setMailServer(settings: any) {
+    const { host, port, encryption, username, from_address, from_name, ...info } = settings;
+    this.mailServer = { host, port, encryption, username, password: '', from_address, from_name };
+    this.mailServerInfo = { ...this.mailServerInfo, ...info };
+    this.mailServerSaved = JSON.stringify(this.mailServer);
   }
 
   refreshAdminData() {

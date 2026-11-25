@@ -127,29 +127,7 @@
         </div>
         <div class="filter-group" *ngIf="isHR || (isMgr && activeTab === 'log')">
           <label class="filter-lbl">{{ 'COMMON.EMPLOYEE' | translate }}</label>
-          <div class="emp-combo">
-            <input class="filter-input emp-combo-input" type="text"
-                   [placeholder]="'ATTENDANCE.FILTER.SEARCH_EMPLOYEE' | translate" autocomplete="off"
-                   [value]="empSearchOpen ? empSearch : selectedEmployeeLabel"
-                   (focus)="openEmpSearch()"
-                   (input)="onEmpSearch($any($event.target).value)"
-                   (blur)="closeEmpSearch()"
-                   (keydown.escape)="$any($event.target).blur()">
-            <mat-icon class="emp-combo-caret">expand_more</mat-icon>
-            <div class="emp-combo-list" *ngIf="empSearchOpen">
-              <div class="emp-combo-opt" [class.active]="!filterForm.value.employee_id"
-                   (mousedown)="$event.preventDefault(); selectFilterEmployee(null)">
-                {{ 'ATTENDANCE.FILTER.ALL_EMPLOYEES' | translate }}
-              </div>
-              <div class="emp-combo-opt" *ngFor="let e of filterEmployeeOptions"
-                   [class.active]="'' + filterForm.value.employee_id === '' + e.id"
-                   (mousedown)="$event.preventDefault(); selectFilterEmployee(e)">
-                {{ e.first_name }} {{ e.last_name }}
-                <span class="emp-combo-code" dir="ltr" *ngIf="e.employee_code">{{ e.employee_code }}</span>
-              </div>
-              <div class="emp-combo-empty" *ngIf="!filterEmployeeOptions.length">{{ 'ATTENDANCE.FILTER.NO_EMPLOYEES' | translate }}</div>
-            </div>
-          </div>
+          <app-employee-picker formControlName="employee_id" [employees]="filterEmployeeOptions"></app-employee-picker>
         </div>
         <button class="btn-primary apply-btn" (click)="applyFilters()">
           <mat-icon>search</mat-icon> {{ 'COMMON.APPLY' | translate }}
@@ -214,6 +192,10 @@
               </td>
               <td>
                 <span class="status-badge" [class]="statusClass(r.status)">{{ r.status | statusLabel }}</span>
+                <span class="wfh-tag" *ngIf="r.wfh" [class.wfh-pending]="r.wfh.status !== 'completed'"
+                      [matTooltip]="r.wfh.reference + ' · ' + (wfhStatusKey(r.wfh.status) | translate) + (r.wfh.details ? ' — ' + r.wfh.details : '')">
+                  <mat-icon>home_work</mat-icon>{{ 'ATTENDANCE.TABLE.WFH' | translate }}
+                </span>
               </td>
               <td>
                 <span class="source-badge" [class]="'src-' + r.source">{{ sourceLabel(r.source) }}</span>
@@ -291,7 +273,7 @@
           <label class="field-label">{{ 'COMMON.EMPLOYEE' | translate }} <span class="req">*</span></label>
           <select class="field-select-full" formControlName="employee_id">
             <option value="">{{ 'ATTENDANCE.MANUAL.SELECT_EMPLOYEE' | translate }}</option>
-            <option *ngFor="let e of allEmployees" [value]="e.id">
+            <option *ngFor="let e of manualEmployeeOptions" [value]="e.id">
               {{ e.first_name }} {{ e.last_name }} ({{ e.employee_code }})
             </option>
           </select>

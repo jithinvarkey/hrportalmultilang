@@ -25,7 +25,9 @@ class BirthdayWishService
         $values = DB::table('system_settings')->whereIn('key', [
             'birthday_wishes_enabled', 'birthday_wish_subject', 'birthday_wish_body',
             'birthday_wish_subject_ar', 'birthday_wish_body_ar', 'birthday_wish_background_image',
+            'birthday_wish_name_area', 'birthday_wish_name_color',
         ])->pluck('value', 'key');
+        $area = json_decode($values['birthday_wish_name_area'] ?? '', true);
 
         return [
             'enabled' => ($values['birthday_wishes_enabled'] ?? '1') === '1',
@@ -36,6 +38,9 @@ class BirthdayWishService
             'background_image_path' => $values['birthday_wish_background_image'] ?? null,
             'background_image_url' => !empty($values['birthday_wish_background_image'])
                 ? Storage::disk('public')->url($values['birthday_wish_background_image']) : null,
+            // Where the employee's name is written on the artwork, as percentages of the image.
+            'name_area' => is_array($area) ? $this->normaliseArea($area) : BirthdayWishImageComposer::DEFAULT_AREA,
+            'name_color' => $values['birthday_wish_name_color'] ?? BirthdayWishImageComposer::DEFAULT_COLOR,
         ];
     }
 
@@ -49,6 +54,8 @@ class BirthdayWishService
             'birthday_wish_subject_ar' => $settings['subject_ar'] ?? '',
             'birthday_wish_body_ar' => $settings['body_ar'] ?? '',
             'birthday_wish_background_image' => $settings['background_image_path'] ?? null,
+            'birthday_wish_name_area' => json_encode($this->normaliseArea($settings['name_area'] ?? BirthdayWishImageComposer::DEFAULT_AREA)),
+            'birthday_wish_name_color' => $settings['name_color'] ?? BirthdayWishImageComposer::DEFAULT_COLOR,
         ] as $key => $value) {
             DB::table('system_settings')->updateOrInsert(['key' => $key], ['value' => $value, 'updated_at' => $now, 'created_at' => $now]);
         }
@@ -106,7 +113,8 @@ class BirthdayWishService
             $backgroundPath = $settings['background_image_path']
                 ? Storage::disk('public')->path($settings['background_image_path']) : null;
             $renderedImage = $backgroundPath && is_file($backgroundPath)
-                ? $this->imageComposer->compose($backgroundPath, $body, $bodyAr) : null;
+                ? $this->imageComposer->compose($backgroundPath, $employee->full_name, (string) $employee->arabic_name,
+                    $settings['name_area'], $settings['name_color']) : null;
             try {
                 // One message per communication language: colleagues read the email frame in their own language
                 // (the HR-written greeting itself is shown in both languages as authored).
@@ -124,6 +132,19 @@ class BirthdayWishService
             report($e);
             return 'failed';
         }
+    }
+
+    /** Keep the text area inside the image: whole percentages, at least 5% wide and tall. */
+    private function normaliseArea(array $area): array
+    {
+        $x = max(0, min(95, (int) round($area['x'] ?? 0)));
+        $y = max(0, min(95, (int) round($area['y'] ?? 0)));
+        return [
+            'x' => $x,
+            'y' => $y,
+            'width' => max(5, min(100 - $x, (int) round($area['width'] ?? 50))),
+            'height' => max(5, min(100 - $y, (int) round($area['height'] ?? 30))),
+        ];
     }
 
     private function render(string $template, Employee $employee): string
