@@ -50,7 +50,9 @@ class MonthlyAttendanceReportService
             ->get()
             ->keyBy(fn(AttendanceLog $log) => $log->employee_id . '|' . $log->date->toDateString());
 
+        // Work From Home days have their own column: punched hours are kept, and approved days without any get a full day.
         $leaveRequests = LeaveRequest::with('leaveType')
+            ->excludingWorkFromHome()
             ->whereIn('employee_id', $employeeIds)
             ->whereDate('start_date', '<=', $periodEnd->toDateString())
             ->whereDate('end_date', '>=', $periodStart->toDateString())
@@ -83,8 +85,15 @@ class MonthlyAttendanceReportService
 
                 $requiredMinutes += $minimum;
                 $row = $this->dailyRow($day, $log, $minimum, $isWeekend, $holidayName, $approvedLeaves, $pendingLeaves);
-                $workedMinutes += (int) $row[4];
                 $wfhRequest = $wfhByDate[$dateKey] ?? null;
+                // A fully approved Work From Home day without punched hours counts as a full day (0 on weekends and holidays).
+                if ($wfhRequest && $wfhRequest['status'] === 'completed' && (int) $row[4] === 0) {
+                    $row[4] = $minimum;
+                }
+                $workedMinutes += (int) $row[4];
+                if ($wfhRequest && !$log?->check_in && $row[6] === 'Absent') {
+                    $row[6] = 'Work From Home' . ($wfhRequest['status'] === 'completed' ? '' : ' (pending)');
+                }
                 $row[] = $wfhRequest ? $this->wfhLookup->describe($wfhRequest) : '';
                 $employeeRows[] = $row;
 

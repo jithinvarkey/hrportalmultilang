@@ -12,7 +12,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { LanguageService } from '../../../core/services/language.service';
 
 export interface AttendanceLog {
-  id:            number;
+  /** Missing on Work From Home days without an attendance record */
+  id?:           number | null;
   employee_id:   number;
   date:          string;
   check_in:      string | null;
@@ -21,7 +22,7 @@ export interface AttendanceLog {
   status:        string;
   source:        string;
   has_active_leave?: boolean | number | null;
-  /** Work From Home request whose "Needed By" date is this day */
+  /** Work From Home applied for this day (pending or approved) */
   wfh?: { id: number; reference: string; status: string; details?: string | null } | null;
   notes?:        string;
 }
@@ -103,6 +104,9 @@ export class AttendanceComponent implements OnInit, OnDestroy {
     { value: 'on_leave', color: '#6366f1' },
     { value: 'holiday',  color: '#8b949e' },
   ];
+
+  /** Log filter only: not a status HR can set on a record. */
+  readonly filterStatusOptions = [...this.statusOptions, { value: 'work_from_home', color: '#8b5cf6' }];
 
   // 0 = Sunday … 6 = Saturday; names rendered with locDate:'EEEE' so they follow the language
   readonly weekDays = [0, 1, 2, 3, 4, 5, 6].map(value => ({ value }));
@@ -511,13 +515,14 @@ this.isAdmin = this.auth.isAdminRole();
     const map: any = {
       present:'#10b981', late:'#f59e0b', absent:'#ef4444',
       half_day:'#fb923c', on_leave:'#6366f1', holiday:'#8b949e',
+      work_from_home:'#8b5cf6',
     };
     return map[status] || '#6b7280';
   }
 
   statusClass(s: string): string {
     return ({ present: 'badge-green', late: 'badge-yellow', absent: 'badge-red',
-              half_day: 'badge-orange', on_leave: 'badge-purple', holiday: 'badge-gray' } as any)[s] ?? 'badge-gray';
+              half_day: 'badge-orange', on_leave: 'badge-purple', work_from_home: 'badge-purple', holiday: 'badge-gray' } as any)[s] ?? 'badge-gray';
   }
 
   /** Determine if a check-in time would be considered late given current settings. */

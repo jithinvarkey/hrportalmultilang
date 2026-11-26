@@ -188,9 +188,10 @@ class RequestActivityVisibilityTest extends TestCase
     public function test_submission_is_logged(): void
     {
         DB::table('employee_requests')->delete();
+        DB::table('request_types')->insert(['id' => 2, 'name' => 'Salary Certificate', 'code' => 'DOC_SALARY', 'category' => 'documents']);
 
         $this->signIn(self::REQUESTER);
-        $response = $this->controller()->store(new Request(['request_type_id' => 1, 'details' => 'One day from home']));
+        $response = $this->controller()->store(new Request(['request_type_id' => 2, 'details' => 'For the bank']));
         $this->assertSame(201, $response->getStatusCode(), $response->getContent());
 
         $entry = RequestComment::sole();

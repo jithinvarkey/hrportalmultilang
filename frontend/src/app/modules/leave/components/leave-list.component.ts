@@ -114,6 +114,7 @@ export class LeaveListComponent implements OnInit {
   statItems: any[] = [];
   excuseUsage: any = null;   // monthly hourly excuse usage
   loadingUsage = false;
+  monthlyUsage: any = null;  // days used this month for types with a monthly day limit (Work From Home)
 
   // Table columns
   displayedColumns = ['employee', 'type', 'dates', 'days', 'reason', 'status', 'actions'];
@@ -351,6 +352,7 @@ export class LeaveListComponent implements OnInit {
       this.annualBalanceToday && this.isAnnualBalance(balance) ? this.annualBalanceToday : balance
     );
     this.formError = '';
+    this.monthlyUsage = null;
     this.selectedFile = null;
     this.fileError = '';
     this.showNewRequest = true;
@@ -402,7 +404,7 @@ export class LeaveListComponent implements OnInit {
       next: () => {
         this.submitting = false; this.showNewRequest = false;
         this.form = { leave_type_id: '', start_date: '', end_date: '', start_time: '08:00', end_time: '09:00', reason: '', employee_id: '', is_half_day: false, half_day_period: 'morning', requires_exit_reentry: false, requires_ticket: false, ticket_dependent_ids: [], destination_country: '' };
-        this.selectedFile = null; this.excuseUsage = null;
+        this.selectedFile = null; this.excuseUsage = null; this.monthlyUsage = null;
         this.load(1); this.loadStats(); this.loadMyBalance(); this.loadAnnualBalanceToday();
       },
       error: err => { this.submitting = false; this.formError = err?.error?.message || this.lang.t('LEAVE.FORM.ERR_SUBMIT'); }
@@ -458,7 +460,7 @@ export class LeaveListComponent implements OnInit {
       this.typeForm = { ...t, carry_forward_all: !!t.carry_forward_all, max_carry_forward: Number(t.max_carry_forward) };
     } else {
       this.typeEditId = null;
-      this.typeForm = { name: '', name_ar: '', code: '', days_allowed: 0, is_paid: true, carry_forward: false, max_carry_forward: 10, carry_forward_all: false, requires_document: false, description: '', skip_manager_approval: false };
+      this.typeForm = { name: '', name_ar: '', code: '', days_allowed: 0, is_paid: true, carry_forward: false, max_carry_forward: 10, carry_forward_all: false, requires_document: false, description: '', skip_manager_approval: false, monthly_days_limit: null };
     }
     this.typeError = '';
     this.showTypeForm = true;
@@ -697,6 +699,11 @@ export class LeaveListComponent implements OnInit {
     return this.selectedType?.is_hourly === true;
   }
 
+  /** Full days only, with no yearly balance: the monthly limit is the only cap. */
+  get isWorkFromHome(): boolean {
+    return String(this.selectedType?.code || '').toUpperCase() === 'WFH';
+  }
+
   get isBusinessExcuse(): boolean {
     return this.isHourlyExcuse;
   }
@@ -747,7 +754,33 @@ export class LeaveListComponent implements OnInit {
     } else {
       this.excuseUsage = null;
     }
+    if (this.isWorkFromHome) this.form.is_half_day = false;
     this.loadMyBalanceForFormDate();
+    this.loadMonthlyUsage();
+  }
+
+  /** Usage for the month of the chosen start date (today's month until a date is picked). */
+  loadMonthlyUsage(): void {
+    const type = this.selectedType;
+    if (!type || type.is_hourly || type.monthly_days_limit == null) {
+      this.monthlyUsage = null;
+      return;
+    }
+    const [year, month] = (this.form.start_date || this.dateInputValue(new Date())).split('-').map(Number);
+    if (this.monthlyUsage?.leave_type_id === type.id && this.monthlyUsage.year === year && this.monthlyUsage.month === month) return;
+    this.http.get<any>('/api/v1/leave/monthly-usage', {
+      params: { leave_type_id: type.id, year, month }
+    }).subscribe({
+      next: r => {
+        if (this.selectedType?.id === type.id) this.monthlyUsage = { ...r, leave_type_id: type.id };
+      },
+      error: () => this.monthlyUsage = null
+    });
+  }
+
+  monthlyUsageLabel(): string {
+    const { year, month } = this.monthlyUsage;
+    return new Date(year, month - 1, 1).toLocaleDateString(this.intlLocale(), { month: 'long', year: 'numeric' });
   }
 
   loadExcuseUsage() {
@@ -875,6 +908,7 @@ export class LeaveListComponent implements OnInit {
   onLeaveStartDateChange(): void {
     if (this.form.is_half_day) this.form.end_date = this.form.start_date;
     if (this.form.requires_ticket) this.loadTicketOptions();
+    this.loadMonthlyUsage();
     this.loadMyBalanceForFormDate();
     this.loadFormHolidays();
   }
@@ -1091,6 +1125,7 @@ export class LeaveListComponent implements OnInit {
     const map: any = {
       'Annual Leave': '#10b981', 'Sick Leave': '#ef4444', 'Emergency': '#f59e0b',
       'Maternity': '#ec4899', 'Paternity': '#3b82f6', 'Unpaid': '#6b7280',
+      'Work From Home': '#8b5cf6',
     };
     return map[name] || '#6366f1';
   }

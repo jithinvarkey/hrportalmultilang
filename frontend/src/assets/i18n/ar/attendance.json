@@ -24,6 +24,7 @@
       "HOURS": "{{n}} س"
     },
     "SOURCES": {
+      "leave": "طلب إجازة",
       "biometric": "جهاز البصمة",
       "manual": "يدوي",
       "mobile": "الجوال",

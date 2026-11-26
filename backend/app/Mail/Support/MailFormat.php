@@ -91,9 +91,15 @@ final class MailFormat
         return self::name($model->{$attribute} ?? '', $model->{$attribute . '_ar'} ?? null);
     }
 
+    /** 4.00 → "4", 0.50 → "0.5" */
+    public static function number($count): string
+    {
+        return rtrim(rtrim(number_format((float) $count, 2, '.', ''), '0'), '.');
+    }
+
     private static function unit(string $unit, float $count): string
     {
-        $formatted = rtrim(rtrim(number_format($count, 2, '.', ''), '0'), '.');
+        $formatted = self::number($count);
 
         if (abs($count - round($count)) < 0.001 && $count >= 1) {
             return trans_choice("mail.units.{$unit}", (int) round($count), ['count' => $formatted]);

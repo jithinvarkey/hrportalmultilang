@@ -210,6 +210,7 @@ class DatabaseSeeder extends Seeder {
             ['name' => 'Maternity Leave', 'code' => 'ML',  'days_allowed' => 90, 'is_paid' => true,  'carry_forward' => false, 'max_carry_forward' => 0],
             ['name' => 'Paternity Leave', 'code' => 'PL',  'days_allowed' => 5,  'is_paid' => true,  'carry_forward' => false, 'max_carry_forward' => 0],
             ['name' => 'Unpaid Leave',    'code' => 'UL',  'days_allowed' => 30, 'is_paid' => false, 'carry_forward' => false, 'max_carry_forward' => 0],
+            ['name' => 'Work From Home',  'code' => 'WFH', 'days_allowed' => 0, 'monthly_days_limit' => 4, 'is_paid' => true, 'carry_forward' => false, 'max_carry_forward' => 0, 'name_ar' => 'العمل عن بُعد'],
             ['name' => 'Emergency Leave', 'code' => 'EML', 'days_allowed' => 3,  'is_paid' => true,  'carry_forward' => false, 'max_carry_forward' => 0],
         ];
         foreach ($leaveTypes as $lt) LeaveType::firstOrCreate(['code' => $lt['code']], $lt);
@@ -322,7 +323,7 @@ class DatabaseSeeder extends Seeder {
             // HR Requests
             ['name'=>'Advance Salary Request',       'code'=>'HR_ADVANCE',   'category'=>'hr',       'icon'=>'monetization_on', 'color'=>'#8b5cf6', 'sla_days'=>5,  'sort_order'=>30, 'requires_manager_approval'=>false, 'instructions'=>'State the advance amount needed and reason.'],
             ['name'=>'Change of Information',        'code'=>'HR_INFO',      'category'=>'hr',       'icon'=>'manage_accounts', 'color'=>'#8b5cf6', 'sla_days'=>3,  'sort_order'=>31, 'instructions'=>'Describe the information that needs to be updated and attach supporting documents.'],
-            ['name'=>'Work From Home Request',       'code'=>'HR_WFH',       'category'=>'hr',       'icon'=>'home_work',       'color'=>'#8b5cf6', 'sla_days'=>2,  'sort_order'=>32, 'requires_manager_approval'=>true, 'instructions'=>'Specify dates and reason for WFH request.'],
+            ['name'=>'Work From Home Request',       'code'=>'HR_WFH',       'category'=>'hr',       'is_active'=>false,       'icon'=>'home_work',       'color'=>'#8b5cf6', 'sla_days'=>2,  'sort_order'=>32, 'requires_manager_approval'=>true, 'instructions'=>'Specify dates and reason for WFH request.'],
             ['name'=>'Training Request',             'code'=>'HR_TRAIN',     'category'=>'hr',       'icon'=>'school',          'color'=>'#8b5cf6', 'sla_days'=>5,  'sort_order'=>33, 'requires_manager_approval'=>false, 'instructions'=>'Provide training name, provider, dates, and how it benefits your role.'],
             // IT
             ['name'=>'IT Equipment Request',         'code'=>'IT_EQUIP',     'category'=>'it',       'icon'=>'computer',        'color'=>'#ef4444', 'sla_days'=>5,  'sort_order'=>40, 'requires_manager_approval'=>false, 'instructions'=>'Specify equipment type, model if preferred, and business justification.'],

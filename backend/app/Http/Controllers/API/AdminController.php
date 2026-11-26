@@ -290,7 +290,7 @@ class AdminController extends Controller
 
         // Leave
         $pendingLeave = LeaveRequest::where('status', 'pending')->count();
-        $onLeaveToday = LeaveRequest::where('status', 'approved')
+        $onLeaveToday = LeaveRequest::excludingWorkFromHome()->where('status', 'approved')
             ->where('start_date', '<=', $today)->where('end_date', '>=', $today)->count();
 
         // Payroll

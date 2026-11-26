@@ -57,6 +57,7 @@
   &.s-half_day   { background:rgba(249,115,22,.12); color:#fb923c; }
   &.s-on_leave   { background:rgba(99,102,241,.12); color:var(--accent2); }
   &.s-holiday    { background:var(--surface2);      color:var(--text3); }
+  &.badge-purple { background:rgba(139,92,246,.14); color:#8b5cf6; }
 }
 .btn-checkin, .btn-checkout {
   display:inline-flex; align-items:center; gap:6px;

@@ -18,9 +18,7 @@
     default => '#f59e0b'
     };
 
-    $statusText = in_array($action, ['submitted', 'manager_approved', 'manager_rejected', 'hr_approved', 'hr_rejected', 'cancelled'], true)
-        ? __('mail_leave.banner.' . $action)
-        : __('mail_leave.banner.default');
+    $statusText = $bannerText;
 
     $displayName = MailFormat::name($recipientName, $recipientNameAr ?? null);
 
@@ -88,21 +86,14 @@
                                     {!! __('mail.greeting', ['name' => '<strong>' . e($displayName) . '</strong>']) !!}
                                 </p>
 
-                                @if(in_array($action, ['submitted', 'manager_approved', 'manager_rejected', 'hr_approved', 'hr_rejected', 'cancelled'], true))
+                                @if($introText)
 
                                 <p style="color:#374151;font-size:14px;line-height:1.6">
-                                    {{ __('mail_leave.intro.' . $action) }}
+                                    {{ $introText }}
                                 </p>
 
                                 @endif
 
-                                @if(!empty($remarks))
-
-                                <p style="margin-top:15px;color:#374151;font-size:14px;">
-                                    <strong>{{ __('mail.labels.remarks') }}:</strong> {{ $remarks }}
-                                </p>
-
-                                @endif
 
 
 
@@ -126,7 +117,7 @@
 
                                     <tr style="background:#f9fafb">
                                         <td style="padding:10px 16px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;font-weight:bold">
-                                            {{ __('mail_leave.labels.leave_type') }}
+                                            {{ $typeLabel }}
                                         </td>
 
                                         <td style="padding:10px 16px;border-top:1px solid #e5e7eb">
@@ -174,13 +165,25 @@
                                         </td>
                                     </tr>
 
+                                    @foreach($monthlyUsage as $usage)
+                                    <tr>
+                                        <td style="padding:10px 16px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;font-weight:bold">
+                                            {{ __('mail_leave.labels.monthly_usage', ['month' => $usage['month']]) }}
+                                        </td>
+
+                                        <td style="padding:10px 16px;border-top:1px solid #e5e7eb;font-weight:600">
+                                            {{ $usage['text'] }}
+                                        </td>
+                                    </tr>
+                                    @endforeach
+
                                 </table>
 
                                 <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0">
                                     <tr>
                                         <td align="center">
                                             <a href="{{ $requestUrl }}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;padding:12px 22px;border-radius:7px">
-                                                {{ __('mail_leave.view_request') }}
+                                                {{ $viewText }}
                                             </a>
                                         </td>
                                     </tr>

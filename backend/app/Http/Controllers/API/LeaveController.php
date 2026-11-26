@@ -235,6 +235,7 @@ class LeaveController extends Controller {
             'skip_manager_approval' => 'boolean',
             'is_hourly' => 'boolean',
             'monthly_hours_limit' => 'nullable|numeric|min:0.5|max:200',
+            'monthly_days_limit' => 'nullable|numeric|min:0.5|max:31',
             'description' => 'nullable|string',
         ]);
         return response()->json(['type' => LeaveType::create($request->all())], 201);
@@ -259,6 +260,7 @@ class LeaveController extends Controller {
             'skip_manager_approval' => 'boolean', // sick leave policy
             'is_hourly' => 'boolean',
             'monthly_hours_limit' => 'nullable|numeric|min:0.5|max:200',
+            'monthly_days_limit' => 'nullable|numeric|min:0.5|max:31',
             'description' => 'nullable|string',
         ]);
         $type->update($request->all());
@@ -564,6 +566,9 @@ class LeaveController extends Controller {
 
         $employee = auth()->user()->employee;
         $isHalfDay = (bool) $request->is_half_day;
+        if ($isHalfDay && $leaveType->isWorkFromHome()) {
+            return response()->json(['message' => __('Work From Home can only be requested for full days.')], 422);
+        }
         $requiresTicket = $leaveType->is_annual ? (bool) $request->requires_ticket : false;
         $ticketYear = (int) date('Y', strtotime($request->start_date));
         $dependentIds = $this->annualTickets->validateSelection(
@@ -602,7 +607,17 @@ class LeaveController extends Controller {
             return response()->json(['message' => __('Selected dates do not contain working days after excluding weekends and holidays.')], 422);
         }
 
-        $allocation = $this->allocationForLeaveDate($employee, $leaveType, Carbon::parse($request->end_date));
+        $monthlyLimitError = $this->service->validateMonthlyDays(
+            $employee->id, $leaveType, $request->start_date, $request->end_date, $isHalfDay
+        );
+        if ($monthlyLimitError) {
+            return response()->json(['message' => $monthlyLimitError], 422);
+        }
+
+        // Work From Home has no yearly balance; only its monthly limit applies.
+        $allocation = $leaveType->isWorkFromHome()
+            ? null
+            : $this->allocationForLeaveDate($employee, $leaveType, Carbon::parse($request->end_date));
         $projected = $allocation && $this->isAnnualLeaveType($leaveType)
             ? $this->projectedAnnualAllocation($allocation, Carbon::parse($request->end_date))
             : null;
@@ -897,6 +912,7 @@ class LeaveController extends Controller {
               |--------------------------------------------------------------------------
              */
             $this->service->notifyEmployee($leave, 'hr_approved');
+            $this->service->notifyManager($leave, 'hr_approved');
 
             return response()->json([
                         'message' => __('Leave fully approved by HR.'),
@@ -965,6 +981,7 @@ class LeaveController extends Controller {
         ]);
         $this->service->updateLeaveBalance($leave, 'cancel');
         $this->service->notifyEmployee($leave, $action,$request->reason);
+        $this->service->notifyManager($leave, $action, $request->reason);
         return response()->json(['message' => __('Leave rejected at :stage stage.', ['stage' => __($stage)])]);
     }
 
@@ -1002,7 +1019,7 @@ class LeaveController extends Controller {
           | Notify HR
           |--------------------------------------------------------------------------
          */
-        $this->service->notifyManager($leave, 'cancelled');
+        $this->service->notifyManager($leave, 'cancelled', $request->input('reason'));
         return response()->json(['message' => __('Leave cancelled')]);
     }
 
@@ -1441,6 +1458,13 @@ class LeaveController extends Controller {
                 return response()->json(['message' => __('Selected dates do not contain working days after excluding weekends and holidays.')], 422);
             }
 
+            $monthlyLimitError = $leave->leaveType
+                ? $this->service->validateMonthlyDays($leave->employee_id, $leave->leaveType, $start, $end, (bool) $leave->is_half_day, $leave->id)
+                : null;
+            if ($monthlyLimitError) {
+                return response()->json(['message' => $monthlyLimitError], 422);
+            }
+
             // Release the old pending reservation, then reserve the recalculated days.
             $this->service->updateLeaveBalance($leave, 'cancel');
             $leave->update(array_merge($changes, ['start_date' => $start, 'end_date' => $end, 'total_days' => $totalDays]));
@@ -1493,7 +1517,7 @@ class LeaveController extends Controller {
 
         $approvedMonth = (clone $baseQ)->where('status', 'approved')
                         ->whereMonth('start_date', now()->month)->whereYear('start_date', now()->year)->count();
-        $onLeaveToday = (clone $baseQ)->where('status', 'approved')
+        $onLeaveToday = (clone $baseQ)->excludingWorkFromHome()->where('status', 'approved')
                         ->where('start_date', '<=', $today)->where('end_date', '>=', $today)->count();
         $cancelledCount = (clone $baseQ)->where('status', 'cancelled')->count();
 
@@ -1983,6 +2007,32 @@ class LeaveController extends Controller {
         }
 
         return response()->json($this->service->monthlyExcuseUsage($empId, $year, $month, $leaveTypeId));
+    }
+
+    /** Days used and left this month for a leave type with a monthly day limit (e.g. Work From Home). */
+    public function monthlyUsage(Request $request) {
+        $data = $request->validate([
+            'leave_type_id' => 'required|exists:leave_types,id',
+            'employee_id' => 'nullable|integer',
+            'year' => 'nullable|integer|min:2000|max:2100',
+            'month' => 'nullable|integer|min:1|max:12',
+        ]);
+
+        $empId = $data['employee_id'] ?? auth()->user()->employee?->id;
+        if (!$empId) {
+            return response()->json(['message' => __('Employee not found')], 404);
+        }
+
+        if (!$this->canAccessEmployeeLeave($empId)) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
+        return response()->json($this->service->monthlyDaysUsage(
+            (int) $empId,
+            LeaveType::findOrFail($data['leave_type_id']),
+            (int) ($data['year'] ?? now()->year),
+            (int) ($data['month'] ?? now()->month)
+        ));
     }
 
     

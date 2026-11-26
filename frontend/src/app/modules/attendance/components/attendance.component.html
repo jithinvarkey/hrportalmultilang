@@ -115,7 +115,7 @@
           <label class="filter-lbl">{{ 'COMMON.STATUS' | translate }}</label>
           <select class="filter-select" formControlName="status">
             <option value="">{{ 'ATTENDANCE.FILTER.ALL_STATUS' | translate }}</option>
-            <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.value | statusLabel }}</option>
+            <option *ngFor="let s of filterStatusOptions" [value]="s.value">{{ s.value | statusLabel }}</option>
           </select>
         </div>
         <div class="filter-group" *ngIf="isHR">
@@ -194,7 +194,7 @@
                 <span class="status-badge" [class]="statusClass(r.status)">{{ r.status | statusLabel }}</span>
                 <span class="wfh-tag" *ngIf="r.wfh" [class.wfh-pending]="r.wfh.status !== 'completed'"
                       [matTooltip]="r.wfh.reference + ' · ' + (wfhStatusKey(r.wfh.status) | translate) + (r.wfh.details ? ' — ' + r.wfh.details : '')">
-                  <mat-icon>home_work</mat-icon>{{ 'ATTENDANCE.TABLE.WFH' | translate }}
+                  <mat-icon>home_work</mat-icon>{{ 'ATTENDANCE.TABLE.WFH' | translate }} · {{ wfhStatusKey(r.wfh.status) | translate }}
                 </span>
               </td>
               <td>
@@ -207,7 +207,7 @@
                   <mat-icon>event_available</mat-icon>
                   {{ 'ATTENDANCE.TABLE.APPLY_LEAVE' | translate }}
                 </button>
-                <button class="icon-btn" *ngIf="isHR" [matTooltip]="'ATTENDANCE.TABLE.EDIT_RECORD' | translate" [attr.aria-label]="'ATTENDANCE.TABLE.EDIT_RECORD' | translate" (click)="openEdit(r)">
+                <button class="icon-btn" *ngIf="isHR && r.id" [matTooltip]="'ATTENDANCE.TABLE.EDIT_RECORD' | translate" [attr.aria-label]="'ATTENDANCE.TABLE.EDIT_RECORD' | translate" (click)="openEdit(r)">
                   <mat-icon>edit</mat-icon>
                 </button>
               </td>

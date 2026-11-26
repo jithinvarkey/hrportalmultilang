@@ -122,6 +122,7 @@ class DashboardController extends Controller
         $rejectedLeave = $safe(fn () => $leaveQuery()->where('status', 'rejected')->count());
         $onLeaveToday  = $safe(fn () => $leaveQuery()
             ->where('status', 'approved')
+            ->whereNotIn('leave_type_id', DB::table('leave_types')->select('id')->where('code', \App\Models\LeaveType::WORK_FROM_HOME_CODE))
             ->where('start_date', '<=', $today)
             ->where('end_date', '>=', $today)->count());
         $approvedMonth = $safe(fn () => $leaveQuery()

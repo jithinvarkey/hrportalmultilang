@@ -74,5 +74,14 @@ class LeaveRequest extends Model {
     public function approver()  { return $this->belongsTo(User::class,'approved_by'); }
     public function managerApprover()  { return $this->belongsTo(User::class,'manager_approved_by'); }
     public function ticketPassengers() { return $this->hasMany(LeaveTicketPassenger::class); }
+    public function scopeWorkFromHome($query) {
+        return $query->whereIn('leave_type_id', LeaveType::query()->select('id')->where('code', LeaveType::WORK_FROM_HOME_CODE));
+    }
+
+    /** Real absences only: Work From Home is recorded as a leave type but the employee is working. */
+    public function scopeExcludingWorkFromHome($query) {
+        return $query->whereNotIn('leave_type_id', LeaveType::query()->select('id')->where('code', LeaveType::WORK_FROM_HOME_CODE));
+    }
+
     public function scopePending($q) { return $q->where('status','pending'); }
 }

@@ -24,6 +24,7 @@
       "HOURS": "{{n}}h"
     },
     "SOURCES": {
+      "leave": "Leave request",
       "biometric": "Biometric",
       "manual": "Manual",
       "mobile": "Mobile",

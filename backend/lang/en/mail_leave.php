@@ -3,12 +3,13 @@
 // Leave emails (leave status workflow, contract-expiry balance reminder, monthly reminder).
 return [
     'subject' => [
-        'submitted'        => 'New Leave Request - :reference',
-        'manager_approved' => 'Leave Request Awaiting HR Approval - :reference',
-        'manager_rejected' => 'Leave Request Rejected By Manager - :reference',
-        'hr_approved'      => 'Leave Request Approved - :reference',
-        'hr_rejected'      => 'Leave Request Rejected By HR - :reference',
-        'cancelled'        => 'Leave Request Cancelled - :reference',
+        'submitted'        => 'New Leave Request',
+        'manager_approved' => 'Leave Request Awaiting HR Approval',
+        'manager_rejected' => 'Leave Request Rejected By Manager',
+        'manager_rejected_by_hr' => 'Leave Request Rejected By HR',
+        'hr_approved'      => 'Leave Request Approved',
+        'hr_rejected'      => 'Leave Request Rejected By HR',
+        'cancelled'        => 'Leave Request Cancelled',
         'default'          => 'Leave Request Notification',
     ],
 
@@ -16,6 +17,8 @@ return [
         'submitted'        => 'Leave Request Submitted',
         'manager_approved' => 'Manager Approval Completed',
         'manager_rejected' => 'Rejected By Manager',
+        'manager_approved_by_hr' => 'First Approval Completed',
+        'manager_rejected_by_hr' => 'Rejected By HR',
         'hr_approved'      => 'Leave Approved',
         'hr_rejected'      => 'Rejected By HR',
         'cancelled'        => 'Leave Cancelled',
@@ -25,16 +28,92 @@ return [
     'intro' => [
         'submitted'        => 'A new leave request has been submitted and requires your review.',
         'manager_approved' => 'The leave request has been approved by the reporting manager and is awaiting HR approval.',
+        'manager_approved_by_hr' => 'HR has given the first approval for the leave request, which is now awaiting final HR approval.',
         'manager_rejected' => 'The leave request has been rejected by the reporting manager.',
-        'hr_approved'      => 'Your leave request has been fully approved by HR.',
-        'hr_rejected'      => 'Your leave request has been rejected by HR.',
+        'manager_rejected_by_hr' => 'The leave request has been rejected by HR.',
+        'hr_approved'      => 'The leave request has been fully approved by HR.',
+        'hr_rejected'      => 'The leave request has been rejected by HR.',
         'cancelled'        => 'The leave request has been cancelled.',
     ],
+
+    // The requester's own copy, where it differs from the approvers' copy.
+    'employee' => [
+        'subject' => [
+            'submitted' => 'Leave Request Submitted',
+        ],
+        'intro' => [
+            'submitted'        => 'Your leave request has been submitted and is awaiting approval.',
+            'manager_approved' => 'Your leave request has been approved by your reporting manager and is awaiting HR approval.',
+            'manager_approved_by_hr' => 'HR has given the first approval for your leave request, which is now awaiting final HR approval.',
+            'manager_rejected' => 'Your leave request has been rejected by your reporting manager.',
+            'manager_rejected_by_hr' => 'Your leave request has been rejected by HR.',
+            'hr_approved'      => 'Your leave request has been fully approved by HR.',
+            'hr_rejected'      => 'Your leave request has been rejected by HR.',
+            'cancelled'        => 'Your leave request has been cancelled.',
+        ],
+    ],
+
+    // Work From Home requests are leave requests in the system but are not called "leave" in emails.
+    'wfh' => [
+        'subject' => [
+            'submitted'        => 'New Work From Home Request',
+            'manager_approved' => 'Work From Home Request Awaiting HR Approval',
+            'manager_rejected' => 'Work From Home Request Rejected By Manager',
+            'manager_rejected_by_hr' => 'Work From Home Request Rejected By HR',
+            'hr_approved'      => 'Work From Home Request Approved',
+            'hr_rejected'      => 'Work From Home Request Rejected By HR',
+            'cancelled'        => 'Work From Home Request Cancelled',
+            'default'          => 'Work From Home Request Notification',
+        ],
+        'banner' => [
+            'submitted'        => 'Work From Home Request Submitted',
+            'manager_approved' => 'Manager Approval Completed',
+            'manager_approved_by_hr' => 'First Approval Completed',
+            'manager_rejected' => 'Rejected By Manager',
+            'manager_rejected_by_hr' => 'Rejected By HR',
+            'hr_approved'      => 'Work From Home Approved',
+            'hr_rejected'      => 'Rejected By HR',
+            'cancelled'        => 'Work From Home Cancelled',
+            'default'          => 'Work From Home Request',
+        ],
+        'intro' => [
+            'submitted'        => 'A new work from home request has been submitted and requires your review.',
+            'manager_approved' => 'The work from home request has been approved by the reporting manager and is awaiting HR approval.',
+            'manager_approved_by_hr' => 'HR has given the first approval for the work from home request, which is now awaiting final HR approval.',
+            'manager_rejected' => 'The work from home request has been rejected by the reporting manager.',
+            'manager_rejected_by_hr' => 'The work from home request has been rejected by HR.',
+            'hr_approved'      => 'The work from home request has been fully approved by HR.',
+            'hr_rejected'      => 'The work from home request has been rejected by HR.',
+            'cancelled'        => 'The work from home request has been cancelled.',
+        ],
+        'employee' => [
+            'subject' => [
+                'submitted' => 'Work From Home Request Submitted',
+            ],
+            'intro' => [
+                'submitted'        => 'Your work from home request has been submitted and is awaiting approval.',
+                'manager_approved' => 'Your work from home request has been approved by your reporting manager and is awaiting HR approval.',
+                'manager_approved_by_hr' => 'HR has given the first approval for your work from home request, which is now awaiting final HR approval.',
+                'manager_rejected' => 'Your work from home request has been rejected by your reporting manager.',
+                'manager_rejected_by_hr' => 'Your work from home request has been rejected by HR.',
+                'hr_approved'      => 'Your work from home request has been fully approved by HR.',
+                'hr_rejected'      => 'Your work from home request has been rejected by HR.',
+                'cancelled'        => 'Your work from home request has been cancelled.',
+            ],
+        ],
+        'labels' => [
+            'leave_type' => 'Request Type',
+        ],
+        'view_request' => 'View Request',
+    ],
+
+    'usage_value' => ':used of :limit (approved and pending)',
 
     'labels' => [
         'leave_type' => 'Leave Type',
         'from_date'  => 'From Date',
         'to_date'    => 'To Date',
+        'monthly_usage' => 'Used in :month',
     ],
 
     'view_request' => 'View Leave Request',

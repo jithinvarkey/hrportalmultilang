@@ -6,6 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 class LeaveType extends Model {
     use HasFactory;
 
+    public const WORK_FROM_HOME_CODE = 'WFH';
+
+    /** A working day away from the office, not an absence: no yearly balance, only the monthly limit. */
+    public function isWorkFromHome(): bool
+    {
+        return strtoupper((string) $this->code) === self::WORK_FROM_HOME_CODE;
+    }
+
     public function isAnnual(): bool
     {
         return (bool) $this->is_annual || strtoupper((string) $this->code) === 'AL'
@@ -24,7 +32,7 @@ class LeaveType extends Model {
         'name','name_ar','code','days_allowed','is_paid','carry_forward',
         'max_carry_forward','carry_forward_all','requires_document','is_active','description',
         'is_hourly','monthly_hours_limit','exempt_department_codes',
-        'skip_manager_approval','is_annual',
+        'skip_manager_approval','is_annual','monthly_days_limit',
     ];
     protected $casts = [
         'is_paid'                  => 'boolean',
@@ -35,6 +43,7 @@ class LeaveType extends Model {
         'skip_manager_approval'    => 'boolean',
         'is_hourly'                => 'boolean',
         'is_annual'                => 'boolean',
+        'monthly_days_limit'       => 'float',
         'exempt_department_codes'  => 'array',
     ];
     public function allocations() { return $this->hasMany(LeaveAllocation::class); }

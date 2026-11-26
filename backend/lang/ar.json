@@ -430,5 +430,8 @@
     "Attendance location saved.": "تم حفظ موقع الحضور.",
     "Attendance location deleted.": "تم حذف موقع الحضور.",
     "Mobile punching enabled for this user.": "تم تفعيل التسجيل عبر الجوال لهذا المستخدم.",
-    "Mobile punching disabled for this user.": "تم إيقاف التسجيل عبر الجوال لهذا المستخدم."
+    "Mobile punching disabled for this user.": "تم إيقاف التسجيل عبر الجوال لهذا المستخدم.",
+    ":type is limited to :limit days per month. Month :month - used: :used, requested: :requested, remaining: :remaining.": "الحد الأقصى لـ :type هو :limit أيام في الشهر. شهر :month - المستخدم: :used، المطلوب: :requested، المتبقي: :remaining.",
+    "Work From Home can only be requested for full days.": "يمكن طلب العمل عن بُعد لأيام كاملة فقط.",
+    "Work From Home is now requested from the Leave page.": "يتم الآن تقديم طلب العمل عن بُعد من صفحة الإجازات."
 }

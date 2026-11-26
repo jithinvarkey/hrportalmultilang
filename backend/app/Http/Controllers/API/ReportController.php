@@ -6,6 +6,7 @@ use App\Models\{Employee, Payslip, Payroll, LeaveRequest, LeaveAllocation, Leave
                 AttendanceLog, Loan, LoanInstallment, Department};
 use App\Services\ExportService;
 use App\Services\Attendance\AttendancePolicyService;
+use App\Services\Attendance\WorkFromHomeLookup;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -156,16 +157,29 @@ class ReportController extends Controller
             ->when($request->department_id, fn($q) =>
                 $q->whereHas('employee', fn($eq) => $eq->where('department_id',$request->department_id))
             )
-            ->when($request->status, fn($q) => $q->where('status',$request->status))
+            ->when($request->status && $request->status !== WorkFromHomeLookup::STATUS, fn($q) => $q->where('status',$request->status))
             ->orderBy('date','desc')->orderBy('employee_id')
             ->get();
 
-        $wfhLookup = app(\App\Services\Attendance\WorkFromHomeLookup::class);
-        $wfh = $rows->isEmpty() ? [] : $wfhLookup->byEmployeeDate(
-            $rows->pluck('employee_id'),
-            $rows->min(fn($l) => Carbon::parse($l->date)->toDateString()),
-            $rows->max(fn($l) => Carbon::parse($l->date)->toDateString())
+        // Applied Work From Home days are listed even when nobody punched on them.
+        $wfhLookup = app(WorkFromHomeLookup::class);
+        $monthStart = $request->month ? Carbon::createFromFormat('!Y-m', $request->month) : null;
+        $from = max(array_filter([$monthStart?->toDateString(), $request->from ? Carbon::parse($request->from)->toDateString() : null]) ?: ['2000-01-01']);
+        $to = min(array_filter([$monthStart?->copy()->endOfMonth()->toDateString(), $request->to ? Carbon::parse($request->to)->toDateString() : null]) ?: [now()->toDateString()]);
+        $wfh = $from > $to ? [] : $wfhLookup->byEmployeeDate(
+            Employee::when($request->department_id, fn($q) => $q->where('department_id', $request->department_id))->pluck('id'),
+            $from,
+            $to
         );
+        $wfhOnly = $request->status === WorkFromHomeLookup::STATUS;
+        if ($wfhOnly) {
+            $rows = $rows->filter(fn($l) => isset($wfh[$l->employee_id . '|' . Carbon::parse($l->date)->toDateString()]));
+        }
+        if (!$request->status || $wfhOnly) {
+            $rows = collect($rows->all())->concat($wfhLookup->rowsWithoutAttendance($wfh))
+                ->sortBy([fn($a, $b) => Carbon::parse($b->date) <=> Carbon::parse($a->date) ?: $a->employee_id <=> $b->employee_id])
+                ->values();
+        }
 
         $rows = $rows->map(fn($l) => [
                 'code'       => $l->employee?->employee_code,

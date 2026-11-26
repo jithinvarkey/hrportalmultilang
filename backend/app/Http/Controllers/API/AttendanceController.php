@@ -6,13 +6,16 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceLog;
+use App\Models\Employee;
 use App\Models\LeaveRequest;
 use App\Services\Attendance\AttendanceGeofenceService;
 use App\Services\Attendance\AttendancePolicyService;
 use App\Services\Attendance\MonthlyAttendanceReportService;
+use App\Services\Attendance\WorkFromHomeLookup;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * Handles attendance: check-in, check-out, daily status, reports, and dashboard.
@@ -212,7 +215,31 @@ class AttendanceController extends Controller
         $departmentId = $user->employee?->department_id;
         $scope = $request->input('scope');
 
-        $data = AttendanceLog::with('employee.department')
+        // Work From Home days (leave requests, plus the older HR_WFH requests) of the employees this user may see.
+        // Days nobody punched on have no attendance record, so they are listed as rows of their own.
+        // Future days are only listed when the chosen period includes them.
+        $wfhLookup = app(WorkFromHomeLookup::class);
+        $wfhOnly = $request->status === WorkFromHomeLookup::STATUS;
+        $wfhEmployeeIds = Employee::query()
+            ->when(!$isHR && !$isMgr, fn ($q) => $q->whereKey($employeeId ?? 0))
+            ->when($isMgr && !$isHR && $scope === 'mine', fn ($q) => $q->whereKey($employeeId ?? 0))
+            ->when($isMgr && !$isHR && $scope !== 'mine', fn ($q) =>
+                $q->where(fn ($team) => $team
+                        ->where('department_id', $departmentId)
+                        ->when($employeeId, fn ($direct) => $direct->orWhere('manager_id', $employeeId)))
+                  ->when($employeeId, fn ($team) => $team->whereKeyNot($employeeId))
+            )
+            ->when($request->department_id, fn ($q) => $q->where('department_id', $request->department_id))
+            ->when($request->employee_id, fn ($q) => $q->whereKey($request->employee_id))
+            ->pluck('id');
+        $wfh = $wfhLookup->byEmployeeDate(
+            $wfhEmployeeIds,
+            $request->date_from ? Carbon::parse($request->date_from)->toDateString() : '2000-01-01',
+            $request->date_to ? Carbon::parse($request->date_to)->toDateString() : now()->toDateString()
+        );
+        $wfhRows = !$request->status || $wfhOnly ? $wfhLookup->rowsWithoutAttendance($wfh) : collect();
+
+        $query = AttendanceLog::with('employee.department')
             ->select('attendance_logs.*')
             ->addSelect([
                 'has_active_leave' => LeaveRequest::query()
@@ -243,25 +270,22 @@ class AttendanceController extends Controller
             )
             ->when($request->date_from, fn ($q) => $q->whereDate('date', '>=', $request->date_from))
             ->when($request->date_to,   fn ($q) => $q->whereDate('date', '<=', $request->date_to))
-            ->when($request->status,    fn ($q) => $q->where('status', $request->status))
+            ->when($request->status && !$wfhOnly, fn ($q) => $q->where('status', $request->status))
+            ->when($wfhOnly, fn ($q) => $q->where(function ($days) use ($wfh) {
+                $days->whereRaw('1 = 0');
+                collect(array_keys($wfh))->map(fn (string $key) => explode('|', $key))->groupBy(0)
+                    ->each(fn ($keys, $id) => $days->orWhere(fn ($own) => $own
+                        ->where('employee_id', $id)
+                        ->whereIn(\DB::raw('DATE(date)'), $keys->pluck(1)->all())));
+            }))
             ->when($request->employee_id, fn ($q) => $q->where('employee_id', $request->employee_id))
             ->orderBy('date', 'desc')
-            ->orderBy('id', 'desc')
-            ->paginate($perPage);
+            ->orderBy('id', 'desc');
 
-        // Work From Home requests for these days (matched by the request's "Needed By" date)
-        $rows = $data->getCollection();
-        $wfh = $rows->isEmpty() ? [] : app(\App\Services\Attendance\WorkFromHomeLookup::class)->byEmployeeDate(
-            $rows->pluck('employee_id'),
-            $rows->min(fn($l) => \Carbon\Carbon::parse($l->date)->toDateString()),
-            $rows->max(fn($l) => \Carbon\Carbon::parse($l->date)->toDateString())
-        );
+        $data = $this->paginateWithExtraRows($query, $wfhRows, $perPage);
 
         $data->getCollection()->each(function (AttendanceLog $log) use ($wfh): void {
-            $wfhRequest = $wfh[$log->employee_id . '|' . \Carbon\Carbon::parse($log->date)->toDateString()] ?? null;
-            $log->setAttribute('wfh', $wfhRequest
-                ? app(\App\Services\Attendance\WorkFromHomeLookup::class)->toArray($wfhRequest)
-                : null);
+            $log->setAttribute('wfh', $wfh[$log->employee_id . '|' . \Carbon\Carbon::parse($log->date)->toDateString()] ?? null);
             $log->status = $this->attendancePolicy->statusForReport(
                 $log->check_in ? (string) $log->check_in : null,
                 (string) $log->status,
@@ -270,6 +294,39 @@ class AttendanceController extends Controller
         });
 
         return response()->json($data);
+    }
+
+    /**
+     * Paginates the attendance records with rows that are not in the table, newest day first
+     * (on the same day the records come first). Only the current page's records are loaded.
+     */
+    private function paginateWithExtraRows($query, \Illuminate\Support\Collection $extra, int $perPage): LengthAwarePaginator
+    {
+        if ($extra->isEmpty()) {
+            return $query->paginate($perPage);
+        }
+
+        $day = fn ($row) => Carbon::parse($row->date)->toDateString();
+        $perDay = (clone $query)->reorder()->setEagerLoads([])->toBase()
+            ->select([\DB::raw('DATE(date) as day'), \DB::raw('COUNT(*) as total')])
+            ->groupBy(\DB::raw('DATE(date)'))
+            ->pluck('total', 'day');
+
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $offset = ($page - 1) * $perPage;
+        $positions = $extra->map(fn ($row, $i) => $i
+            + $perDay->filter(fn ($count, $date) => $date >= $day($row))->sum());
+
+        $before = $positions->filter(fn ($p) => $p < $offset)->count();
+        $onPage = $extra->filter(fn ($row, $i) => $positions[$i] >= $offset && $positions[$i] < $offset + $perPage);
+        $logs = (clone $query)->skip($offset - $before)->take($perPage - $onPage->count())->get();
+
+        // Stable sort: records stay ahead of the extra rows of the same day.
+        $rows = collect($logs->all())->concat($onPage->values())->sortByDesc($day)->values();
+
+        return new LengthAwarePaginator($rows, $perDay->sum() + $extra->count(), $perPage, $page, [
+            'path' => LengthAwarePaginator::resolveCurrentPath(),
+        ]);
     }
 
     /**

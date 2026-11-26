@@ -254,6 +254,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/calendar',                [LeaveController::class, 'calendar']);
             Route::get('/stats',                   [LeaveController::class, 'stats']);
             Route::get('/excuse-usage',            [LeaveController::class, 'excuseUsage']);
+            Route::get('/monthly-usage',           [LeaveController::class, 'monthlyUsage']);
 
         // Department excuse limits (admin)
         Route::prefix('excuse-limits')->group(function () {

@@ -106,7 +106,7 @@ export class ReportsComponent implements OnInit {
 
   readonly EMP_STATUSES    = ['active','inactive','probation','on_leave','terminated'];
   readonly LEAVE_STATUSES  = ['pending','approved','rejected','cancelled'];
-  readonly ATT_STATUSES    = ['present','absent','late','holiday','off'];
+  readonly ATT_STATUSES    = ['present','absent','late','holiday','off','work_from_home'];
   readonly LOAN_STATUSES   = ['pending','active','settled','rejected'];
 
   constructor(private http: HttpClient, private lang: LanguageService) {}

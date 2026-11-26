@@ -54,6 +54,7 @@ return [
     'offer'             => 'Offer',
     'on_hold'           => 'On Hold',
     'on_leave'          => 'On Leave',
+    'work_from_home'    => 'Work From Home',
     'on_track'          => 'On Track',
     'open'              => 'Open',
     'overdue'           => 'Overdue',

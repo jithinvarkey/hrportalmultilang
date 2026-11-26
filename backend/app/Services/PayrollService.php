@@ -401,6 +401,7 @@ class PayrollService
     protected function getApprovedLeaveDays(int $empId, string $from, string $to): int
     {
         return \App\Models\LeaveRequest::where('employee_id', $empId)
+            ->excludingWorkFromHome()
             ->where('status', 'approved')
             ->where(function($q) use ($from, $to) {
                 $q->whereBetween('start_date', [$from, $to])
