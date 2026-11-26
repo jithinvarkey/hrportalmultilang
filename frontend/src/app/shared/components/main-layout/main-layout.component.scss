@@ -65,6 +65,9 @@
   padding:8px 8px 10px;
   display:flex; flex-direction:column; gap:1px;
 }
+/* Never let flex squash nav rows when the list is taller than the drawer
+   (overflow:hidden lets them shrink to 0 and clips the section labels). */
+.nav-list > * { flex-shrink:0; }
 .nav-section-label {
   font-size:10px; font-weight:700; color:var(--text3);
   text-transform:uppercase; letter-spacing:.12em;
@@ -77,7 +80,10 @@
   text-decoration:none; color:var(--text3);
   font-size:13px; font-weight:500;
   font-family:'Inter', sans-serif;
-  transition:all .14s; white-space:nowrap; overflow:hidden;
+  /* Explicit properties only: `transition:all` also animates the inherited
+     `visibility` of the mobile drawer, and iOS WebKit then fails to repaint
+     the links for several seconds after the drawer opens. */
+  transition:background-color .14s, color .14s; white-space:nowrap; overflow:hidden;
   &:hover { background:var(--surface2); color:var(--text); }
   &.nav-active {
     background:var(--active-nav-bg);
@@ -319,10 +325,15 @@
     position:fixed; inset-block:0; inset-inline-start:0; z-index:1000;
     width:min(284px, 86vw); height:100dvh;
     transform:translateX(-105%); visibility:hidden;
-    transition:transform .25s cubic-bezier(.4,0,.2,1), visibility .25s;
+    /* hide only after the slide-out finishes */
+    transition:transform .25s cubic-bezier(.4,0,.2,1), visibility 0s linear .25s;
     box-shadow:none;
   }
-  &.mobile-nav-open .sidebar { transform:translateX(0); visibility:visible; box-shadow:8px 0 32px rgba(0,0,0,.35); }
+  &.mobile-nav-open .sidebar {
+    transform:translateX(0); visibility:visible; box-shadow:8px 0 32px rgba(0,0,0,.35);
+    /* become visible immediately when opening */
+    transition:transform .25s cubic-bezier(.4,0,.2,1), visibility 0s;
+  }
 
   .nav-link { padding:11px 12px; font-size:14px; }
   .main-content {
