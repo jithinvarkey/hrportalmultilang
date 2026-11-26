@@ -173,17 +173,17 @@ class ProfileController extends Controller
             return response()->json(['message' => __('No employee record linked to this account.')], 404);
         }
 
-        // Delete old avatar
-        if ($employee->avatar && Storage::disk('public')->exists($employee->avatar)) {
-            Storage::disk('public')->delete($employee->avatar);
+        // Delete old avatar (private disk, or the public disk for photos uploaded before the move)
+        if ($employee->avatar) {
+            \App\Support\PrivateUploads::delete($employee->avatar);
         }
 
-        $path = $request->file('avatar')->store('avatars', 'public');
+        $path = $request->file('avatar')->store('avatars', \App\Support\PrivateUploads::DISK);
         $employee->update(['avatar' => $path]);
 
         return response()->json([
             'message'    => __('Avatar updated successfully.'),
-            'avatar_url' => asset('storage/' . $path),
+            'avatar_url' => $employee->avatar_url,
         ]);
     }
 

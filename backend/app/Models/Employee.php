@@ -13,7 +13,8 @@ class Employee extends Model
 
     public function getActivitylogOptions(): LogOptions
     {
-        return LogOptions::defaults()->logOnly(['first_name','last_name','email','status','department_id','salary'])->logOnlyDirty();
+        // No salary here: the activity log is not restricted to payroll roles.
+        return LogOptions::defaults()->logOnly(['first_name','last_name','email','status','department_id'])->logOnlyDirty();
     }
 
     protected $fillable = [
@@ -38,6 +39,29 @@ class Employee extends Model
         'salary','housing_allowance','transport_allowance','other_allowances',
         'mobile_allowance','food_allowance','bank_name','bank_account',
     ];
+
+    /** Roles that may see pay and banking fields of other employees. */
+    public const PAY_VIEWER_ROLES = ['super_admin', 'ceo', 'hr_manager', 'finance_manager'];
+
+    /**
+     * Pay and banking fields are hidden from every API response unless the signed-in user is a
+     * payroll-level role or the employee themself. This applies wherever an employee is serialized
+     * (leave, requests, attendance, performance...), so a line manager never receives a report's salary.
+     * Code without a signed-in user (queues, console, PDF and mail rendering) is not affected.
+     */
+    public function getHidden()
+    {
+        $hidden = parent::getHidden();
+
+        $viewer = auth()->user();
+        if (($viewer === null && app()->runningInConsole())
+            || ($viewer !== null && (int) $this->user_id === (int) $viewer->getAuthIdentifier())
+            || ($viewer !== null && method_exists($viewer, 'hasAnyRole') && $viewer->hasAnyRole(self::PAY_VIEWER_ROLES))) {
+            return $hidden;
+        }
+
+        return array_values(array_unique(array_merge($hidden, self::PAY_FIELDS)));
+    }
 
     /** Recursively drop pay/bank/ID fields from serialized data (org-structure endpoints). */
     public static function stripPayFields(array $data): array
@@ -80,7 +104,11 @@ class Employee extends Model
 
     public function getAvatarUrlAttribute(): ?string
     {
-        return $this->avatar ? asset('storage/' . $this->avatar) : null;
+        // Profile photos are private: served by an authenticated API endpoint, never from /storage.
+        // Relative, like every API call of the SPA; ?v= changes when the photo changes (browser cache).
+        return $this->avatar
+            ? '/api/v1/employees/' . $this->id . '/avatar?v=' . substr(md5((string) $this->avatar), 0, 8)
+            : null;
     }
 
     public function user()          { return $this->belongsTo(User::class); }

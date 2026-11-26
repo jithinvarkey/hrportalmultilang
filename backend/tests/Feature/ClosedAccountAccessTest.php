@@ -118,7 +118,7 @@ class ClosedAccountAccessTest extends TestCase
 
         $this->postJson('/api/v1/auth/forgot-password', ['email' => 'person@hrms.test'])
             ->assertOk()
-            ->assertJsonMissingPath('challenge_token')
+            ->assertJsonPath('otp_required', true) // same shape as a real account: nothing to probe
             ->assertJsonPath('message', 'If an account exists for that email, an OTP has been sent.');
 
         $this->assertSame(0, LoginOtp::count());

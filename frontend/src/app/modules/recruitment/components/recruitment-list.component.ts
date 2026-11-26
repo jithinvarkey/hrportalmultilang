@@ -10,6 +10,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { ProtectedFileService } from '../../../core/services/protected-file.service';
 import { humanize } from '../../../shared/pipes/i18n.pipes';
 
 @Component({
@@ -168,7 +169,16 @@ export class RecruitmentListComponent implements OnInit, OnDestroy {
     private readonly auth: AuthService,
     private readonly cdr: ChangeDetectorRef,
     private readonly lang: LanguageService,
+    private readonly files: ProtectedFileService,
   ) {}
+
+  /** CVs are private: fetch through the authorized API (Bearer token), not /storage. */
+  openCvFile(application: { id: number }): void {
+    this.files.open(`${this.api}/applications/${application.id}/cv`, () => {
+      this.errorMsg = this.lang.t('MESSAGES.GENERIC_ERROR');
+      this.cdr.markForCheck();
+    });
+  }
 
   ngOnInit(): void {
     const user = this.auth.getUser();

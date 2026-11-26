@@ -150,8 +150,9 @@ class LeaveApiTest extends TestCase
         $this->actingAs($this->employee, 'sanctum')
             ->postJson('/api/v1/leave/requests', [
                 'leave_type_id' => $this->sickLeave->id,
-                'start_date'    => now()->addDay()->toDateString(),
-                'end_date'      => now()->addDays(2)->toDateString(),
+                // Next Monday-Tuesday: always working days (tomorrow can fall on the Fri-Sat weekend).
+                'start_date'    => now()->next(\Carbon\Carbon::MONDAY)->toDateString(),
+                'end_date'      => now()->next(\Carbon\Carbon::MONDAY)->addDay()->toDateString(),
                 'reason'        => 'Medical appointment confirmed by doctor',
             ])
             ->assertCreated()

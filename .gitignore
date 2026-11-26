@@ -41,3 +41,9 @@ outputs/itasset-unmatched-users-20260818/itasset_unmatched_users.xlsx.inspect.nd
 outputs/itasset-unmatched-users-20260818/itasset_unmatched_users.xlsx
 outputs/itasset-unmatched-users-20260818/Affected_Assets.png
 docs/ITASSET_MIGRATION.md
+
+# Data exports and database dumps must never be committed (personal data)
+backups/
+outputs/
+*.sql
+*.sql.gz

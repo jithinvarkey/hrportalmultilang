@@ -16,6 +16,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -224,10 +225,15 @@ class AuthController extends Controller
             ->whereRaw('LOWER(email) = ?', [strtolower((string) $request->input('email'))])
             ->first();
 
-        // Closed accounts get the same answer as unknown emails (no OTP is sent, nothing to probe).
+        // Unknown emails and closed accounts get a response of exactly the same shape, with a decoy
+        // challenge token that no OTP will ever match, so this endpoint cannot be used to find accounts.
+        $genericMessage = __('If an account exists for that email, an OTP has been sent.');
         if (!$user || $user->hasClosedEmployment()) {
             return response()->json([
-                'message' => __('If an account exists for that email, an OTP has been sent.'),
+                'otp_required' => true,
+                'challenge_token' => Str::random(64),
+                'expires_in' => OtpService::EXPIRES_IN_MINUTES * 60,
+                'message' => $genericMessage,
             ]);
         }
 
@@ -237,7 +243,7 @@ class AuthController extends Controller
             'otp_required' => true,
             'challenge_token' => $challenge->challenge_token,
             'expires_in' => $this->otpService->expiresInSeconds($challenge),
-            'message' => $this->hasMobileNumber($user) ? __('OTP sent to your email and mobile number.') : __('OTP sent to your email.'),
+            'message' => $genericMessage,
         ]);
     }
 

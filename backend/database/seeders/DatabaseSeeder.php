@@ -3,6 +3,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\Department;
 use App\Models\LoanType;
@@ -231,13 +232,26 @@ class DatabaseSeeder extends Seeder {
         $hrDesig = Designation::where('title','HR Manager')->first();
         $hrDept  = Department::where('code','HR')->first();
 
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@hrms.com'],
-            [
+        // The first admin password comes from ADMIN_INITIAL_PASSWORD, or is generated and printed once.
+        // Never hardcode it: the seeder also runs on production servers. An existing admin is left as is.
+        $adminEmail = env('ADMIN_INITIAL_EMAIL', 'admin@hrms.com');
+        $admin = User::where('email', $adminEmail)->first();
+        if (!$admin) {
+            $initialPassword = (string) env('ADMIN_INITIAL_PASSWORD', '');
+            $generated = $initialPassword === '';
+            if ($generated) {
+                $initialPassword = Str::password(20);
+            }
+            $admin = User::create([
                 'name'     => 'System Admin',
-                'password' => Hash::make('Admin@1234'),
-            ]
-        );
+                'email'    => $adminEmail,
+                'password' => Hash::make($initialPassword),
+            ]);
+            if ($generated) {
+                $this->command?->warn("Created {$adminEmail} with a generated password (shown once): {$initialPassword}");
+                $this->command?->warn('Sign in and change it immediately.');
+            }
+        }
         $admin->assignRole('super_admin');
 
         Employee::updateOrCreate(

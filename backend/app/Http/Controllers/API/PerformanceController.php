@@ -317,6 +317,12 @@ class PerformanceController extends Controller
             return $this->forbidden();
         }
         $kpi = Kpi::findOrFail($id);
+        $request->validate([
+            'title'    => 'sometimes|required|string|max:200',
+            'category' => 'sometimes|required|string',
+            'year'     => 'sometimes|required|integer|min:2020|max:2099',
+            'weight'   => 'sometimes|nullable|numeric|min:0|max:100',
+        ]);
         $kpi->update($request->all());
         return response()->json(['kpi' => $kpi->fresh()]);
     }

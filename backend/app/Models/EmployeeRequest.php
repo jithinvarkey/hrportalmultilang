@@ -1,7 +1,6 @@
 <?php
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class EmployeeRequest extends Model {
     protected $table = 'employee_requests';
@@ -43,6 +42,6 @@ class EmployeeRequest extends Model {
 
     public function getHasCompletionFileAttribute(): bool
     {
-        return (bool) $this->completion_file && Storage::disk('public')->exists($this->completion_file);
+        return (bool) $this->completion_file && \App\Support\PrivateUploads::exists($this->completion_file);
     }
 }

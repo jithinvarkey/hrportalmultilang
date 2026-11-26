@@ -11,7 +11,7 @@ use App\Services\ContractRenewalNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Support\PrivateUploads;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -229,7 +229,7 @@ class ContractRenewalController extends Controller {
         if ($request->hasFile('document')) {
             $file = $request->file('document');
             $docData = [
-                'document_path' => $file->store('contracts/renewals', 'public'),
+                'document_path' => $file->store('contracts/renewals', PrivateUploads::DISK),
                 'document_name' => $file->getClientOriginalName(),
                 'document_mime' => $file->getMimeType(),
                 'document_size' => $file->getSize(),
@@ -308,6 +308,12 @@ class ContractRenewalController extends Controller {
         $user = auth()->user();
 
         $notes = $request->notes ?? null;
+
+        // HR may not approve the manager or HR stage of their own contract renewal.
+        $isOwnRenewal = $user->employee && (int) $renewal->employee_id === (int) $user->employee->id;
+        if ($isOwnRenewal && in_array($renewal->status, ['pending', 'manager_approved'], true)) {
+            return response()->json(['message' => __('You cannot approve your own renewal request.')], 403);
+        }
 
         switch ($renewal->status) {
             case 'pending':
@@ -441,7 +447,7 @@ class ContractRenewalController extends Controller {
 
     /**
      * Upload (or replace) the supporting document for a renewal request.
-     * Accepts PDF/DOC/DOCX up to 10 MB, stored on the public disk.
+     * Accepts PDF/DOC/DOCX up to 10 MB, stored on the private local disk.
      *
      * @param  Request      $request
      * @param  int          $id
@@ -460,12 +466,12 @@ class ContractRenewalController extends Controller {
         }
 
         if ($renewal->document_path) {
-            Storage::disk('public')->delete($renewal->document_path);
+            PrivateUploads::delete($renewal->document_path);
         }
 
         $file = $request->file('document');
         $renewal->update([
-            'document_path' => $file->store('contracts/renewals', 'public'),
+            'document_path' => $file->store('contracts/renewals', PrivateUploads::DISK),
             'document_name' => $file->getClientOriginalName(),
             'document_mime' => $file->getMimeType(),
             'document_size' => $file->getSize(),
@@ -490,11 +496,11 @@ class ContractRenewalController extends Controller {
             return response()->json(['message' => __('Unauthorized.')], 403);
         }
 
-        if (!$renewal->document_path || !Storage::disk('public')->exists($renewal->document_path)) {
+        if (!PrivateUploads::exists($renewal->document_path)) {
             return response()->json(['message' => __('No document attached to this renewal request.')], 404);
         }
 
-        return Storage::disk('public')->download(
+        return PrivateUploads::download(
                         $renewal->document_path,
                         $renewal->document_name ?: "{$renewal->reference}.pdf"
         );
@@ -514,7 +520,7 @@ class ContractRenewalController extends Controller {
         }
 
         if ($renewal->document_path) {
-            Storage::disk('public')->delete($renewal->document_path);
+            PrivateUploads::delete($renewal->document_path);
             $renewal->update([
                 'document_path' => null,
                 'document_name' => null,
@@ -554,7 +560,7 @@ class ContractRenewalController extends Controller {
         'name' => $r->document_name,
         'mime' => $r->document_mime,
         'size' => $r->document_size,
-        'url' => Storage::disk('public')->url($r->document_path),
+        'url' => url("/api/v1/contracts/renewals/{$r->id}/document"),
             ] : null,
             'employee' => $r->employee ? [
         'id' => $r->employee->id,

@@ -438,13 +438,12 @@ class LegacyMigrationService
                 'name' => trim($row['first_name'] . ' ' . $row['last_name']),
                 'password' => $legacyPasswordMd5
                     ? Hash::make(Str::random(40))
-                    : Hash::make(($row['password'] ?? '') ?: 'Password@123'),
+                    : Hash::make(($row['password'] ?? '') ?: Str::password(20)),
                 'legacy_password_md5' => $legacyPasswordMd5,
             ]
         );
-        if ($legacyPasswordMd5 && !$user->legacy_password_md5) {
-            $user->forceFill(['legacy_password_md5' => $legacyPasswordMd5])->save();
-        }
+        // Credentials are only set when the import creates the account. An existing login is never
+        // given a legacy password, otherwise an import file could set a known password on any account.
         if (!$user->hasRole('employee')) {
             $user->assignRole('employee');
         }
@@ -797,9 +796,21 @@ class LegacyMigrationService
             return null;
         }
 
-        $resolved = realpath($folder);
+        $root = realpath((string) config('legacy_migration.source_root'));
+        if (!$root || !is_dir($root)) {
+            throw new \InvalidArgumentException(__('The legacy import folder is not set up on the server. Create it and copy the documents there: :path', ['path' => (string) config('legacy_migration.source_root')]));
+        }
+
+        // Accept a path relative to the import root, or an absolute path inside it.
+        $isAbsolute = (bool) preg_match('/^(?:[A-Za-z]:|[\\\\\/])/', $folder);
+        $resolved = realpath($isAbsolute ? $folder : $root . DIRECTORY_SEPARATOR . $folder);
         if (!$resolved || !is_dir($resolved) || !is_readable($resolved) || !is_writable($resolved)) {
             throw new \InvalidArgumentException(__('Source document folder does not exist or is not readable and writable by the server.'));
+        }
+        $rootPrefix = strtolower(rtrim($root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR);
+        if (strtolower($resolved) !== strtolower(rtrim($root, DIRECTORY_SEPARATOR))
+            && !str_starts_with(strtolower($resolved) . DIRECTORY_SEPARATOR, $rootPrefix)) {
+            throw new \InvalidArgumentException(__('Source document folder must be inside the legacy import folder: :path', ['path' => $root]));
         }
         return rtrim($resolved, DIRECTORY_SEPARATOR);
     }
@@ -815,7 +826,8 @@ class LegacyMigrationService
         }
         $resolved = realpath($this->documentSourceFolder . DIRECTORY_SEPARATOR . $relativeName);
         $root = strtolower($this->documentSourceFolder . DIRECTORY_SEPARATOR);
-        if (!$resolved || !is_file($resolved) || !str_starts_with(strtolower($resolved), $root)) {
+        if (!$resolved || !is_file($resolved) || !str_starts_with(strtolower($resolved), $root)
+            || str_starts_with(basename($resolved), '.')) {
             throw new \InvalidArgumentException(__('Source document not found inside the selected folder: :file', ['file' => $relativeName]));
         }
         return $resolved;

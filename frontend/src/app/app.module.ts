@@ -1,4 +1,4 @@
-import { APP_INITIALIZER, NgModule } from '@angular/core';
+import { APP_INITIALIZER, NgModule, isDevMode } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localeArSa from '@angular/common/locales/ar-SA';
 import { BrowserModule } from '@angular/platform-browser';
@@ -8,7 +8,7 @@ import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { BidiModule } from '@angular/cdk/bidi';
 import { StoreModule } from '@ngrx/store';
 import { EffectsModule } from '@ngrx/effects';
-import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { ToastrModule } from 'ngx-toastr';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 
@@ -43,13 +43,16 @@ export function initLanguage(lang: LanguageService) {
     }),
     StoreModule.forRoot({}),
     EffectsModule.forRoot([]),
-    StoreDevtoolsModule.instrument({ maxAge: 25 }),
     ToastrModule.forRoot({ positionClass: 'toast-top-right', timeOut: 3000 })
   ],
   providers: [
     // AuthInterceptor and HttpActivityInterceptor are provided by CoreModule.
     { provide: HTTP_INTERCEPTORS, useClass: LanguageInterceptor, multi: true },
     { provide: APP_INITIALIZER, useFactory: initLanguage, deps: [LanguageService], multi: true },
+    // NgRx devtools in development only: in production they would expose the signed-in user and
+    // token state to the browser extension. Providers (unlike imports) may be conditional.
+    // (angular.json has no environment file replacement, so isDevMode() is the reliable switch.)
+    ...(isDevMode() ? [provideStoreDevtools({ maxAge: 25 })] : []),
   ],
   bootstrap: [AppComponent]
 })

@@ -294,7 +294,7 @@
           <div class="cv-card-footer">
             <div class="cv-date">{{ (cv.cv_path ? 'RECRUITMENT.CV.CV_UPLOADED' : 'RECRUITMENT.CV.NO_FILE') | translate }} - {{ cv.created_at | locDate:'dd MMM yyyy' }}</div>
             <div class="cv-actions" (click)="$event.stopPropagation()">
-              <a *ngIf="cv.cv_path" [href]="'/storage/'+cv.cv_path" target="_blank"
+              <a *ngIf="cv.cv_path" href="#" (click)="$event.preventDefault(); openCvFile(cv)"
                  class="cv-action-btn" [matTooltip]="'RECRUITMENT.CV.VIEW_CV' | translate" [attr.aria-label]="'RECRUITMENT.CV.VIEW_CV' | translate">
                 <mat-icon>description</mat-icon>
               </a>
@@ -391,7 +391,7 @@
       </div>
       <div class="detail-section" *ngIf="selectedApp.cv_path">
         <div class="ds-title">{{ 'RECRUITMENT.DETAIL.CV_RESUME' | translate }}</div>
-        <a class="doc-link" [href]="'/storage/' + selectedApp.cv_path" target="_blank">
+        <a class="doc-link" href="#" (click)="$event.preventDefault(); openCvFile(selectedApp)">
           <mat-icon class="flip-rtl">open_in_new</mat-icon> {{ 'RECRUITMENT.CV.VIEW_CV' | translate }}
         </a>
       </div>
@@ -620,7 +620,7 @@
           <div class="cv-card-footer">
             <div class="cv-date">{{ (cv.cv_path ? 'RECRUITMENT.CV.CV_UPLOADED' : 'RECRUITMENT.CV.NO_FILE') | translate }} - {{ cv.created_at | locDate:'dd MMM yyyy' }}</div>
             <div class="cv-actions" (click)="$event.stopPropagation()">
-              <a *ngIf="cv.cv_path" [href]="'/storage/'+cv.cv_path" target="_blank"
+              <a *ngIf="cv.cv_path" href="#" (click)="$event.preventDefault(); openCvFile(cv)"
                  class="cv-action-btn" [matTooltip]="'RECRUITMENT.CV.VIEW_CV' | translate">
                 <mat-icon>description</mat-icon>
               </a>

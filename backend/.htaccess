@@ -1,0 +1,12 @@
+# This folder is deployed inside the web server's document root (e.g. D:/Xampp_82/htdocs/HRSystemApi).
+# Only public/ may be served. Everything else (.env, storage/ with private HR documents and logs,
+# vendor/, config/, database backups) must never be downloadable, whatever the folder is called.
+# public/.htaccess has its own RewriteEngine, so these rules do not apply to requests inside public/.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(?!public(?:/|$)) - [F,L]
+</IfModule>
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>
+Options -Indexes

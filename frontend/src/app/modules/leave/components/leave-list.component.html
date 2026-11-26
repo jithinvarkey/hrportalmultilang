@@ -773,9 +773,8 @@
         <div class="detail-row" *ngIf="selectedRequest.document_path">
           <div class="detail-lbl"><mat-icon>attach_file</mat-icon> {{ 'COMMON.ATTACHMENT' | translate }}</div>
           <div class="detail-val">
-            <a class="doc-link"
-               [href]="'/storage/' + selectedRequest.document_path"
-               target="_blank" rel="noopener">
+            <a class="doc-link" href="#"
+               (click)="$event.preventDefault(); viewLeaveDocument(selectedRequest)">
               <mat-icon>open_in_new</mat-icon> {{ 'LEAVE.DETAIL.VIEW_DOCUMENT' | translate }}
             </a>
           </div>

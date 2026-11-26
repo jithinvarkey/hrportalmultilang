@@ -25,6 +25,7 @@ class User extends Authenticatable implements HasLocalePreference
         'password'          => 'hashed',
         'otp_exempt'         => 'boolean',
         'mobile_punch_enabled' => 'boolean',
+        'is_active'         => 'boolean',
     ];
 
     /**
@@ -70,6 +71,11 @@ class User extends Authenticatable implements HasLocalePreference
      */
     public function hasClosedEmployment(): bool
     {
+        // An administrator disabled this login account (AdminController::toggleUserStatus).
+        if ($this->is_active === false) {
+            return true;
+        }
+
         $employee = Employee::withTrashed()->where('user_id', $this->id)->first(['id', 'status', 'deleted_at']);
 
         return $employee !== null

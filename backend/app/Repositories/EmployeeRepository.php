@@ -72,8 +72,9 @@ class EmployeeRepository implements EmployeeRepositoryInterface
                 )
             )
             ->orderBy(
-                $filters['sort_by'] ?? 'created_at',
-                $filters['sort_dir'] ?? 'desc'
+                in_array($filters['sort_by'] ?? null, ['created_at', 'first_name', 'last_name', 'email', 'employee_code', 'hire_date', 'status', 'department_id'], true)
+                    ? $filters['sort_by'] : 'created_at',
+                strtolower((string) ($filters['sort_dir'] ?? 'desc')) === 'asc' ? 'asc' : 'desc'
             );
 
         return $query->paginate((int) ($filters['per_page'] ?? 15));

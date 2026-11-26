@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { ProtectedFileService } from '../../../core/services/protected-file.service';
 
 @Component({
   standalone: false,
@@ -150,7 +151,7 @@ export class LeaveListComponent implements OnInit {
     { id: '', label: 'COMMON.ALL' },
   ];
 
-  constructor(private http: HttpClient, private auth: AuthService, private route: ActivatedRoute, public lang: LanguageService) { }
+  constructor(private http: HttpClient, private auth: AuthService, private route: ActivatedRoute, public lang: LanguageService, private files: ProtectedFileService) { }
 
   ngOnInit() {
     const portalType = this.auth.getPortalType();
@@ -533,6 +534,12 @@ export class LeaveListComponent implements OnInit {
     }).subscribe({
       next: response => this.downloadBlob(response, `leave-details-report-${new Date().toISOString().slice(0, 10)}.xlsx`)
     });
+  }
+
+  /** Supporting documents are private: fetch through the authorized API, not /storage. */
+  viewLeaveDocument(leave: any): void {
+    this.files.open(`/api/v1/leave/requests/${leave.id}/document`,
+      () => alert(this.lang.t('MESSAGES.GENERIC_ERROR')));
   }
 
   private downloadBlob(response: any, fallbackFilename: string): void {

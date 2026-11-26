@@ -159,6 +159,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/{id}',                          [EmployeeController::class, 'update']);
             Route::delete('/{id}',                       [EmployeeController::class, 'destroy'])->middleware('role:super_admin|ceo|hr_manager|hr_staff');
             Route::post('/{id}/avatar',                  [EmployeeController::class, 'uploadAvatar']);
+            Route::get('/{id}/avatar',                   [EmployeeController::class, 'avatar'])->whereNumber('id');
             Route::post('/{id}/documents',               [EmployeeController::class, 'uploadDocument']);
             Route::get('/{id}/documents',                [EmployeeController::class, 'listDocuments']);
             Route::delete('/{id}/documents/{docId}',     [EmployeeController::class, 'deleteDocument']);
@@ -246,6 +247,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/details-report',           [LeaveController::class, 'downloadDetailsReport']);
             Route::post('/requests',               [LeaveController::class, 'store']);
             Route::get('/requests/{id}',           [LeaveController::class, 'show']);
+            Route::get('/requests/{id}/document',  [LeaveController::class, 'downloadDocument'])->whereNumber('id');
             Route::put('/requests/{id}',           [LeaveController::class, 'update']);
             Route::delete('/requests/{id}',        [LeaveController::class, 'cancel']);
             Route::post('/requests/{id}/approve',  [LeaveController::class, 'approve']);
@@ -320,6 +322,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/apply/{jobId}',              [RecruitmentController::class, 'apply']);
             Route::get('/applications',                [RecruitmentController::class, 'applications']);
             Route::get('/applications/{id}',           [RecruitmentController::class, 'showApplication']);
+            Route::get('/applications/{id}/cv',        [RecruitmentController::class, 'downloadCv'])->whereNumber('id');
             Route::put('/applications/{id}',           [RecruitmentController::class, 'updateApplication']);
             Route::put('/applications/{id}/stage',     [RecruitmentController::class, 'updateStage']);
             Route::post('/interviews',                 [RecruitmentController::class, 'scheduleInterview']);
@@ -454,6 +457,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/assign',                 [RequestManagementController::class, 'assign'])->whereNumber('id');
             Route::post('/{id}/complete',               [RequestManagementController::class, 'complete'])->whereNumber('id');
             Route::get('/{id}/completion-file',         [RequestManagementController::class, 'downloadCompletionFile'])->whereNumber('id');
+            Route::get('/{id}/attachment',              [RequestManagementController::class, 'downloadAttachment'])->whereNumber('id');
             Route::post('/{id}/reject',                 [RequestManagementController::class, 'reject'])->whereNumber('id');
             Route::post('/{id}/cancel',                 [RequestManagementController::class, 'cancel'])->whereNumber('id');
             Route::post('/{id}/comments',               [RequestManagementController::class, 'addComment'])->whereNumber('id');

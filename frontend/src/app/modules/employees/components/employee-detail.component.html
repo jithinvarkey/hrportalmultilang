@@ -26,8 +26,11 @@
   <!-- Profile Hero -->
   <div class="profile-hero" *ngIf="!loading && employee">
     <div class="hero-av" [style.background]="avCol(employee.full_name)">
-      <img *ngIf="employee.avatar_url" [src]="employee.avatar_url" [alt]="employee.full_name">
-      <span *ngIf="!employee.avatar_url">{{ initial(employee.full_name) }}</span>
+      <!-- Photos are private: loaded through the API with the login token (authImage pipe) -->
+      <ng-container *ngIf="(employee.avatar_url | authImage | async) as photo; else heroInitial">
+        <img [src]="photo" [alt]="employee.full_name">
+      </ng-container>
+      <ng-template #heroInitial><span>{{ initial(employee.full_name) }}</span></ng-template>
     </div>
     <div class="hero-info">
       <div class="hero-name">{{ displayName(employee) }}</div>
@@ -657,7 +660,7 @@
               <mat-icon>verified</mat-icon>
               <span>{{ 'STATUS.approved' | translate }} {{ formatDate(c.approved_at) }}</span>
             </div>
-            <a class="cc-field" *ngIf="c.pdf_url" [href]="c.pdf_url" target="_blank" rel="noopener" (click)="$event.stopPropagation()">
+            <a class="cc-field" *ngIf="c.has_document || c.pdf_url" href="#" (click)="$event.preventDefault(); $event.stopPropagation(); viewContractDocument(c)">
               <mat-icon>attach_file</mat-icon>
               <span>{{ 'EMPLOYEES.CONTRACTS.VIEW_DOCUMENT' | translate }}</span>
             </a>

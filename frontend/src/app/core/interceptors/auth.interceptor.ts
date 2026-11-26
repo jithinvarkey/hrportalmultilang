@@ -11,9 +11,21 @@ export const SIGNOUT_REASON_KEY = 'hrms_signout_reason';
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
   constructor(private auth: AuthService, private router: Router) {}
+
+  private isSameOrigin(url: string): boolean {
+    if (!/^[a-z][a-z0-9+.-]*:|^\/\//i.test(url)) {
+      return true; // relative URL such as /api/v1/...
+    }
+    try {
+      return new URL(url).origin === window.location.origin;
+    } catch {
+      return false;
+    }
+  }
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const token = this.auth.getToken();
-    if (token) {
+    // Send the token only to this site's own API, never to another origin.
+    if (token && this.isSameOrigin(req.url)) {
       req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
     }
     return next.handle(req).pipe(

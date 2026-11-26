@@ -34,7 +34,8 @@ class ContractResource extends JsonResource
             'position'      => $this->position,
             'terms'         => $this->terms,
             'pdf_path'      => $this->pdf_path,
-            'pdf_url'       => $this->pdf_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->pdf_path) : null,
+            // Authorized API download URL (the file is private; fetch it with the bearer token).
+            'pdf_url'       => $this->pdf_path ? url("/api/v1/contracts/{$this->id}/document") : null,
             'has_document'  => (bool) $this->pdf_path,
             'is_expired'    => $this->is_expired,
             'approved_at'   => $this->approved_at?->toDateTimeString(),

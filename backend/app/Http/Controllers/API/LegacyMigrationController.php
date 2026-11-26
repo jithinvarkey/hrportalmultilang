@@ -19,7 +19,7 @@ class LegacyMigrationController extends Controller
         $this->allowLongRunningImport();
 
         if (!$this->canMigrate()) {
-            return response()->json(['message' => __('Only Super Admin or HR Manager can run legacy data migration.')], 403);
+            return response()->json(['message' => __('Only a Super Admin can run legacy data migration.')], 403);
         }
 
         $data = $request->validate([
@@ -71,7 +71,7 @@ class LegacyMigrationController extends Controller
             ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
             ->where('model_has_roles.model_id', auth()->id())
             ->where('model_has_roles.model_type', get_class(auth()->user()))
-            ->whereIn('roles.name', ['super_admin', 'hr_manager'])
+            ->where('roles.name', 'super_admin')
             ->exists();
     }
 }

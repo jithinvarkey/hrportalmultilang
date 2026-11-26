@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class OtpService
 {
-    private const EXPIRES_IN_MINUTES = 3;
+    public const EXPIRES_IN_MINUTES = 3;
     private const MAX_SENDS = 5;
     private const MAX_ATTEMPTS = 5;
 

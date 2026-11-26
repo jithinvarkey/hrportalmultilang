@@ -6,6 +6,7 @@ import { Subject } from 'rxjs';
 import { finalize, takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { ProtectedFileService } from '../../../core/services/protected-file.service';
 import { humanize } from '../../../shared/pipes/i18n.pipes';
 
 @Component({
@@ -106,7 +107,14 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     private readonly http:   HttpClient,
     private readonly auth:   AuthService,
     private readonly lang:   LanguageService,
+    private readonly files:  ProtectedFileService,
   ) {}
+
+  /** Contract documents are private: fetch through the authorized API (Bearer token), not /storage. */
+  viewContractDocument(contract: { id: number }): void {
+    this.files.open(`/api/v1/contracts/${contract.id}/document`,
+      () => alert(this.lang.t('MESSAGES.GENERIC_ERROR')));
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');

@@ -1,0 +1,12 @@
+# The project may sit inside the web server's document root (e.g. XAMPP htdocs), where Apache would
+# otherwise publish everything here: .git, database dumps, logs, storage/ uploads and backups, docs, outputs.
+# Deny everything except the two folders that are meant to be served:
+#   frontend/dist/  - the built Angular app
+#   backend/public/ - the Laravel entry point
+# The pattern does not name the project folder, so it works whatever the folder is called on the server.
+<IfModule mod_authz_core.c>
+    <If "%{REQUEST_FILENAME} !~ m#/(frontend/dist|backend/public)(/|$)#i">
+        Require all denied
+    </If>
+</IfModule>
+Options -Indexes

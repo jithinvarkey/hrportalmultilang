@@ -92,8 +92,10 @@
         <th mat-header-cell *matHeaderCellDef></th>
         <td mat-cell *matCellDef="let e" class="cell-avatar">
           <div class="av" [style.background]="avatarColor(e.full_name || e.first_name)">
-            <img *ngIf="e.avatar_url" [src]="e.avatar_url" [alt]="e.full_name" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
-            <span *ngIf="!e.avatar_url">{{ initial(e.full_name || e.first_name) }}</span>
+            <ng-container *ngIf="(e.avatar_url | authImage | async) as photo; else rowInitial">
+              <img [src]="photo" [alt]="e.full_name" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+            </ng-container>
+            <ng-template #rowInitial><span>{{ initial(e.full_name || e.first_name) }}</span></ng-template>
           </div>
         </td>
       </ng-container>

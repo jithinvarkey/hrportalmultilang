@@ -12,7 +12,7 @@ use App\Services\XlsxReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Support\PrivateUploads;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -297,7 +297,7 @@ class ContractController extends Controller {
         // Store the optional signed/scanned contract document (â‰¤ 10 MB).
         $pdfPath = null;
         if ($request->hasFile('document')) {
-            $pdfPath = $request->file('document')->store('contracts/documents', 'public');
+            $pdfPath = $request->file('document')->store('contracts/documents', PrivateUploads::DISK);
         }
 
         $contract = Contract::create([
@@ -373,9 +373,9 @@ class ContractController extends Controller {
         // Replace the attached document if a new file is provided.
         if ($request->hasFile('document')) {
             if ($contract->pdf_path) {
-                Storage::disk('public')->delete($contract->pdf_path);
+                PrivateUploads::delete($contract->pdf_path);
             }
-            $data['pdf_path'] = $request->file('document')->store('contracts/documents', 'public');
+            $data['pdf_path'] = $request->file('document')->store('contracts/documents', PrivateUploads::DISK);
         }
 
         $contract->update($data);
@@ -439,7 +439,7 @@ class ContractController extends Controller {
 
     /**
      * Upload (or replace) the signed/scanned document for a contract.
-     * Accepts PDF/DOC/DOCX up to 10 MB and stores it on the public disk.
+     * Accepts PDF/DOC/DOCX up to 10 MB and stores it on the private local disk.
      *
      * @param  Request      $request
      * @param  int          $id
@@ -460,16 +460,16 @@ class ContractController extends Controller {
 
         // Remove the previous file so we don't orphan storage.
         if ($contract->pdf_path) {
-            Storage::disk('public')->delete($contract->pdf_path);
+            PrivateUploads::delete($contract->pdf_path);
         }
 
-        $path = $request->file('document')->store('contracts/documents', 'public');
+        $path = $request->file('document')->store('contracts/documents', PrivateUploads::DISK);
         $contract->update(['pdf_path' => $path]);
 
         return response()->json([
             'message'  => __('Contract document uploaded.'),
             'pdf_path' => $path,
-            'pdf_url'  => Storage::disk('public')->url($path),
+            'pdf_url'  => url("/api/v1/contracts/{$contract->id}/document"),
             'contract' => new ContractResource($contract->fresh(['employee.department', 'department'])),
         ], 201);
     }
@@ -488,13 +488,13 @@ class ContractController extends Controller {
             return response()->json(['message' => __('Unauthorized.')], 403);
         }
 
-        if (!$contract->pdf_path || !Storage::disk('public')->exists($contract->pdf_path)) {
+        if (!PrivateUploads::exists($contract->pdf_path)) {
             return response()->json(['message' => __('No document attached to this contract.')], 404);
         }
 
         $filename = "{$contract->reference}." . pathinfo($contract->pdf_path, PATHINFO_EXTENSION);
 
-        return Storage::disk('public')->download($contract->pdf_path, $filename);
+        return PrivateUploads::download($contract->pdf_path, $filename);
     }
 
     /**
@@ -512,7 +512,7 @@ class ContractController extends Controller {
         $contract = Contract::findOrFail($id);
 
         if ($contract->pdf_path) {
-            Storage::disk('public')->delete($contract->pdf_path);
+            PrivateUploads::delete($contract->pdf_path);
             $contract->update(['pdf_path' => null]);
         }
 

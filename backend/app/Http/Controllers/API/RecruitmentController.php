@@ -4,6 +4,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{Employee, JobPosting, JobApplication, Interview};
 use App\Services\NewHireOnboardingService;
 use App\Services\RecruitmentService;
+use App\Support\PrivateUploads;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -134,7 +135,7 @@ class RecruitmentController extends Controller {
             : $jobQuery->where('status','open')->findOrFail($jobId);
 
         $cvPath = $request->hasFile('cv_path')
-            ? $request->file('cv_path')->store("recruitment/cvs/{$jobId}", 'public')
+            ? $request->file('cv_path')->store("recruitment/cvs/{$jobId}", PrivateUploads::DISK)
             : null;
 
         // Only recruiters may place an applicant directly into a later stage;
@@ -186,6 +187,19 @@ class RecruitmentController extends Controller {
         }
         $this->hideExpectedSalary(collect([$app]), $request);
         return response()->json(['application' => $app]);
+    }
+
+    /** Stream an applicant's / CV-bank entry's CV, using the same scoping as showApplication(). */
+    public function downloadCv(Request $request, $id) {
+        $departmentScope = $this->managerDepartmentScope($request);
+        $app = $this->scopeApplications(JobApplication::query(), $departmentScope)->findOrFail($id);
+
+        $extension = pathinfo((string) $app->cv_path, PATHINFO_EXTENSION);
+        $base = trim(preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $app->applicant_name), '-') ?: 'applicant-' . $app->id;
+        $filename = $base . '-cv' . ($extension ? '.' . $extension : '');
+
+        return PrivateUploads::download($app->cv_path, $filename)
+            ?? response()->json(['message' => __('Document not found.')], 404);
     }
 
     public function updateApplication(Request $request, $id) {
@@ -465,7 +479,7 @@ class RecruitmentController extends Controller {
 
         $cvPath = null;
         if ($request->hasFile('cv_file')) {
-            $cvPath = $request->file('cv_file')->store('recruitment/cv-bank', 'public');
+            $cvPath = $request->file('cv_file')->store('recruitment/cv-bank', PrivateUploads::DISK);
         }
 
         $cv = JobApplication::create(array_merge(
@@ -502,7 +516,7 @@ class RecruitmentController extends Controller {
         $departmentScope = $this->managerDepartmentScope($request);
         $cv = $this->scopeApplications(JobApplication::query(), $departmentScope)->where('is_cv_bank', true)->findOrFail($id);
         if ($cv->cv_path) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($cv->cv_path);
+            PrivateUploads::delete($cv->cv_path);
         }
         $cv->delete();
         return response()->json(['message' => __('CV removed from bank.')]);
@@ -548,6 +562,10 @@ class RecruitmentController extends Controller {
         if ($departmentId === null) return $query;
 
         $employeeId = request()->user()?->employee?->id;
+        if ($departmentId <= 0 && !$employeeId) {
+            return $query->whereRaw('1 = 0');
+        }
+
         return $query->where(function ($scope) use ($departmentId, $employeeId) {
             if ($departmentId > 0) $scope->where('department_id', $departmentId);
             if ($employeeId) {
@@ -566,6 +584,13 @@ class RecruitmentController extends Controller {
         }
 
         $employeeId = request()->user()?->employee?->id;
+
+        // Not HR / a department manager and no employee record: nothing is visible
+        // (an empty where-group would otherwise apply no filter at all).
+        if ($departmentId <= 0 && !$employeeId) {
+            return $query->whereRaw('1 = 0');
+        }
+
         return $query->where(function ($scope) use ($departmentId, $employeeId) {
             if ($departmentId > 0) {
                 $scope->where('department_id', $departmentId)

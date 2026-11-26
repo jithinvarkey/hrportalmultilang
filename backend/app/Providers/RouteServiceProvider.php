@@ -33,7 +33,15 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('auth', function (Request $request) {
             $identity = (string) ($request->input('login') ?: $request->input('email') ?: $request->input('challenge_token') ?: '');
 
-            return Limit::perMinute(10)->by(sha1(strtolower(trim($identity)) . '|' . $request->ip()));
+            $account = sha1(strtolower(trim($identity)));
+
+            return [
+                Limit::perMinute(10)->by($account . '|' . $request->ip()),
+                // Per account across all IPs: stops distributed guessing against one login (acts as a lockout).
+                Limit::perHour(30)->by('account:' . $account),
+                // Per IP across all accounts: stops one client spraying many logins.
+                Limit::perMinute(30)->by('ip:' . $request->ip()),
+            ];
         });
 
         $this->routes(function () {

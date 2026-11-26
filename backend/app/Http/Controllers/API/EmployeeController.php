@@ -46,6 +46,46 @@ class EmployeeController extends Controller {
         return $roles;
     }
 
+    /**
+     * Email and phone numbers are where sign-in and password-reset OTPs are sent. Changing them on
+     * someone else's record could let the editor receive that person's OTP and take over the account,
+     * so the change is limited to roles above the target:
+     * - login email: HR Manager or Super Admin only;
+     * - targets holding super_admin / ceo / hr_manager: Super Admin only;
+     * - targets holding hr_staff: HR Manager or Super Admin.
+     */
+    private function denyLoginChannelChange(Employee $employee, array $data): ?JsonResponse
+    {
+        if ($employee->user_id && (int) $employee->user_id === (int) auth()->id()) {
+            return null; // own record: self-service rules already apply
+        }
+
+        $changed = [];
+        foreach (['email', 'phone', 'work_phone'] as $field) {
+            if (array_key_exists($field, $data) && (string) ($data[$field] ?? '') !== (string) ($employee->{$field} ?? '')) {
+                $changed[] = $field;
+            }
+        }
+        if (!$changed) {
+            return null;
+        }
+
+        $isSuperAdmin = $this->hasAnyRoleDB(['super_admin']);
+        $isHrManager  = $this->hasAnyRoleDB(['super_admin', 'hr_manager']);
+        $targetRoles  = $employee->user ? $employee->user->getRoleNames()->all() : [];
+
+        $allowed = match (true) {
+            (bool) array_intersect($targetRoles, ['super_admin', 'ceo', 'hr_manager']) => $isSuperAdmin,
+            in_array('hr_staff', $targetRoles, true) => $isHrManager,
+            in_array('email', $changed, true) => $isHrManager,
+            default => true,
+        };
+
+        return $allowed ? null : response()->json([
+            'message' => __('You are not allowed to change the email or phone number of this employee. Ask an HR Manager or Super Admin.'),
+        ], 403);
+    }
+
     private function hasAnyRoleDB(array $roles): bool {
         return (bool) array_intersect($this->userRoles(), $roles);
     }
@@ -377,7 +417,8 @@ class EmployeeController extends Controller {
 
         return DB::transaction(function () use ($request, $validated): JsonResponse {
                     // Unique temp password: date + random suffix
-                    $tempPassword = 'Hrms@' . now()->format('dmy') . strtoupper(substr(md5(uniqid('', true)), 0, 6)) . '!';
+                    // Cryptographically random (letters, digits, symbols); the old date-based value was guessable.
+                    $tempPassword = \Illuminate\Support\Str::password(16);
 
                     $user = User::create([
                                 'name' => $request->first_name . ' ' . $request->last_name,
@@ -778,12 +819,19 @@ class EmployeeController extends Controller {
             $data = array_intersect_key($data, array_flip(self::SELF_EDITABLE_FIELDS));
         }
 
+        if ($denied = $this->denyLoginChannelChange($employee, $data)) {
+            return $denied;
+        }
+
         if (!empty($data['manager_id']) && $this->managerCreatesCycle($employee->id, (int) $data['manager_id'])) {
             return response()->json([
                 'message' => __('Manager assignment would create a reporting cycle.'),
                 'errors' => ['manager_id' => [__('Manager assignment would create a reporting cycle.')]],
             ], 422);
         }
+
+        $emailChanged = array_key_exists('email', $data)
+            && strcasecmp((string) $data['email'], (string) $employee->email) !== 0;
 
         $employee->update($data);
 
@@ -792,6 +840,9 @@ class EmployeeController extends Controller {
                 'name' => $employee->full_name,
                 'email' => $employee->email,
             ]);
+            if ($emailChanged && $employee->user->id !== auth()->id()) {
+                $employee->user->tokens()->delete(); // the login identity changed: end existing sessions
+            }
         }
 
         return response()->json([
@@ -824,12 +875,26 @@ class EmployeeController extends Controller {
         if (!$this->hasAnyRoleDB(['super_admin', 'hr_manager', 'hr_staff']) && (int) auth()->user()?->employee?->id !== $employee->id) {
             return response()->json(['message' => __('Unauthorized.')], 403);
         }
-        $request->validate(['avatar' => 'required|image|max:2048']);
+        $request->validate(['avatar' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:2048']);
         if ($employee->avatar)
-            Storage::disk('public')->delete($employee->avatar);
-        $path = $request->file('avatar')->store('avatars', 'public');
+            \App\Support\PrivateUploads::delete($employee->avatar);
+        $path = $request->file('avatar')->store('avatars', \App\Support\PrivateUploads::DISK);
         $employee->update(['avatar' => $path]);
-        return response()->json(['avatar_url' => asset('storage/' . $path)]);
+        return response()->json(['avatar_url' => $employee->avatar_url]);
+    }
+
+    /**
+     * Profile photo of an employee, for any signed-in user (colleagues see each other's photos in
+     * lists and the org chart). Not reachable without a login, unlike the old /storage/avatars links.
+     */
+    public function avatar(int $id)
+    {
+        $employee = Employee::withTrashed()->findOrFail($id);
+        $response = \App\Support\PrivateUploads::inline($employee->avatar, [
+            'Cache-Control' => 'private, max-age=86400',
+        ]);
+
+        return $response ?? response()->json(['message' => __('No photo.')], 404);
     }
 
     public function uploadDocument(Request $request, int $id): JsonResponse {
@@ -837,7 +902,7 @@ class EmployeeController extends Controller {
         $request->validate([
             'title' => 'required|string|max:100',
             'type' => 'required|in:contract,id,certificate,visa,passport,medical,other',
-            'file' => 'required|file|max:10240',
+            'file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx',
             'expiry_date' => 'nullable|date',
         ]);
         $employee = Employee::findOrFail($id);

@@ -427,6 +427,10 @@ class AdminController extends Controller
             'otp_exempt'  => 'sometimes|boolean',
         ]);
 
+        if ($request->role === 'super_admin' && !$this->isSuperAdmin()) {
+            return response()->json(['message' => __('Only a super admin can grant the super admin role.')], 403);
+        }
+
         $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
@@ -446,16 +450,23 @@ class AdminController extends Controller
     public function updateUser(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
+        if ($denied = $this->denyIfProtectedTarget($user)) {
+            return $denied;
+        }
         $request->validate([
             'name'  => 'sometimes|string|max:120',
             'email' => "sometimes|email|unique:users,email,{$id}",
             'otp_exempt' => 'sometimes|boolean',
+            'password' => 'sometimes|nullable|string|min:8',
         ]);
 
         $user->update($request->only($this->isSuperAdmin() ? ['name', 'email', 'otp_exempt'] : ['name', 'email']));
 
         if ($request->filled('password')) {
             $user->update(['password' => Hash::make($request->password)]);
+            if ($user->id !== auth()->id()) {
+                $user->tokens()->delete(); // an admin reset ends the user's existing sessions
+            }
         }
 
         return response()->json(['user' => $user->fresh('roles', 'employee')]);
@@ -465,6 +476,19 @@ class AdminController extends Controller
     {
         $request->validate(['role' => 'required|exists:roles,name']);
         $user = User::findOrFail($id);
+
+        if (!$this->isSuperAdmin()) {
+            if ($request->role === 'super_admin') {
+                return response()->json(['message' => __('Only a super admin can grant the super admin role.')], 403);
+            }
+            if ($user->id === auth()->id()) {
+                return response()->json(['message' => __('You cannot change your own role.')], 403);
+            }
+        }
+        if ($denied = $this->denyIfProtectedTarget($user)) {
+            return $denied;
+        }
+
         $user->syncRoles([$request->role]);
 
         return response()->json(['message' => __('Role \':role\' assigned.', ['role' => $request->role]), 'user' => $user->fresh('roles')]);
@@ -473,9 +497,22 @@ class AdminController extends Controller
     public function toggleUserStatus(int $id): JsonResponse
     {
         $user = User::findOrFail($id);
-        $user->tokens()->delete();
+        if ($user->id === auth()->id()) {
+            return response()->json(['message' => __('You cannot disable your own account.')], 403);
+        }
+        if ($denied = $this->denyIfProtectedTarget($user)) {
+            return $denied;
+        }
 
-        return response()->json(['message' => __('User tokens revoked. User must re-login.')]);
+        $user->forceFill(['is_active' => !$user->is_active])->save();
+        if (!$user->is_active) {
+            $user->tokens()->delete();
+        }
+
+        return response()->json([
+            'message'   => $user->is_active ? __('User account enabled.') : __('User account disabled. The user is signed out and cannot sign in.'),
+            'is_active' => (bool) $user->is_active,
+        ]);
     }
 
     public function updateUserOtpExemption(Request $request, int $id): JsonResponse
@@ -504,6 +541,9 @@ class AdminController extends Controller
         ]);
 
         $user = User::with('roles', 'employee.department', 'employee.designation')->findOrFail($id);
+        if ($denied = $this->denyIfProtectedTarget($user)) {
+            return $denied;
+        }
         $user->forceFill(['mobile_punch_enabled' => (bool) $data['mobile_punch_enabled']])->save();
 
         return response()->json([
@@ -602,6 +642,9 @@ class AdminController extends Controller
         if ($role->name === 'super_admin') {
             return response()->json(['message' => __('Super admin permissions cannot be modified.')], 403);
         }
+        if (!$this->isSuperAdmin() && auth()->user()->hasRole($role->name)) {
+            return response()->json(['message' => __('You cannot change the permissions of your own role.')], 403);
+        }
 
         $request->validate(['permissions' => 'required|array']);
         $role->syncPermissions($request->permissions);
@@ -640,6 +683,19 @@ class AdminController extends Controller
             'department_manager' => 'Department Manager',
             'employee'           => 'Employee',
         ][$name] ?? ucfirst(str_replace('_', ' ', $name));
+    }
+
+    /**
+     * Only a super admin may change a super admin account (role, password, email, status).
+     * Stops holders of admin.manage_users (e.g. HR Manager) from taking over the top account.
+     */
+    private function denyIfProtectedTarget(User $target): ?JsonResponse
+    {
+        if ($target->hasRole('super_admin') && !$this->isSuperAdmin()) {
+            return response()->json(['message' => __('Only a super admin can change a super admin account.')], 403);
+        }
+
+        return null;
     }
 
     private function isSuperAdmin(): bool

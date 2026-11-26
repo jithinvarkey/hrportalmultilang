@@ -392,6 +392,8 @@
     "You can update only offboarding tasks assigned to your department.": "يمكنك تحديث مهام إخلاء الطرف المسندة إلى إدارتك فقط.",
     "You cannot approve your own leave request.": "لا يمكنك الموافقة على طلب إجازتك.",
     "You cannot approve your own loan request.": "لا يمكنك الموافقة على طلب السلفة الخاص بك.",
+    "You cannot approve your own renewal request.": "لا يمكنك الموافقة على طلب تجديد عقدك.",
+    "You cannot complete your own request.": "لا يمكنك إكمال طلبك الخاص.",
     "You cannot reject your own leave request.": "لا يمكنك رفض طلب إجازتك.",
     "You cannot reject your own loan request.": "لا يمكنك رفض طلب السلفة الخاص بك.",
     "You do not have permission to cancel this separation.": "ليست لديك صلاحية إلغاء إنهاء الخدمة هذا.",
@@ -433,5 +435,16 @@
     "Mobile punching disabled for this user.": "تم إيقاف التسجيل عبر الجوال لهذا المستخدم.",
     ":type is limited to :limit days per month. Month :month - used: :used, requested: :requested, remaining: :remaining.": "الحد الأقصى لـ :type هو :limit أيام في الشهر. شهر :month - المستخدم: :used، المطلوب: :requested، المتبقي: :remaining.",
     "Work From Home can only be requested for full days.": "يمكن طلب العمل عن بُعد لأيام كاملة فقط.",
-    "Work From Home is now requested from the Leave page.": "يتم الآن تقديم طلب العمل عن بُعد من صفحة الإجازات."
+    "Work From Home is now requested from the Leave page.": "يتم الآن تقديم طلب العمل عن بُعد من صفحة الإجازات.",
+    "Only a super admin can grant the super admin role.": "يمكن لمسؤول النظام الرئيسي فقط منح دور مسؤول النظام الرئيسي.",
+    "You cannot change your own role.": "لا يمكنك تغيير دورك بنفسك.",
+    "You cannot disable your own account.": "لا يمكنك تعطيل حسابك بنفسك.",
+    "User account enabled.": "تم تفعيل حساب المستخدم.",
+    "User account disabled. The user is signed out and cannot sign in.": "تم تعطيل حساب المستخدم. تم تسجيل خروجه ولا يمكنه تسجيل الدخول.",
+    "You cannot change the permissions of your own role.": "لا يمكنك تغيير صلاحيات دورك.",
+    "Only a super admin can change a super admin account.": "يمكن لمسؤول النظام الرئيسي فقط تعديل حساب مسؤول النظام الرئيسي.",
+    "Only a Super Admin can run legacy data migration.": "يمكن لمسؤول النظام الرئيسي فقط تشغيل ترحيل البيانات القديمة.",
+    "The legacy import folder is not set up on the server. Create it and copy the documents there: :path": "مجلد الاستيراد القديم غير مُعد على الخادم. أنشئه وانسخ المستندات إليه: :path",
+    "Source document folder must be inside the legacy import folder: :path": "يجب أن يكون مجلد المستندات المصدر داخل مجلد الاستيراد القديم: :path",
+    "You are not allowed to change the email or phone number of this employee. Ask an HR Manager or Super Admin.": "غير مسموح لك بتغيير البريد الإلكتروني أو رقم الهاتف لهذا الموظف. تواصل مع مدير الموارد البشرية أو مسؤول النظام الرئيسي."
 }

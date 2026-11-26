@@ -20,8 +20,9 @@
 
       <!-- Avatar -->
       <div class="av-wrap">
-        <div class="av-circle" [style.background-image]="avatarUrl() ? 'url(' + avatarUrl() + ')' : 'none'">
-          <span *ngIf="!avatarUrl()">{{ initial(user?.name) }}</span>
+        <div class="av-circle" *ngIf="{ photo: avatarUrl() | authImage | async } as av"
+             [style.background-image]="av.photo ? 'url(' + av.photo + ')' : 'none'">
+          <span *ngIf="!av.photo">{{ initial(user?.name) }}</span>
           <div *ngIf="avatarUploading" class="av-overlay">
             <div class="spinner sm"></div>
           </div>

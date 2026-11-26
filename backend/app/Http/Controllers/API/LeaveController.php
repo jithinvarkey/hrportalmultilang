@@ -12,6 +12,7 @@ use App\Models\LeaveAllocation;
 use App\Services\LeaveService;
 use App\Services\RequestActivityService;
 use App\Services\AnnualTicketService;
+use App\Support\PrivateUploads;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
@@ -520,7 +521,7 @@ class LeaveController extends Controller {
             if ($request->hasFile('document')) {
                 $request->validate(['document' => 'file|mimes:pdf,jpg,jpeg,png|max:5120']);
                 $documentPath = $request->file('document')->store(
-                        "leave-documents/{$employee->id}", 'public'
+                        "leave-documents/{$employee->id}", PrivateUploads::DISK
                 );
             }
 
@@ -642,7 +643,7 @@ class LeaveController extends Controller {
         if ($request->hasFile('document')) {
             $request->validate(['document' => 'file|mimes:pdf,jpg,jpeg,png|max:5120']);
             $documentPath = $request->file('document')->store(
-                    "leave-documents/{$employee->id}", 'public'
+                    "leave-documents/{$employee->id}", PrivateUploads::DISK
             );
         }
 
@@ -824,6 +825,20 @@ class LeaveController extends Controller {
         }
         $request->setAttribute('activities', $this->activityService->timeline($request));
         return response()->json(['request' => $request]);
+    }
+
+    /** Stream the supporting document (e.g. medical certificate) to whoever may view the leave request. */
+    public function downloadDocument($id) {
+        $leave = LeaveRequest::with('employee')->findOrFail($id);
+        if (!$this->isOwnLeaveRequest($leave, auth()->user()) && !$this->canAccessEmployeeLeave($leave->employee_id)) {
+            return response()->json(['message' => __('Unauthorized.')], 403);
+        }
+
+        $extension = pathinfo((string) $leave->document_path, PATHINFO_EXTENSION);
+        $filename = 'leave-' . $leave->id . '-document' . ($extension ? '.' . $extension : '');
+
+        return PrivateUploads::download($leave->document_path, $filename)
+            ?? response()->json(['message' => __('Document not found.')], 404);
     }
 
     public function approve(Request $request, $id) {

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Support\PrivateUploads;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\JsonResponse;
@@ -293,7 +294,7 @@ class RequestManagementController extends Controller {
         $attachmentPath = null;
         if ($request->hasFile('attachment')) {
             $attachmentPath = $request->file('attachment')->store(
-                    "requests/{$employee->id}", 'public'
+                    "requests/{$employee->id}", PrivateUploads::DISK
             );
         }
 
@@ -448,6 +449,11 @@ class RequestManagementController extends Controller {
             return response()->json(['message' => __('Only the assigned person or HR can complete this request.')], 403);
         }
 
+        // Nobody — HR included — may give the final approval on their own request.
+        if ($this->isOwnRequest($req)) {
+            return response()->json(['message' => __('You cannot complete your own request.')], 403);
+        }
+
         // The direct manager must approve first; HR gives the final approval afterwards.
         if (in_array($req->status, ['pending_manager', 'completed', 'rejected', 'cancelled'], true)) {
             return response()->json(['message' => __('Request cannot be completed at this stage.')], 422);
@@ -457,7 +463,7 @@ class RequestManagementController extends Controller {
         if ($request->hasFile('completion_file')) {
             $request->validate(['completion_file' => 'file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240']);
             $completionFile = $request->file('completion_file')->store(
-                    "requests/completed/{$req->id}", 'public'
+                    "requests/completed/{$req->id}", PrivateUploads::DISK
             );
         }
 
@@ -489,14 +495,27 @@ class RequestManagementController extends Controller {
             return response()->json(['message' => __('You are not allowed to download this file.')], 403);
         }
 
-        if (!$req->completion_file || !Storage::disk('public')->exists($req->completion_file)) {
-            return response()->json(['message' => __('Completion file not found.')], 404);
-        }
-
-        $extension = pathinfo($req->completion_file, PATHINFO_EXTENSION);
+        $extension = pathinfo((string) $req->completion_file, PATHINFO_EXTENSION);
         $filename = $req->reference . '-completion' . ($extension ? '.' . $extension : '');
 
-        return Storage::disk('public')->download($req->completion_file, $filename);
+        return PrivateUploads::download($req->completion_file, $filename)
+            ?? response()->json(['message' => __('Completion file not found.')], 404);
+    }
+
+    /** Stream the requester's supporting attachment to whoever may view the request. */
+    public function downloadAttachment($id): StreamedResponse|JsonResponse
+    {
+        $req = EmployeeRequest::with(['employee', 'requestType'])->findOrFail($id);
+
+        if (!$this->canAccessRequestFile($req)) {
+            return response()->json(['message' => __('You are not allowed to download this file.')], 403);
+        }
+
+        $extension = pathinfo((string) $req->attachment_path, PATHINFO_EXTENSION);
+        $filename = $req->reference . '-attachment' . ($extension ? '.' . $extension : '');
+
+        return PrivateUploads::download($req->attachment_path, $filename)
+            ?? response()->json(['message' => __('Document not found.')], 404);
     }
 
     // ══════════════════════════════════════════════════════════════════════
